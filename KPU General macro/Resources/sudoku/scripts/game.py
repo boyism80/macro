@@ -19,7 +19,7 @@ def callback(vmodel, frame, parameter):
             return 'not loaded'
 
         while True:
-            success, out_row, out_col, in_row, in_col, num = table.find_one()
+            success, out_row, out_col, in_row, in_col, num = table.next()
             if not success:
                 break
 

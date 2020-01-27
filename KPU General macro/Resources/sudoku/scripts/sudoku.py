@@ -17,13 +17,13 @@ def combinations(iterable, r):
             yield tuple(pool[i] for i in indices)
 
 
-class Cell:
+class cell:
     def __init__(self, num=None, candidates=[]):
         self._num = num
         self._candidates = candidates
 
     def clone(self):
-        cell = Cell(self._num, list(self._candidates))
+        cell = cell(self._num, list(self._candidates))
         return cell
 
     def erase_candidate(self, value):
@@ -89,9 +89,9 @@ class SUDOKU_TABLE:
 
     def on_init(self, out_row, out_col, in_row, in_col, components):
         if type(components[out_row][out_col][in_row][in_col]) is int:
-                self._cells[out_row][out_col][in_row][in_col] = Cell(components[out_row][out_col][in_row][in_col])
+                self._cells[out_row][out_col][in_row][in_col] = cell(components[out_row][out_col][in_row][in_col])
         else:
-            self._cells[out_row][out_col][in_row][in_col] = Cell(None, components[out_row][out_col][in_row][in_col])
+            self._cells[out_row][out_col][in_row][in_col] = cell(None, components[out_row][out_col][in_row][in_col])
                         
     def __getitem__(self, position):
         out_row, out_col, in_row, in_col = position
@@ -294,6 +294,10 @@ class SUDOKU_TABLE:
         return valid_last_row and valid_last_col
 
 
+
+    # Check table is valid after set number of cell
+    # Return value
+    #   - success : return True if 'num' is correct value for position 'coordination'
     def predict(self, coordination, num):
         out_row, out_col, in_row, in_col = coordination
         cell = self[out_row, out_col, in_row, in_col]
@@ -303,12 +307,15 @@ class SUDOKU_TABLE:
         new_table = self.clone(self._root)
         new_table[out_row, out_col, in_row, in_col]._num = num
         new_table[out_row, out_col, in_row, in_col]._candidates = []
-        return new_table.find()
+        return new_table.continuable()
 
-    def find(self):
+    # Get value that table is valid
+    # Return value
+    #   - success : return True if table is valid else False
+    def continuable(self):
         try:
             while True:
-                success, out_row, out_col, in_row, in_col, num = self.find_one()
+                success, out_row, out_col, in_row, in_col, num = self.next()
                 if not success:
                     break
 
@@ -317,18 +324,28 @@ class SUDOKU_TABLE:
             return False
 
 
-    def find_one(self):
+    # Get next cell number
+    # Return value
+    #   - success   : return True if cell has valid value else False
+    #   - out_row   : row index of outer box
+    #   - out_col   : column index of outer box
+    #   - in_row    : row index of inner box
+    #   - in_col    : column index of inner box
+    #   - candidate : number of cell
+    def next(self):
         try:
             if self.is_finish():
                 raise Exception()
 
-            self.foreach_out(self.on_base_out_remove)
-            self.foreach_row(self.on_base_row_remove)
-            self.foreach_column(self.on_base_column_remove)
-            ret = self.foreach_all(self.on_find)
+            # Remove candidates using common algorithm
+            self.foreach_out(self.on_base_out_remove)       # Remove out candidates
+            self.foreach_row(self.on_base_row_remove)       # Remove row candidates
+            self.foreach_column(self.on_base_column_remove) # Remove column candidates
+            ret = self.foreach_all(self.on_find)            # Find next number
             if ret is not None:
                 return ret
 
+            # Remove exposure circulation numbers
             self.foreach_out(self.on_remove_exposed_cnum_out)
             self.foreach_row(self.on_remove_exposed_cnum_row)
             self.foreach_column(self.on_remove_exposed_cnum_col)
@@ -336,6 +353,7 @@ class SUDOKU_TABLE:
             if ret is not None:
                 return ret
 
+            # Remove hidden circulation numbers
             self.foreach_out(self.on_remove_hidden_cnum_out)
             self.foreach_row(self.on_remove_hidden_cnum_row)
             self.foreach_column(self.on_remove_hidden_cnum_col)
@@ -343,6 +361,7 @@ class SUDOKU_TABLE:
             if ret is not None:
                 return ret
 
+            # Remove candidates using x-wing algorithm
             for i in range(3**2):
                 self.remove_xwing_row(i)
             for i in range(3**2):
@@ -350,10 +369,12 @@ class SUDOKU_TABLE:
             if ret is not None:
                 return ret
 
+            # Get cell has least candidates
             coordination = self.get_least_candidate_coordination()
             if coordination is None:
                 raise Exception()
 
+            # Predict from candidate
             cell = self[coordination]
             for candidate in cell._candidates:
                 out_row, out_col, in_row, in_col = coordination
