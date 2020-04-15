@@ -1,0 +1,31 @@
+﻿<UserControl x:Class="KPU_General_macro.Screen"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:KPU_General_macro"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800"
+             MouseDown="Screen_MouseDown"
+             MouseUp="Screen_MouseUp"
+             MouseMove="Screen_MouseMove">
+    <Grid>
+        <Canvas>
+            <Canvas.Background>
+                <ImageBrush ImageSource="{Binding Frame, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:Screen}}" />
+            </Canvas.Background>
+
+            <!--Draw selected area-->
+            <Rectangle Width="{Binding Path=Size.Width, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:Screen}}}"
+                   Height="{Binding Path=Size.Height, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:Screen}}}"
+                   Canvas.Left ="{Binding Path=Begin.X, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:Screen}}}"
+                   Canvas.Top="{Binding Path=Begin.Y, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:Screen}}}"
+                   Visibility="{Binding Path=SelectedRectVisibility, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:Screen}}}"
+                   Stroke="{StaticResource HighlightBrush}" 
+                   RadiusX="3"
+                   RadiusY="3"
+                   StrokeThickness="1">
+            </Rectangle>
+        </Canvas>
+    </Grid>
+</UserControl>

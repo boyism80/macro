@@ -238,7 +238,8 @@
                     Background="{Binding FrameBackgroundBrush}"
                     BorderBrush="#1272d8"
                     BorderThickness="1">
-                <Image Source="{Binding Frame}" />
+                <local:Screen Frame="{Binding Frame}" 
+                              SelectRectCommand="{Binding SelectedRectCommand}"/>
             </Border>
 
             <Border Grid.Row="0"

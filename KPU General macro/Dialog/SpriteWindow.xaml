@@ -1,0 +1,250 @@
+﻿<Window x:Class="KPU_General_macro.Dialog.SpriteWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="clr-namespace:CalcBinding;assembly=CalcBinding"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:KPU_General_macro"
+        mc:Ignorable="d"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Style="{StaticResource DefaultWindowStyle}"
+        Title="리소스" Height="768" Width="640">
+    <WindowChrome.WindowChrome>
+        <WindowChrome 
+            ResizeBorderThickness="10"
+            CaptionHeight="30"
+            CornerRadius="0"
+            GlassFrameThickness="0"
+            />
+    </WindowChrome.WindowChrome>
+    <DockPanel Style="{StaticResource WindowDialog}"
+               LastChildFill="False">
+        <TabControl DockPanel.Dock="Top"
+                    Height="{Binding Path=ActualHeight, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DockPanel}}">
+            <TabItem Header="스프라이트">
+                <DockPanel LastChildFill="True"
+                           Margin="10">
+                    <StackPanel DockPanel.Dock="Bottom" 
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                Margin="10 15">
+                        <Button Content="확인"
+                                Click="OnCompleteSprite"/>
+                        <Button Content="취소"
+                                Click="OnCancelSprite"/>
+                    </StackPanel>
+                    
+                    <Grid DockPanel.Dock="Bottom">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="6*" />
+                            <ColumnDefinition Width="4*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Margin="0 0 10 0">
+                            <StackPanel Orientation="Vertical">
+                                <Border Margin="0 0 0 30" 
+                                        BorderThickness="1" 
+                                        BorderBrush="#eeeeee">
+                                    <Image Height="320" 
+                                           Stretch="Uniform"
+                                           Source="{Binding SpriteVM.Bitmap}"/>
+                                </Border>
+
+                                <TextBlock Text="이름" />
+                                <TextBox Text="{Binding SpriteVM.Name}" />
+
+                                <TextBlock Text="임계값"
+                                           Margin="0 30 0 10"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="65" />
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="Threshold" 
+                                            Grid.Column="0"
+                                            Minimum="0.0"
+                                            Maximum="1.0"
+                                            Value="{Binding SpriteVM.Threshold}" />
+                                    <TextBlock Grid.Column="1" 
+                                               Margin="10 0"
+                                               TextAlignment="Right"
+                                               Text="{Binding SpriteVM.ThresholdLabelText}" />
+                                </Grid>
+                                
+                                <TextBlock Text="기준 색상"
+                                           Margin="0 30 0 0"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0"
+                                             Text="{Binding SpriteVM.Color, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Button Grid.Column="1"
+                                            Content="찾기"
+                                            Click="OnBrowseColor"/>
+                                </Grid>
+
+                                <StackPanel Orientation="Vertical"
+                                            Visibility="{c:Binding SpriteVM.EnabledColorFactor}">
+                                    <TextBlock Text="색상 오차율"
+                                           Margin="0 20 0 10"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="65" />
+                                        </Grid.ColumnDefinitions>
+                                        <Slider x:Name="PivotColorFactor" 
+                                            Grid.Column="0"
+                                            Minimum="0.0"
+                                            Maximum="1.0"
+                                            IsEnabled="{Binding EnabledColorFactor}"
+                                            Value="{Binding ColorErrorFactor}"/>
+                                        <TextBlock Grid.Column="1" 
+                                               Margin="10 0"
+                                               TextAlignment="Right"
+                                               Text="{Binding ColorErrorFactorLabelText}" />
+                                    </Grid>
+                                </StackPanel>
+
+                                <!--<Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="4*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition />
+                                        <RowDefinition />
+                                        <RowDefinition />
+                                    </Grid.RowDefinitions>
+                                    
+                                    <TextBlock Grid.Column="0"
+                                               Grid.Row="0"
+                                               VerticalAlignment="Center"
+                                               Text="이름" />
+                                    <TextBox Grid.Column="1" 
+                                             Grid.Row="0" />
+                                    <TextBlock Grid.Column="0" 
+                                               Grid.Row="1"
+                                               Text="임계값" />
+                                    <Slider Grid.Column="1" 
+                                            Grid.Row="1"
+                                            Minimum="0.0"
+                                            Maximum="100.0"
+                                            Value="95.0"/>
+                                    <TextBlock Grid.Column="2"
+                                               Grid.Row="1"
+                                               TextAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               Margin="10 0"
+                                               Text="100%" />
+                                    <TextBlock Grid.Column="0"
+                                               Grid.Row="2"
+                                               VerticalAlignment="Center"
+                                               Text="기준 색상"/>
+                                    <TextBox Grid.Column="1" 
+                                             Grid.Row="2" />
+                                    <Button Grid.Column="2"
+                                            Grid.Row="2"
+                                            Content="찾기" />
+                                </Grid>-->
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="1" Margin="0">
+                            <local:SpriteListView ItemsSource="{Binding SpriteVM.Sprites}" />
+                        </Border>
+                    </Grid>
+                </DockPanel>
+            </TabItem>
+
+            <TabItem Header="상태">
+                <Border Margin="10">
+                    <Grid DockPanel.Dock="Bottom">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="3*" />
+                            <RowDefinition Height="2*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="3*" />
+                            <ColumnDefinition Width="2*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Row="0"
+                                Grid.Column="0"
+                                Margin="0">
+                            <StackPanel Orientation="Vertical">
+                                <TextBlock Text="이름" />
+                                <TextBox Text="{Binding StatusVM.Name}" />
+
+                                <TextBlock Text="스크립트" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0"
+                                             Text="{Binding StatusVM.Script}"/>
+                                    <Button Grid.Column="1"
+                                            Content="찾기" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Row="1"
+                                Grid.Column="0"
+                                Margin="0 10 0 0">
+                            <local:SpriteListView x:Name="bindedSpriteListView"
+                                                  ItemsSource="{Binding StatusVM.BindedSprites}"
+                                                  PreviewMouseLeftButtonDown="SpriteListView_PreviewMouseLeftButtonDown"
+                                                  PreviewMouseMove="SpriteListView_PreviewMouseMove"
+                                                  Drop="SpriteListView_Drop"
+                                                  MouseDoubleClick="SpriteListView_MouseDoubleClick"/>
+                        </Border>
+
+                        <Border Grid.Row="0"
+                                Grid.Column="1"
+                                Margin="0">
+                            <ListView Background="Transparent"
+                                      Margin="10 0 0 0"
+                                      ItemsSource="{Binding StatusVM.Statuses}">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Name}"
+                                                   Foreground="{StaticResource MainTextBrush}"/>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </Border>
+
+                        <Border Grid.Row="2"
+                                Grid.Column="0"
+                                Grid.ColumnSpan="2"
+                                Margin="0">
+                            <StackPanel Orientation="Horizontal"
+                                        HorizontalAlignment="Right"
+                                        Margin="10 15">
+                                <Button Content="확인"
+                                        Click="OKButton_Click"/>
+                                <Button Content="취소"
+                                        Click="CancelButton_Click"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Row="1"
+                                Grid.Column="1"
+                                Margin="10 10 0 0">
+                            <local:SpriteListView x:Name="unbindedSpriteListView" 
+                                                  ItemsSource="{Binding StatusVM.UnbindedSprites}"
+                                                  PreviewMouseLeftButtonDown="SpriteListView_PreviewMouseLeftButtonDown"
+                                                  PreviewMouseMove="SpriteListView_PreviewMouseMove"
+                                                  Drop="SpriteListView_Drop"
+                                                  MouseDoubleClick="SpriteListView_MouseDoubleClick"/>
+                        </Border>
+                    </Grid>
+                </Border>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

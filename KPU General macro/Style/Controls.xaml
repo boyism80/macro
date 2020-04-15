@@ -469,4 +469,131 @@
             </Trigger>
         </Style.Triggers>
     </Style>
+
+    <Style x:Key="Exception" TargetType="{x:Type TextBlock}">
+        <Setter Property="Foreground" Value="{StaticResource ErrorBrush}" />
+        <Setter Property="Margin" Value="0 0 0 20" />
+    </Style>
+
+    <Style x:Key="WindowDialog" TargetType="DockPanel">
+        <Setter Property="Background" Value="{StaticResource SystemBrush}" />
+        <Style.Resources>
+            <Style TargetType="{x:Type Border}">
+                <Setter Property="Margin" Value="10 25 10 0" />
+            </Style>
+
+            <Style TargetType="{x:Type TextBlock}">
+                <Setter Property="Margin" Value="0 0 0 5" />
+                <Setter Property="Foreground" Value="{StaticResource MainTextBrush}" />
+            </Style>
+
+            <Style TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0 0 0 1" />
+                <Setter Property="BorderBrush" Value="#a0a0a0" />
+                <Setter Property="Foreground" Value="{StaticResource MainTextBrush}" />
+                <Setter Property="Padding" Value="5" />
+                <Setter Property="Margin" Value="0 0 0 5" />
+                <Setter Property="CaretBrush" Value="{StaticResource MainTextBrush}" />
+            </Style>
+
+            <Style TargetType="{x:Type Button}">
+                <Setter Property="Padding" Value="10 0" />
+                <Setter Property="Height" Value="20" />
+                <Setter Property="Margin" Value="10 0 0 0" />
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="BorderThickness" Value="0" />
+            </Style>
+
+            <Style TargetType="{x:Type CheckBox}">
+                <Setter Property="Foreground" Value="{StaticResource MainTextBrush}" />
+                <Setter Property="Margin" Value="0 5 10 0" />
+            </Style>
+        </Style.Resources>
+    </Style>
+
+    <Style x:Key="SliderRepeatButtonPrev" TargetType="RepeatButton">
+        <Setter Property="SnapsToDevicePixels" Value="true" />
+        <Setter Property="OverridesDefaultStyle" Value="true" />
+        <Setter Property="IsTabStop" Value="false" />
+        <Setter Property="Focusable" Value="false" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RepeatButton">
+                    <Border BorderThickness="1" 
+                            BorderBrush="{StaticResource ControlLightBackgroundBrush}"
+                            Background="{StaticResource ControlLightBackgroundBrush}"
+                            Height="{TemplateBinding Height}"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="SliderRepeatButtonNext" TargetType="RepeatButton">
+        <Setter Property="SnapsToDevicePixels" Value="true" />
+        <Setter Property="OverridesDefaultStyle" Value="true" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RepeatButton">
+                    <Border SnapsToDevicePixels="True" 
+                            Background="{StaticResource HighlightBrush}" Height="{TemplateBinding Height}"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="SliderThumb" TargetType="Thumb">
+        <Setter Property="SnapsToDevicePixels" Value="true" />
+        <Setter Property="OverridesDefaultStyle" Value="true" />
+        <Setter Property="Width" Value="{Binding Height, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Slider}}" />
+        <Setter Property="Height" Value="{Binding Height, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Slider}}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Rectangle Width="{TemplateBinding Width}" 
+                               Height="{TemplateBinding Height}" Fill="White" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <ControlTemplate x:Key="Slider" TargetType="Slider">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" MinHeight="{TemplateBinding MinHeight}" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Track Grid.Row="1" x:Name="PART_Track">
+                <Track.DecreaseRepeatButton>
+                    <RepeatButton Style="{StaticResource SliderRepeatButtonNext}"  
+                                      Height="{TemplateBinding Height}"
+                                      Command="Slider.DecreaseLarge" />
+                </Track.DecreaseRepeatButton>
+                <Track.Thumb>
+                    <Thumb Style="{StaticResource SliderThumb}" />
+                </Track.Thumb>
+                <Track.IncreaseRepeatButton>
+                    <RepeatButton Style="{StaticResource SliderRepeatButtonPrev}" 
+                                      Height="{TemplateBinding Height}"
+                                      Command="Slider.IncreaseLarge" />
+                </Track.IncreaseRepeatButton>
+            </Track>
+        </Grid>
+    </ControlTemplate>
+
+    <Style TargetType="Slider">
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="SnapsToDevicePixels" Value="true" />
+        <Setter Property="OverridesDefaultStyle" Value="true" />
+        <Setter Property="Height" Value="8" />
+        <Style.Triggers>
+            <Trigger Property="Orientation" Value="Horizontal">
+                <Setter Property="MinHeight" Value="11" />
+                <Setter Property="MinWidth" Value="104" />
+                <Setter Property="Template" Value="{StaticResource Slider}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
 </ResourceDictionary>

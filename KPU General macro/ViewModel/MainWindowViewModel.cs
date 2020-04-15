@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Threading;
 using System.Windows;
@@ -23,15 +24,15 @@ namespace KPU_General_macro
     public class MainWindowViewModel : BaseViewModel, IDisposable
     {
         public static SolidColorBrush INACTIVE_FRAME_BACKGROUND = new SolidColorBrush(Colors.White);
-        public static SolidColorBrush ACTIVE_FRAME_BACKGROUND = new SolidColorBrush(Color.FromRgb(222, 222, 222));
+        public static SolidColorBrush ACTIVE_FRAME_BACKGROUND = new SolidColorBrush(System.Windows.Media.Color.FromRgb(222, 222, 222));
         public const int MAXIMUM_IDLE_TIME = 1000 * 10;
 
         private ScriptRuntime _pythonRuntime;
         private Mutex _pythonRuntimeLock = new Mutex();
         private Stopwatch _elapsedStopwatch = new Stopwatch();
         private Stopwatch _idleStopwatch = new Stopwatch();
-        private Sprite _sprite;
-        private Status _status;
+        private SpriteContainer _spriteContainer;
+        private StatusContainer _statusContainer;
         private string _lastStatusName = string.Empty;
         private bool _handleFrameThreadExecutable = true;
         private Mutex _handleFrameThreadExecutableLock = new Mutex();
@@ -107,13 +108,18 @@ namespace KPU_General_macro
         public ICommand CloseCommand { get; private set; }
         public ICommand OptionCommand { get; private set; }
         public ICommand RunCommand { get; private set; }
-
-
         public ICommand CompleteCommand { get; private set; }
         public ICommand CancelCommand { get; private set; }
         public ICommand SelectSpriteFileCommand { get; private set; }
         public ICommand SelectStatusFileCommand { get; private set; }
         public ICommand BrowsePythonDirectoryCommand { get; private set; }
+        public ICommand SelectedRectCommand { get; private set; }
+        public ICommand CompleteSpriteCommand { get; private set; }
+        public ICommand CancelSpriteCommand { get; private set; }
+        public ICommand ChangedColorCommand { get; private set; }
+        public ICommand BindSpriteCommand { get; private set; }
+        public ICommand UnbindSpriteCommand { get; private set; }
+        public ICommand CompleteStatusCommand { get; private set; }
 
         public MainWindowViewModel(MainWindow mainWindow)
         {
@@ -133,6 +139,132 @@ namespace KPU_General_macro
             this.SelectSpriteFileCommand = new RelayCommand(this.OnSelectSpriteCommand);
             this.SelectStatusFileCommand = new RelayCommand(this.OnSelectStatusFile);
             this.BrowsePythonDirectoryCommand = new RelayCommand(this.OnBrowsePythonDirectory);
+            this.SelectedRectCommand = new RelayCommand(this.OnSelectedRect);
+            this.CompleteSpriteCommand = new RelayCommand(this.OnCompleteSprite);
+            this.CancelSpriteCommand = new RelayCommand(this.OnCancelSprite);
+            this.ChangedColorCommand = new RelayCommand(this.OnChangedCommand);
+            this.BindSpriteCommand = new RelayCommand(this.OnBindSprite);
+            this.UnbindSpriteCommand = new RelayCommand(this.OnUnbindSprite);
+            this.CompleteStatusCommand = new RelayCommand(this.OnCompleteStatus);
+        }
+
+        private void OnCompleteStatus(object obj)
+        {
+            var dataContext = obj as ResourceWindowViewModel;
+
+            try
+            {
+                if (string.IsNullOrEmpty(dataContext.StatusVM.Name))
+                    throw new Exception("상태 이름을 입력하세요.");
+
+                if (string.IsNullOrEmpty(dataContext.StatusVM.Script))
+                    throw new Exception("스크립트 파일명을 입력하세요.");
+
+                var createdStatus = new Status(dataContext.StatusVM.Name, dataContext.StatusVM.Script);
+                createdStatus.Components.AddRange(dataContext.StatusVM.Components);
+                this._statusContainer.Add(dataContext.StatusVM.Name, createdStatus);
+
+                dataContext.StatusVM.Name = string.Empty;
+                dataContext.StatusVM.Script = string.Empty;
+                dataContext.StatusVM.Components.Clear();
+                dataContext.StatusVM.OnPropertyChanged(nameof(dataContext.StatusVM.Components));
+                dataContext.StatusVM.OnPropertyChanged(nameof(dataContext.StatusVM.Statuses));
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message);
+            }
+        }
+
+        private void OnUnbindSprite(object obj)
+        {
+            var parameters = obj as object[];
+            var dataContext = parameters[0] as ResourceWindowViewModel;
+            var sprite = parameters[1] as Sprite;
+
+            var component = dataContext.StatusVM.Components.Find(x => x.sprite == sprite);
+            dataContext.StatusVM.Components.Remove(component);
+            dataContext.StatusVM.OnPropertyChanged(nameof(dataContext.StatusVM.Components));
+        }
+
+        private void OnBindSprite(object obj)
+        {
+            var parameters = obj as object[];
+            var dataContext = parameters[0] as ResourceWindowViewModel;
+            var sprite = parameters[1] as Sprite;
+
+            dataContext.StatusVM.Components.Add(new Status.Component(sprite, true));
+            dataContext.StatusVM.OnPropertyChanged(nameof(dataContext.StatusVM.Components));
+        }
+
+        private void OnChangedCommand(object obj)
+        {
+            var parameters = obj as object[];
+            var dataContext = parameters[0] as ResourceWindowViewModel;
+            var color = (System.Drawing.Color)parameters[1];
+
+            var spriteWindowVM = dataContext.SpriteVM;
+            spriteWindowVM.Color = ColorTranslator.ToHtml(color);
+        }
+
+        private void OnCancelSprite(object obj)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void OnCompleteSprite(object obj)
+        {
+            var dataContext = obj as ResourceWindowViewModel;
+            var spriteWindowVM = dataContext.SpriteVM;
+            try
+            {
+                if (string.IsNullOrEmpty(spriteWindowVM.Name))
+                    throw new Exception("이름을 입력하세요.");
+
+                if (this._spriteContainer.ContainsKey(spriteWindowVM.Name))
+                    throw new Exception("이미 존재하는 스프라이트 이름입니다.");
+
+                if (string.IsNullOrEmpty(spriteWindowVM.Color))
+                    this._spriteContainer.Add(spriteWindowVM.Name, new Sprite(spriteWindowVM.Name, spriteWindowVM.Frame.ToBytes(), (float)spriteWindowVM.Threshold));
+                else
+                    this._spriteContainer.Add(spriteWindowVM.Name, new Sprite(spriteWindowVM.Name, spriteWindowVM.Frame.ToBytes(), (float)spriteWindowVM.Threshold, ColorTranslator.FromHtml(spriteWindowVM.Color), (float)spriteWindowVM.ColorErrorFactor));
+
+                spriteWindowVM.OnPropertyChanged(nameof(this._spriteContainer));
+                
+                spriteWindowVM.Name = string.Empty;
+                spriteWindowVM.Color = string.Empty;
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message);
+            }
+        }
+
+        private void OnSelectedRect(object obj)
+        {
+            var parameters = obj as object[];
+            var renderSize = (System.Windows.Size)parameters[2];
+            var ratio = new System.Windows.Size(this.SourceFrame.Width / renderSize.Width, this.SourceFrame.Height / renderSize.Height);
+
+            var selectedRect = (System.Windows.Rect)parameters[1];
+            var selectedFrame = new Mat(this.SourceFrame, new OpenCvSharp.Rect(new OpenCvSharp.Point(selectedRect.X * ratio.Width, selectedRect.Y * ratio.Height),
+                                                          new OpenCvSharp.Size(selectedRect.Width * ratio.Width, selectedRect.Height * ratio.Height)));
+
+            var resourceViewModel = new ResourceWindowViewModel(this._spriteContainer, this._statusContainer);
+            resourceViewModel.SpriteVM.Frame = selectedFrame;
+
+            var dialog = new SpriteWindow 
+            { 
+                Owner = this.MainWindow, 
+                CompleteSpriteCommand = this.CompleteSpriteCommand,
+                ColorChangedCommand = this.ChangedColorCommand,
+                BindSpriteCommand = this.BindSpriteCommand,
+                UnbindSpriteCommand = this.UnbindSpriteCommand,
+
+                CompleteStatusCommand = this.CompleteStatusCommand,
+                DataContext = resourceViewModel
+            };
+            dialog.Show();
         }
 
         private void OnSelectStatusFile(object obj)
@@ -154,7 +286,7 @@ this.SourceFrameLock.WaitOne();
             this.SourceFrame = frame;
 this.SourceFrameLock.ReleaseMutex();
             this.ExecPython(this.OptionViewModel.Model.RenderScriptName, frame);
-            this.Frame = BitmapExtension.Parse(frame);
+            this.Frame = frame.ToBitmap();
             this._elapsedStopwatch.Stop();
             this.ElapsedTime = this.ElapsedTime.Add(TimeSpan.FromMilliseconds(this._elapsedStopwatch.ElapsedMilliseconds));
             this._elapsedStopwatch.Restart();
@@ -197,7 +329,7 @@ this._handleFrameThreadExecutableLock.ReleaseMutex();
                 }
                 else
                 {
-                    this.ExecPython(this._status[statusName].Script, frame, points.ToDict(), true);
+                    this.ExecPython(this._statusContainer[statusName].Script, frame, points.ToDict(), true);
                     this._lastStatusName = statusName;
                     this._idleStopwatch.Reset();
                 }
@@ -387,28 +519,28 @@ this._pythonRuntimeLock.ReleaseMutex();
 
         private void LoadResources(string spriteFileName, string statusFileName)
         {
-            this._sprite = new Sprite();
-            if (this._sprite.load(spriteFileName) == false)
+            this._spriteContainer = new SpriteContainer();
+            if (this._spriteContainer.Load(spriteFileName) == false)
                 throw new Exception($"Cannot load sprite file : {Path.GetFileName(spriteFileName)}");
 
-            this._status = new Status(this._sprite);
-            if (this._status.Load(statusFileName) == false)
+            this._statusContainer = new StatusContainer(this._spriteContainer);
+            if (this._statusContainer.Load(statusFileName) == false)
                 throw new Exception($"Cannot load status file : {Path.GetFileName(statusFileName)}");
 
-            this.Sprite = this._sprite.ToDict();
-            this.Status = this._status.ToDict();
-            this.Detector = new Detector(this._sprite, this._status);
+            this.Sprite = this._spriteContainer.ToDict();
+            this.Status = this._statusContainer.ToDict();
+            this.Detector = new Detector(this._spriteContainer, this._statusContainer);
         }
 
         private void ReleaseResources()
         {
-            if (this._status != null)
-                this._status.Dispose();
-            this._status = null;
+            if (this._statusContainer != null)
+                this._statusContainer.Dispose();
+            this._statusContainer = null;
 
-            if (this._sprite != null)
-                this._sprite.Dispose();
-            this._sprite = null;
+            if (this._spriteContainer != null)
+                this._spriteContainer.Dispose();
+            this._spriteContainer = null;
 
             this.Sprite.Clear();
             this.Sprite = null;
@@ -429,12 +561,12 @@ this._pythonRuntimeLock.ReleaseMutex();
             this.ExecPython(script);
         }
 
-        public System.Threading.Timer SetTimer(string name, int interval, string script)
+        public Timer SetTimer(string name, int interval, string script)
         {
             if (this.Timers.ContainsKey(name))
                 return null;
 
-            var createdTimer = new System.Threading.Timer(this.randomTimer_Tick, new string[] { script, name }, interval, System.Threading.Timeout.Infinite);
+            var createdTimer = new Timer(this.randomTimer_Tick, new string[] { script, name }, interval, Timeout.Infinite);
             this.Timers.Add(name, createdTimer);
 
             return createdTimer;
@@ -487,14 +619,14 @@ this._pythonRuntimeLock.ReleaseMutex();
             this.Stop();
         }
 
-        private Nullable<int> MatchNumber(Mat source)
+        private int? MatchNumber(Mat source)
         {
             var maximum = 0.0;
             var percentage = 0.0;
-            var selected = new Nullable<int>();
+            var selected = new int?();
             for (var num = 9; num > 0; num--)
             {
-                var location = this._sprite[num.ToString()].MatchTo(source, ref percentage, null as Nullable<OpenCvSharp.Point>, null as Nullable<OpenCvSharp.Size>, true, false);
+                var location = this._spriteContainer[num.ToString()].MatchTo(source, ref percentage, null as OpenCvSharp.Point?, null as OpenCvSharp.Size?, true, false);
                 if (location == null)
                     continue;
 
@@ -511,7 +643,7 @@ this._pythonRuntimeLock.ReleaseMutex();
         public IronPython.Runtime.List Partition(Mat frame)
         {
             var components = new Mat[3, 3, 3, 3];
-            var componentsInt = new Nullable<int>[3, 3, 3, 3];
+            var componentsInt = new int?[3, 3, 3, 3];
             var begin = new OpenCvSharp.Point(11, 159);
             var size = new OpenCvSharp.Size(180, 180);
 
@@ -753,7 +885,7 @@ this._pythonRuntimeLock.ReleaseMutex();
             Thread.Sleep(m);
         }
 
-        public void AddHistory(string message, Nullable<DateTime> datetime = null)
+        public void AddHistory(string message, DateTime? datetime = null)
         {
             try
             {

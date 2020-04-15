@@ -5,51 +5,51 @@ using System.IO;
 
 namespace KPU_General_macro.Model
 {
-    public class Status : Dictionary<string, Status.Element>, IDisposable
+    public class Status
     {
-        public class Element
+        public struct Component
         {
-            public class Component
+            public Sprite sprite;
+            public bool requirement;
+
+            public Component(Sprite sprite, bool requirement)
             {
-                public Sprite.Template template;
-                public bool requirement;
-
-                public Component(Sprite.Template element, bool requirement)
-                {
-                    this.template = element;
-                    this.requirement = requirement;
-                }
-            }
-
-            public string Name { get; set; }
-            public string Script { get; set; }
-
-            public List<Component> Components { get; private set; }
-
-            public Element(string name, string script)
-            {
-                this.Name = name;
-                this.Script = script;
-                this.Components = new List<Component>();
-            }
-
-            public bool Contains(Sprite.Template sprite)
-            {
-                foreach (var component in this.Components)
-                {
-                    if (component.requirement && component.template.Equals(sprite.Name))
-                        return true;
-                }
-
-                return false;
+                this.sprite = sprite;
+                this.requirement = requirement;
             }
         }
 
-        private Sprite Sprite { get; set; }
+        public string Name { get; set; }
+        public string Script { get; set; }
 
-        public Status(Sprite sprite)
+        public List<Component> Components { get; private set; }
+
+        public Status(string name, string script)
         {
-            this.Sprite = sprite;
+            this.Name = name;
+            this.Script = script;
+            this.Components = new List<Component>();
+        }
+
+        public bool Contains(Sprite sprite)
+        {
+            foreach (var component in this.Components)
+            {
+                if (component.requirement && component.sprite.Equals(sprite.Name))
+                    return true;
+            }
+
+            return false;
+        }
+    }
+
+    public class StatusContainer : Dictionary<string, Status>, IDisposable
+    {
+        private SpriteContainer SpriteContainer { get; set; }
+
+        public StatusContainer(SpriteContainer spriteContainer)
+        {
+            this.SpriteContainer = spriteContainer;
         }
 
         public bool Load(string filename)
@@ -64,10 +64,10 @@ namespace KPU_General_macro.Model
                         var name = reader.ReadString();
                         var script = reader.ReadString();
 
-                        var status = new Status.Element(name, script);
+                        var status = new Status(name, script);
                         var bindedSpriteSize = reader.ReadInt32();
                         for (var i2 = 0; i2 < bindedSpriteSize; i2++)
-                            status.Components.Add(new Status.Element.Component(this.Sprite[reader.ReadString()], reader.ReadBoolean()));
+                            status.Components.Add(new Status.Component(this.SpriteContainer[reader.ReadString()], reader.ReadBoolean()));
 
                         this.Add(name, status);
                     }
@@ -94,7 +94,7 @@ namespace KPU_General_macro.Model
                         writer.Write(status.Components.Count);
                         foreach (var component in status.Components)
                         {
-                            writer.Write(component.template.Name);
+                            writer.Write(component.sprite.Name);
                             writer.Write(component.requirement);
                         }
                     }

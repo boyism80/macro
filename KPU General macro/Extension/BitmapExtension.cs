@@ -23,9 +23,20 @@ namespace KPU_General_macro.Extension
             return bitmap;
         }
 
-        public static BitmapImage Parse(Mat frame)
+        public static BitmapImage ToBitmap(this Mat frame)
         {
             return Parse(frame.ToBytes());
+        }
+
+        public static byte[] ToBytes(this BitmapImage bitmap)
+        {
+            if (bitmap == null || bitmap.StreamSource == null)
+                return null;
+
+            using (BinaryReader reader = new BinaryReader(bitmap.StreamSource))
+            {
+                return reader.ReadBytes((int)bitmap.StreamSource.Length);
+            }
         }
     }
 }

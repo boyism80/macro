@@ -136,8 +136,17 @@
     <Compile Include="Control\Container\HistoryContainer.xaml.cs">
       <DependentUpon>HistoryContainer.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Control\Screen.xaml.cs">
+      <DependentUpon>Screen.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Control\SpriteListView.xaml.cs">
+      <DependentUpon>SpriteListView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Dialog\OptionDialog.xaml.cs">
       <DependentUpon>OptionDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Dialog\SpriteWindow.xaml.cs">
+      <DependentUpon>SpriteWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Extension\BitmapExtension.cs" />
     <Compile Include="Extension\IronPythonExtension.cs" />
@@ -152,6 +161,7 @@
     <Compile Include="ViewModel\LogViewModel.cs" />
     <Compile Include="ViewModel\MainWindowViewModel.cs" />
     <Compile Include="ViewModel\OptionViewModel.cs" />
+    <Compile Include="ViewModel\ResourceWindowViewModel.cs" />
     <Page Include="Control\Component\HistoryControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -164,7 +174,19 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Control\Screen.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Control\SpriteListView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Dialog\OptionDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Dialog\SpriteWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

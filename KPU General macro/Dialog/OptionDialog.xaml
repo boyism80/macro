@@ -20,76 +20,22 @@
             />
     </WindowChrome.WindowChrome>
 
-    <DockPanel Background="{StaticResource SystemBrush}"
+    <DockPanel Style="{StaticResource WindowDialog}"
                VerticalAlignment="Stretch"
                LastChildFill="False">
-        <DockPanel.Resources>
-            <Style x:Key="ContentBox" TargetType="{x:Type Border}">
-                <Setter Property="Margin" Value="10 25 10 0" />
-            </Style>
-
-            <Style x:Key="Header" TargetType="{x:Type TextBlock}">
-                <Setter Property="Margin" Value="0 0 0 10" />
-                <Setter Property="FontWeight" Value="Bold" />
-                <Setter Property="Foreground" Value="{StaticResource MainTextBrush}" />
-                <Setter Property="FontSize" Value="14" />
-            </Style>
-
-            <Style x:Key="OptionName" TargetType="{x:Type TextBlock}">
-                <Setter Property="Margin" Value="0 0 0 5" />
-                <Setter Property="Foreground" Value="{StaticResource MainTextBrush}" />
-            </Style>
-
-            <Style TargetType="{x:Type TextBox}">
-                <Setter Property="Background" Value="Transparent" />
-                <Setter Property="BorderThickness" Value="0 0 0 1" />
-                <Setter Property="BorderBrush" Value="#a0a0a0" />
-                <Setter Property="Foreground" Value="{StaticResource MainTextBrush}" />
-                <Setter Property="Padding" Value="5" />
-                <Setter Property="Margin" Value="0 0 0 5" />
-                <Setter Property="CaretBrush" Value="{StaticResource MainTextBrush}" />
-            </Style>
-
-            <Style x:Key="Exception" TargetType="{x:Type TextBlock}">
-                <Setter Property="Foreground" Value="{StaticResource ErrorBrush}" />
-                <Setter Property="Margin" Value="0 0 0 20" />
-            </Style>
-
-            <Style x:Key="BrowseButton" TargetType="{x:Type Button}">
-                <Setter Property="Padding" Value="10 0" />
-                <Setter Property="Height" Value="20" />
-                <Setter Property="Margin" Value="10 0 0 0" />
-                <Setter Property="FontSize" Value="11" />
-                <Setter Property="VerticalAlignment" Value="Center" />
-                <Setter Property="BorderThickness" Value="0" />
-            </Style>
-
-            <Style TargetType="{x:Type CheckBox}">
-                <Setter Property="Foreground" Value="{StaticResource MainTextBrush}" />
-                <Setter Property="Margin" Value="0 5 10 0" />
-            </Style>
-
-            <Style x:Key="ResultButton" TargetType="{x:Type Button}" BasedOn="{StaticResource BrowseButton}">
-                <Setter Property="Margin" Value="0 0 10 10" />
-            </Style>
-        </DockPanel.Resources>
 
         <TabControl DockPanel.Dock="Top">
             <TabItem Header="기본 설정">
-                <Border Style="{StaticResource ContentBox}">
+                <Border >
                     <StackPanel Orientation="Vertical">
                         <StackPanel Orientation="Vertical">
-                            <TextBlock 
-                                Text="클래스"
-                                Style="{StaticResource OptionName}" />
+                            <TextBlock Text="클래스" />
                             <TextBox Text="{Binding OptionViewModel.ClassName.Content, UpdateSourceTrigger=PropertyChanged}"/>
                             <TextBlock 
                                 Text="{Binding OptionViewModel.ClassName.ExceptionText}"
-                                Visibility="{c:Binding !OptionViewModel.ClassName.IsValid, FalseToVisibility=Hidden}"
-                                Style="{StaticResource Exception}"/>
+                                Visibility="{c:Binding !OptionViewModel.ClassName.IsValid, FalseToVisibility=Hidden}"/>
                             <TextBlock 
-                                Text="작동방식"
-                                Style="{StaticResource OptionName}" />
+                                Text="작동방식" />
                             <StackPanel Orientation="Horizontal">
                                 <CheckBox 
                                     Content="Software"
@@ -104,7 +50,7 @@
             </TabItem>
 
             <TabItem Header="경로 설정">
-                <Border Style="{StaticResource ContentBox}">
+                <Border>
                     <StackPanel Orientation="Vertical">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -124,8 +70,7 @@
 
                             <TextBlock 
                                 Grid.Row="0" 
-                                Text="스프라이트 경로"
-                                Style="{StaticResource OptionName}" />
+                                Text="스프라이트 경로" />
                             <TextBox 
                                 Grid.Row="1"
                                 Grid.Column="0"
@@ -133,7 +78,6 @@
                             <Button 
                                 Grid.Row="1"
                                 Grid.Column="1"
-                                Style="{StaticResource BrowseButton}"
                                 Command="{Binding SelectSpriteFileCommand}"
                                 Content="찾기" />
                             <TextBlock 
@@ -145,8 +89,7 @@
 
                             <TextBlock 
                                 Grid.Row="3" 
-                                Text="상태 리소스 경로"
-                                Style="{StaticResource OptionName}" />
+                                Text="상태 리소스 경로" />
                             <TextBox 
                                 Grid.Row="4"
                                 Grid.Column="0"
@@ -154,7 +97,6 @@
                             <Button 
                                 Grid.Row="4"
                                 Grid.Column="1"
-                                Style="{StaticResource BrowseButton}"
                                 Command="{Binding SelectStatusFileCommand}"
                                 Content="찾기" />
                             <TextBlock 
@@ -167,8 +109,7 @@
 
                             <TextBlock 
                                 Grid.Row="6" 
-                                Text="파이썬 경로"
-                                Style="{StaticResource OptionName}" />
+                                Text="파이썬 경로" />
                             <TextBox 
                                 Grid.Row="7"
                                 Grid.Column="0"
@@ -176,7 +117,6 @@
                             <Button 
                                 Grid.Row="7"
                                 Grid.Column="1"
-                                Style="{StaticResource BrowseButton}"
                                 Command="{Binding BrowsePythonDirectoryCommand}"
                                 Content="찾기" />
                             <TextBlock 
@@ -191,36 +131,28 @@
             </TabItem>
 
             <TabItem Header="스크립트">
-                <Border Style="{StaticResource ContentBox}">
+                <Border>
                     <StackPanel Orientation="Vertical">
                         <StackPanel Orientation="Vertical">
-                            <TextBlock 
-                                Text="초기화"
-                                Style="{StaticResource OptionName}" />
+                            <TextBlock Text="초기화" />
                             <TextBox Text="{Binding OptionViewModel.InitializeScriptName.Content, UpdateSourceTrigger=PropertyChanged}"/>
                             <TextBlock 
                                 Text="{Binding OptionViewModel.InitializeScriptName.ExceptionText}"
                                 Visibility="{c:Binding !OptionViewModel.InitializeScriptName.IsValid, FalseToVisibility=Hidden}"
                                 Style="{StaticResource Exception}"/>
-                            <TextBlock 
-                                Text="프레임"
-                                Style="{StaticResource OptionName}" />
+                            <TextBlock Text="프레임" />
                             <TextBox Text="{Binding OptionViewModel.FrameScriptName.Content, UpdateSourceTrigger=PropertyChanged}" />
                             <TextBlock 
                                 Text="{Binding OptionViewModel.FrameScriptName.ExceptionText}"
                                 Visibility="{c:Binding !OptionViewModel.FrameScriptName.IsValid, FalseToVisibility=Hidden}"
                                 Style="{StaticResource Exception}"/>
-                            <TextBlock 
-                                Text="렌더링"
-                                Style="{StaticResource OptionName}" />
+                            <TextBlock Text="렌더링" />
                             <TextBox Text="{Binding OptionViewModel.RenderScriptName.Content, UpdateSourceTrigger=PropertyChanged}" />
                             <TextBlock 
                                 Text="{Binding OptionViewModel.RenderScriptName.ExceptionText}"
                                 Visibility="{c:Binding !OptionViewModel.RenderScriptName.IsValid, FalseToVisibility=Hidden}"
                                 Style="{StaticResource Exception}"/>
-                            <TextBlock 
-                                Text="디스포즈"
-                                Style="{StaticResource OptionName}" />
+                            <TextBlock Text="디스포즈" />
                             <TextBox Text="{Binding OptionViewModel.DisposeScriptName.Content, UpdateSourceTrigger=PropertyChanged}" />
                             <TextBlock 
                                 Text="{Binding OptionViewModel.DisposeScriptName.ExceptionText}"
@@ -235,16 +167,15 @@
         <StackPanel 
             DockPanel.Dock="Bottom"
             Orientation="Horizontal"
-            HorizontalAlignment="Right">
+            HorizontalAlignment="Right"
+            Margin="0 0 10 10">
             <Button 
                 Content="확인"
-                Style="{StaticResource ResultButton}"
                 IsEnabled="{Binding OptionViewModel.Completable}"
                 Command="{Binding CompleteCommand}"
                 VerticalAlignment="Bottom" />
             <Button 
                 Content="취소"
-                Style="{StaticResource ResultButton}"
                 Command="{Binding CancelCommand}"
                 VerticalAlignment="Bottom" />
         </StackPanel>
