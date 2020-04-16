@@ -70,57 +70,37 @@
 
                             <TextBlock 
                                 Grid.Row="0" 
-                                Text="스프라이트 경로" />
+                                Text="리소스 경로" />
                             <TextBox 
                                 Grid.Row="1"
                                 Grid.Column="0"
-                                Text="{Binding OptionViewModel.SpriteFile.Content, UpdateSourceTrigger=PropertyChanged}"/>
+                                Text="{Binding OptionViewModel.ResourceFile.Content, UpdateSourceTrigger=PropertyChanged}"/>
                             <Button 
                                 Grid.Row="1"
                                 Grid.Column="1"
-                                Command="{Binding SelectSpriteFileCommand}"
+                                Command="{Binding SelectResourceFileCommand}"
                                 Content="찾기" />
                             <TextBlock 
                                 Grid.Row="2"
                                 Grid.ColumnSpan="2"
-                                Text="{Binding OptionViewModel.SpritesDirectory.ExceptionText}"
-                                Visibility="{c:Binding !OptionViewModel.SpritesDirectory.IsValid, FalseToVisibility=Hidden}"
+                                Text="{Binding OptionViewModel.ResourceFile.ExceptionText}"
+                                Visibility="{c:Binding !OptionViewModel.ResourceFile.IsValid, FalseToVisibility=Hidden}"
                                 Style="{StaticResource Exception}" />
 
                             <TextBlock 
                                 Grid.Row="3" 
-                                Text="상태 리소스 경로" />
-                            <TextBox 
-                                Grid.Row="4"
-                                Grid.Column="0"
-                                Text="{Binding OptionViewModel.StatusFile.Content, UpdateSourceTrigger=PropertyChanged}"/>
-                            <Button 
-                                Grid.Row="4"
-                                Grid.Column="1"
-                                Command="{Binding SelectStatusFileCommand}"
-                                Content="찾기" />
-                            <TextBlock 
-                                Grid.Row="5"
-                                Grid.ColumnSpan="2"
-                                Text="{Binding OptionViewModel.StatusDirectory.ExceptionText}"
-                                Visibility="{c:Binding !OptionViewModel.StatusDirectory.IsValid, FalseToVisibility=Hidden}"
-                                Style="{StaticResource Exception}" />
-
-
-                            <TextBlock 
-                                Grid.Row="6" 
                                 Text="파이썬 경로" />
                             <TextBox 
-                                Grid.Row="7"
+                                Grid.Row="4"
                                 Grid.Column="0"
                                 Text="{Binding OptionViewModel.PythonDirectory.Content, UpdateSourceTrigger=PropertyChanged}"/>
                             <Button 
-                                Grid.Row="7"
+                                Grid.Row="5"
                                 Grid.Column="1"
                                 Command="{Binding BrowsePythonDirectoryCommand}"
                                 Content="찾기" />
                             <TextBlock 
-                                Grid.Row="8"
+                                Grid.Row="6"
                                 Grid.ColumnSpan="2"
                                 Text="{Binding OptionViewModel.PythonDirectory.ExceptionText}"
                                 Visibility="{c:Binding !OptionViewModel.PythonDirectory.IsValid, FalseToVisibility=Hidden}"

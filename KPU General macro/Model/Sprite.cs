@@ -142,63 +142,6 @@ namespace KPU_General_macro.Model
 
     public class SpriteContainer : Dictionary<string, Sprite>, IDisposable
     {
-        public bool Load(string filename)
-        {
-            try
-            {
-                using (var reader = new BinaryReader(File.Open(filename, FileMode.Open)))
-                {
-                    var spriteSize = reader.ReadInt32();
-                    for (var i = 0; i < spriteSize; i++)
-                    {
-                        var name = reader.ReadString();
-                        var threshold = reader.ReadSingle();
-                        var templateSize = reader.ReadInt32();
-                        var template = reader.ReadBytes(templateSize);
-                        var usedColor = reader.ReadBoolean();
-                        if (usedColor)
-                            this.Add(name, new Sprite(name, template, threshold, Color.FromArgb(reader.ReadInt32()), reader.ReadSingle()));
-                        else
-                            this.Add(name, new Sprite(name, template, threshold));
-                    }
-                }
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        public bool Save(string filename)
-        {
-            try
-            {
-                using (var writer = new BinaryWriter(File.Open(filename, FileMode.Create)))
-                {
-                    writer.Write(this.Count);                               // write script count : 4 bytes
-                    foreach (var sprite in this.Values)
-                    {
-                        writer.Write(sprite.Name);                          // write sprite name : length + value
-                        writer.Write(sprite.Threshold);                     // write threshold : 4bytes
-                        writer.Write(sprite.Bytes.Length);                  // write bytes length : 4bytes
-                        writer.Write(sprite.Bytes);                         // write bytes : bytes length
-                        writer.Write(sprite.Color != null);
-                        if (sprite.Color != null)
-                        {
-                            writer.Write(sprite.Color.Value.ToArgb());
-                            writer.Write(sprite.ErrorFactor);
-                        }
-                    }
-                }
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
         public PythonDictionary ToDict()
         {
             var pythonDict = new PythonDictionary();

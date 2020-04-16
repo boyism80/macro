@@ -52,61 +52,6 @@ namespace KPU_General_macro.Model
             this.SpriteContainer = spriteContainer;
         }
 
-        public bool Load(string filename)
-        {
-            try
-            {
-                using (var reader = new BinaryReader(File.Open(filename, FileMode.Open)))
-                {
-                    var statusSize = reader.ReadInt32();
-                    for (var i = 0; i < statusSize; i++)
-                    {
-                        var name = reader.ReadString();
-                        var script = reader.ReadString();
-
-                        var status = new Status(name, script);
-                        var bindedSpriteSize = reader.ReadInt32();
-                        for (var i2 = 0; i2 < bindedSpriteSize; i2++)
-                            status.Components.Add(new Status.Component(this.SpriteContainer[reader.ReadString()], reader.ReadBoolean()));
-
-                        this.Add(name, status);
-                    }
-                }
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        public bool Save(string filename)
-        {
-            try
-            {
-                using (var writer = new BinaryWriter(File.Open(filename, FileMode.CreateNew)))
-                {
-                    writer.Write(this.Count);                               // write status count : 4bytes
-                    foreach (var status in this.Values)
-                    {
-                        writer.Write(status.Name);                          // write status name : length + value
-                        writer.Write(status.Script);                        // write status script : length + value
-                        writer.Write(status.Components.Count);
-                        foreach (var component in status.Components)
-                        {
-                            writer.Write(component.sprite.Name);
-                            writer.Write(component.requirement);
-                        }
-                    }
-                }
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
         public PythonDictionary ToDict()
         {
             var pythonDict = new PythonDictionary();

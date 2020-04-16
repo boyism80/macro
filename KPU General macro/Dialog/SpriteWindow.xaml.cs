@@ -11,15 +11,30 @@ namespace KPU_General_macro.Dialog
     /// </summary>
     public partial class SpriteWindow : Window
     {
+        public enum EditMode { Create, Modify }
+
+        public EditMode Mode { get; private set; }
+
+        public string CompleteSpriteButtonText
+        {
+            get { return this.Mode == EditMode.Create ? "추가" : "수정"; }
+        }
+
         private bool _dragging = false;
         private SpriteListView _sourceListView;
 
-
-        public static readonly DependencyProperty CompleteSpriteCommandProperty = DependencyProperty.Register("CompleteSpriteCommand", typeof(ICommand), typeof(SpriteWindow));
-        public ICommand CompleteSpriteCommand
+        public static readonly DependencyProperty CreateSpriteCommandProperty = DependencyProperty.Register("CreateSpriteCommand", typeof(ICommand), typeof(SpriteWindow));
+        public ICommand CreateSpriteCommand
         {
-            get { return (ICommand)GetValue(CompleteSpriteCommandProperty); }
-            set { SetValue(CompleteSpriteCommandProperty, value); }
+            get { return (ICommand)GetValue(CreateSpriteCommandProperty); }
+            set { SetValue(CreateSpriteCommandProperty, value); }
+        }
+
+        public static readonly DependencyProperty ModifySpriteCommandProperty = DependencyProperty.Register("ModifySpriteCommand", typeof(ICommand), typeof(SpriteWindow));
+        public ICommand ModifySpriteCommand
+        {
+            get { return (ICommand)GetValue(ModifySpriteCommandProperty); }
+            set { SetValue(ModifySpriteCommandProperty, value); }
         }
 
         public static readonly DependencyProperty ColorChangedCommandProperty = DependencyProperty.Register("ColorChangedCommand", typeof(ICommand), typeof(SpriteWindow));
@@ -43,22 +58,61 @@ namespace KPU_General_macro.Dialog
             set { SetValue(UnbindSpriteCommandProperty, value); }
         }
 
-        public static readonly DependencyProperty CompleteStatusCommandProperty = DependencyProperty.Register("CompleteStatusCommand", typeof(ICommand), typeof(SpriteWindow));
-        public ICommand CompleteStatusCommand
+        public static readonly DependencyProperty CreateStatusCommandProperty = DependencyProperty.Register("CreateStatusCommand", typeof(ICommand), typeof(SpriteWindow));
+        public ICommand CreateStatusCommand
         {
-            get { return (ICommand)GetValue(CompleteStatusCommandProperty); }
-            set { SetValue(CompleteStatusCommandProperty, value); }
+            get { return (ICommand)GetValue(CreateStatusCommandProperty); }
+            set { SetValue(CreateStatusCommandProperty, value); }
         }
 
-        public SpriteWindow()
+        public static readonly DependencyProperty ModifyStatusCommandProperty = DependencyProperty.Register("ModifyStatusCommand", typeof(ICommand), typeof(SpriteWindow));
+        public ICommand ModifyStatusCommand
+        {
+            get { return (ICommand)GetValue(ModifyStatusCommandProperty); }
+            set { SetValue(ModifyStatusCommandProperty, value); }
+        }
+
+        public static readonly DependencyProperty SelectedSpriteChangedCommandProperty = DependencyProperty.Register("SelectedSpriteChangedCommand", typeof(ICommand), typeof(SpriteWindow));
+        public ICommand SelectedSpriteChangedCommand
+        {
+            get { return (ICommand)GetValue(SelectedSpriteChangedCommandProperty); }
+            set { SetValue(SelectedSpriteChangedCommandProperty, value); }
+        }
+
+        public static readonly DependencyProperty SelectedStatusChangedCommandProperty = DependencyProperty.Register("SelectedStatusChangedCommand", typeof(ICommand), typeof(SpriteWindow));
+        public ICommand SelectedStatusChangedCommand
+        {
+            get { return (ICommand)GetValue(SelectedStatusChangedCommandProperty); }
+            set { SetValue(SelectedStatusChangedCommandProperty, value); }
+        }
+
+
+        public SpriteWindow(EditMode mode)
         {
             InitializeComponent();
+            this.Mode = mode;
         }
 
         private void OnCompleteSprite(object sender, RoutedEventArgs e)
         {
-            if (this.CompleteSpriteCommand.CanExecute(this.DataContext))
-                this.CompleteSpriteCommand.Execute(this.DataContext);
+            object[] parameters;
+            switch (this.Mode)
+            {
+                case EditMode.Create:
+                    parameters = new object[] { this.DataContext };
+                    if (this.CreateSpriteCommand.CanExecute(parameters))
+                        this.CreateSpriteCommand.Execute(parameters);
+                    break;
+
+                case EditMode.Modify:
+                    parameters = new object[] { this.DataContext, this.SpriteListView.SelectedValue };
+                    if (this.ModifySpriteCommand.CanExecute(parameters))
+                    {
+                        this.ModifySpriteCommand.Execute(parameters);
+                        this.SpriteListView.SelectedIndex = -1;
+                    }
+                    break;
+            }
         }
 
         private void OnCancelSprite(object sender, RoutedEventArgs e)
@@ -121,7 +175,6 @@ namespace KPU_General_macro.Dialog
             if (item == null)
                 return;
 
-            //this._draggingIndex = listview.Items.IndexOf(item.DataContext);
             DragDrop.DoDragDrop(item, new DataObject("sprite", item.DataContext), DragDropEffects.Move);
         }
 
@@ -132,52 +185,100 @@ namespace KPU_General_macro.Dialog
             var sprite = e.Data.GetData("sprite") as Sprite;
 
 
+            this._dragging = false;
+
             var destListView = sender as SpriteListView;
             if (this._sourceListView == destListView)
                 return;
 
-            var parameters = new object[] { this.DataContext, sprite };
-            if (destListView == this.bindedSpriteListView)
-            {
-                if (this.BindSpriteCommand.CanExecute(parameters))
-                    this.BindSpriteCommand.Execute(parameters);
-            }
-            else
-            {
-                if (this.UnbindSpriteCommand.CanExecute(parameters))
-                    this.UnbindSpriteCommand.Execute(parameters);
-            }
-
-            this._dragging = false;
+            if (this.OnSpriteMoved(destListView, sprite) == false)
+                return;
         }
 
         private void SpriteListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            var listview = sender as SpriteListView;
-            var sprite = listview.SelectedValue as Sprite;
+            var sourceListView = sender as SpriteListView;
+            var destListView = sourceListView == this.bindedSpriteListView ? this.unbindedSpriteListView : this.bindedSpriteListView;
+            var sprite = sourceListView.SelectedValue as Sprite;
 
-            var parameters = new object[] { this.DataContext, sprite };
-            if (listview == this.bindedSpriteListView)
-            {
-                if (this.UnbindSpriteCommand.CanExecute(parameters))
-                    this.UnbindSpriteCommand.Execute(parameters);
-            }
-            else
-            {
-                if (this.BindSpriteCommand.CanExecute(parameters))
-                    this.BindSpriteCommand.Execute(parameters);
-            }
+            if (this.OnSpriteMoved(destListView, sprite) == false)
+                return;
         }
 
-        private void OKButton_Click(object sender, RoutedEventArgs e)
+        private void CreateStatusButton_Click(object sender, RoutedEventArgs e)
         {
-            if (this.CompleteStatusCommand.CanExecute(this.DataContext))
-                this.CompleteStatusCommand.Execute(this.DataContext);
+            var parameters = new object[] { this.DataContext };
+            if (this.CreateStatusCommand.CanExecute(parameters))
+                this.CreateStatusCommand.Execute(parameters);
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
+        }
+
+        private bool OnSpriteMoved(SpriteListView to, Sprite sprite)
+        {
+            var isRequirement = MessageBoxResult.Yes;
+            if (to == this.bindedSpriteListView)
+            {
+                isRequirement = MessageBox.Show("Requirement?", "Requirement", MessageBoxButton.YesNoCancel);
+                if (isRequirement == MessageBoxResult.Cancel)
+                    return false;
+            }
+
+            var parameters = new object[] { this.DataContext, sprite, isRequirement == MessageBoxResult.Yes };
+            if (to == this.bindedSpriteListView)
+            {
+                if (this.BindSpriteCommand.CanExecute(parameters))
+                    this.BindSpriteCommand.Execute(parameters);
+            }
+            else
+            {
+                if (this.UnbindSpriteCommand.CanExecute(parameters))
+                    this.UnbindSpriteCommand.Execute(parameters);
+            }
+
+            return true;
+        }
+
+        private void SpriteListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (this.Mode == EditMode.Create)
+                return;
+
+            var spriteListView = sender as SpriteListView;
+            var sprite = spriteListView.SelectedValue;
+
+            var parameters = new object[] { this.DataContext, sprite };
+            if (this.SelectedSpriteChangedCommand.CanExecute(parameters))
+                this.SelectedSpriteChangedCommand.Execute(parameters);
+        }
+
+        private void StatusListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            this.ModifyStatusButton.IsEnabled = (this.StatusListView.SelectedIndex != -1);
+
+            if (this.Mode == EditMode.Create)
+                return;
+
+            var statusListView = sender as ListView;
+            var status = StatusListView.SelectedValue;
+
+            var parameters = new object[] { this.DataContext, status };
+            if (this.SelectedStatusChangedCommand.CanExecute(parameters))
+                this.SelectedStatusChangedCommand.Execute(parameters);
+        }
+
+        private void ModifyStatusButton_Click(object sender, RoutedEventArgs e)
+        {
+            var status = this.StatusListView.SelectedValue as Status;
+            if (status == null)
+                return;
+
+            var parameters = new object[] { this.DataContext, status };
+            if (this.ModifyStatusCommand.CanExecute(parameters))
+                this.ModifyStatusCommand.Execute(parameters);
         }
     }
 }

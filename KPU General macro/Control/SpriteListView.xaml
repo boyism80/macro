@@ -8,6 +8,7 @@
              d:DesignHeight="450" d:DesignWidth="800"
              Background="Transparent"
              AllowDrop="True"
+             IsSynchronizedWithCurrentItem="False"
              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
              ScrollViewer.VerticalScrollBarVisibility="Auto">
     <ListView.ItemsPanel>

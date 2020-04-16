@@ -154,6 +154,7 @@
     <Compile Include="Model\Detector.cs" />
     <Compile Include="Model\Log.cs" />
     <Compile Include="Model\Option.cs" />
+    <Compile Include="Model\Resource.cs" />
     <Compile Include="Model\Sprite.cs" />
     <Compile Include="Model\Status.cs" />
     <Compile Include="Plugin\SimpleJSON.cs" />

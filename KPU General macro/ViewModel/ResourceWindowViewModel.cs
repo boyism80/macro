@@ -15,11 +15,16 @@ namespace KPU_General_macro.ViewModel
 
         private SpriteContainer _spriteContainer;
 
-        public Mat Frame { get; set; }
+        private Mat _frame;
+        public Mat Frame
+        {
+            get { return this._frame; }
+            set { this._frame = value; this.OnPropertyChanged(nameof(this.Bitmap)); }
+        }
 
         public BitmapImage Bitmap
         {
-            get { return Frame.ToBitmap(); }
+            get { return Frame?.ToBitmap(); }
         }
 
         public string Name { get; set; }

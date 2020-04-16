@@ -18,20 +18,24 @@ namespace KPU_General_macro
             PropertyChanged(this, new PropertyChangedEventArgs(name));
         }
 
+        public Visibility RectVisibility
+        {
+            get { return this.Frame != null ? Visibility.Visible : Visibility.Hidden; }
+        }
+
         public Size Size { get; private set; } = new Size();
         public Point Begin { get; private set; } = new Point();
         public bool Dragging { get; private set; } = false;
         public Visibility SelectedRectVisibility { get; set; } = Visibility.Hidden;
 
         public static readonly DependencyProperty FrameProperty = DependencyProperty.Register("Frame", typeof(BitmapImage), typeof(Screen));
-        public static readonly DependencyProperty SelectRectCommandProperty = DependencyProperty.Register("SelectRectCommand", typeof(ICommand), typeof(Screen));
-
         public BitmapImage Frame
         {
             get { return (BitmapImage)GetValue(FrameProperty); }
-            set { SetValue(FrameProperty, value); }
+            set { SetValue(FrameProperty, value); this.OnPropertyChanged(nameof(this.RectVisibility)); }
         }
 
+        public static readonly DependencyProperty SelectRectCommandProperty = DependencyProperty.Register("SelectRectCommand", typeof(ICommand), typeof(Screen));
         public ICommand SelectRectCommand
         {
             get { return (ICommand)GetValue(SelectRectCommandProperty); }
@@ -45,6 +49,9 @@ namespace KPU_General_macro
 
         private void Screen_MouseDown(object sender, MouseButtonEventArgs e)
         {
+            if (this.Frame == null)
+                return;
+
             if (e.ChangedButton != MouseButton.Left)
                 return;
 
@@ -59,6 +66,9 @@ namespace KPU_General_macro
 
         private void Screen_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            if (this.Frame == null)
+                return;
+
             if (e.ChangedButton != System.Windows.Input.MouseButton.Left)
                 return;
 
@@ -76,6 +86,9 @@ namespace KPU_General_macro
 
         private void Screen_MouseMove(object sender, MouseEventArgs e)
         {
+            if (this.Frame == null)
+                return;
+
             if (this.Dragging == false)
                 return;
 

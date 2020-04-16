@@ -14,8 +14,7 @@ namespace KPU_General_macro.ViewModel
 
         public ExceptableText<string> ClassName { get; set; } = new ExceptableText<string>();
         public bool SoftwareOperatable { get; set; } = true;
-        public ExceptableText<string> SpriteFile { get; set; } = new ExceptableText<string>();
-        public ExceptableText<string> StatusFile { get; set; } = new ExceptableText<string>();
+        public ExceptableText<string> ResourceFile { get; set; } = new ExceptableText<string>();
         public ExceptableText<string> PythonDirectory { get; set; } = new ExceptableText<string>();
         public ExceptableText<string> InitializeScriptName { get; set; } = new ExceptableText<string>();
         public ExceptableText<string> FrameScriptName { get; set; } = new ExceptableText<string>();
@@ -53,15 +52,10 @@ namespace KPU_General_macro.ViewModel
 
             this.SoftwareOperatable = DestinationApp.Instance.OperationType == OperationType.Software;
 
-            this.SpriteFile.Content = this.Model.SpriteFile;
-            this.SpriteFile.Assert += this.Directory_Assert;
-            this.SpriteFile.Complete += this.ResourcesDirectory_Complete;
-            this._exceptableTextList.Add(this.SpriteFile);
-
-            this.StatusFile.Content = this.Model.StatusFile;
-            this.StatusFile.Assert += this.Directory_Assert;
-            this.StatusFile.Complete += this.StatusDirectory_Complete;
-            this._exceptableTextList.Add(this.StatusFile);
+            this.ResourceFile.Content = this.Model.ResourceFile;
+            this.ResourceFile.Assert += this.Directory_Assert;
+            this.ResourceFile.Complete += this.ResourcesDirectory_Complete;
+            this._exceptableTextList.Add(this.ResourceFile);
 
             this.PythonDirectory.Content = this.Model.PythonDirectory;
             this.PythonDirectory.Assert += this.Directory_Assert;
@@ -99,12 +93,6 @@ namespace KPU_General_macro.ViewModel
         {
             if (string.IsNullOrEmpty(content))
                 throw new Exception("렌더 스크립트를 설정해야 합니다.");
-        }
-
-        private void StatusDirectory_Complete(object sender, EventArgs e)
-        {
-            this.OnPropertyChanged(nameof(this.StatusFile));
-            this.OnPropertyChanged(nameof(this.Completable));
         }
 
         private void DisposeScriptName_Complete(object sender, EventArgs e)
@@ -151,7 +139,7 @@ namespace KPU_General_macro.ViewModel
 
         private void ResourcesDirectory_Complete(object sender, EventArgs e)
         {
-            this.OnPropertyChanged(nameof(this.SpriteFile));
+            this.OnPropertyChanged(nameof(this.ResourceFile));
             this.OnPropertyChanged(nameof(this.Completable));
         }
 
@@ -179,8 +167,7 @@ namespace KPU_General_macro.ViewModel
             {
                 this.Model.ClassName = this.ClassName.Content;
                 DestinationApp.Instance.OperationType = this.SoftwareOperatable ? OperationType.Software : OperationType.Hardware;
-                this.Model.SpriteFile = Path.GetFullPath(this.SpriteFile.Content);
-                this.Model.StatusFile = Path.GetFullPath(this.StatusFile.Content);
+                this.Model.ResourceFile = Path.GetFullPath(this.ResourceFile.Content);
                 this.Model.PythonDirectory = Path.GetFullPath(this.PythonDirectory.Content);
                 this.Model.InitializeScriptName = this.InitializeScriptName.Content;
                 this.Model.FrameScriptName = this.FrameScriptName.Content;
@@ -198,8 +185,7 @@ namespace KPU_General_macro.ViewModel
         {
             this.ClassName.Content = this.Model.ClassName;
             this.SoftwareOperatable = DestinationApp.Instance.OperationType == OperationType.Software;
-            this.SpriteFile.Content = this.Model.SpriteFile;
-            this.StatusFile.Content = this.Model.StatusFile;
+            this.ResourceFile.Content = this.Model.ResourceFile;
             this.PythonDirectory.Content = this.Model.PythonDirectory;
             this.InitializeScriptName.Content = this.Model.InitializeScriptName;
             this.FrameScriptName.Content = this.Model.FrameScriptName;

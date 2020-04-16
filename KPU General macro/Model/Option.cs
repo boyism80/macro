@@ -8,8 +8,7 @@ namespace KPU_General_macro.Model
     {
         public string ClassName { get; set; } = "LOSTARK";
 
-        public string SpriteFile { get; set; } = Path.Combine(Directory.GetCurrentDirectory(), "templates", "sprite.ksp");
-        public string StatusFile { get; set; } = Path.Combine(Directory.GetCurrentDirectory(), "templates", "status.kst");
+        public string ResourceFile { get; set; } = Path.Combine(Directory.GetCurrentDirectory(), "templates", "resource.kpu");
         public string PythonDirectory { get; set; } = Path.Combine("D:\\", "Program Files (x86)", "Python", "Python27");
 
 
@@ -24,8 +23,7 @@ namespace KPU_General_macro.Model
             config["class"] = this.ClassName;
             config["software operatable"] = new JSONData(DestinationApp.Instance.OperationType == OperationType.Software);
 
-            config["sprites"] = this.SpriteFile;
-            config["status"] = this.StatusFile;
+            config["sprites"] = this.ResourceFile;
             config["python directory"] = this.PythonDirectory;
 
             config["initialize script"] = this.InitializeScriptName;
@@ -45,8 +43,7 @@ namespace KPU_General_macro.Model
                 this.ClassName = config["class"].Value;
                 DestinationApp.Instance.OperationType = config["software operatable"].AsBool ? OperationType.Software : OperationType.Hardware;
 
-                this.SpriteFile = config["sprites"].Value;
-                this.StatusFile = config["status"].Value;
+                this.ResourceFile = config["sprites"].Value;
                 this.PythonDirectory = config["python directory"].Value;
 
                 this.InitializeScriptName = config["initialize script"].Value;

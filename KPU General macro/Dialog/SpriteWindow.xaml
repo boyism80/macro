@@ -29,7 +29,7 @@
                                 Orientation="Horizontal"
                                 HorizontalAlignment="Right"
                                 Margin="10 15">
-                        <Button Content="확인"
+                        <Button Content="{Binding CompleteSpriteButtonText, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}}"
                                 Click="OnCompleteSprite"/>
                         <Button Content="취소"
                                 Click="OnCancelSprite"/>
@@ -99,11 +99,11 @@
                                             Minimum="0.0"
                                             Maximum="1.0"
                                             IsEnabled="{Binding EnabledColorFactor}"
-                                            Value="{Binding ColorErrorFactor}"/>
+                                            Value="{Binding SpriteVM.ColorErrorFactor}"/>
                                         <TextBlock Grid.Column="1" 
                                                Margin="10 0"
                                                TextAlignment="Right"
-                                               Text="{Binding ColorErrorFactorLabelText}" />
+                                               Text="{Binding SpriteVM.ColorErrorFactorLabelText}" />
                                     </Grid>
                                 </StackPanel>
 
@@ -152,7 +152,9 @@
                             </StackPanel>
                         </Border>
                         <Border Grid.Column="1" Margin="0">
-                            <local:SpriteListView ItemsSource="{Binding SpriteVM.Sprites}" />
+                            <local:SpriteListView x:Name="SpriteListView" 
+                                                  ItemsSource="{Binding SpriteVM.Sprites}"
+                                                  SelectionChanged="SpriteListView_SelectionChanged"/>
                         </Border>
                     </Grid>
                 </DockPanel>
@@ -176,7 +178,7 @@
                                 Margin="0">
                             <StackPanel Orientation="Vertical">
                                 <TextBlock Text="이름" />
-                                <TextBox Text="{Binding StatusVM.Name}" />
+                                <TextBox x:Name="StatusName" Text="{Binding StatusVM.Name}" />
 
                                 <TextBlock Text="스크립트" />
                                 <Grid>
@@ -206,9 +208,11 @@
                         <Border Grid.Row="0"
                                 Grid.Column="1"
                                 Margin="0">
-                            <ListView Background="Transparent"
+                            <ListView x:Name="StatusListView" 
+                                      Background="Transparent"
                                       Margin="10 0 0 0"
-                                      ItemsSource="{Binding StatusVM.Statuses}">
+                                      ItemsSource="{Binding StatusVM.Statuses}"
+                                      SelectionChanged="StatusListView_SelectionChanged">
                                 <ListView.ItemTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding Name}"
@@ -225,8 +229,12 @@
                             <StackPanel Orientation="Horizontal"
                                         HorizontalAlignment="Right"
                                         Margin="10 15">
-                                <Button Content="확인"
-                                        Click="OKButton_Click"/>
+                                <Button Content="추가"
+                                        Click="CreateStatusButton_Click"/>
+                                <Button x:Name="ModifyStatusButton" 
+                                        IsEnabled="False"
+                                        Content="수정"
+                                        Click="ModifyStatusButton_Click"/>
                                 <Button Content="취소"
                                         Click="CancelButton_Click"/>
                             </StackPanel>
