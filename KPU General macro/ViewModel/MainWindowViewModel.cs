@@ -13,6 +13,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Windows;
 using System.Windows.Input;
@@ -124,6 +125,8 @@ namespace KPU_General_macro
         public ICommand ModifySpriteCommand { get; private set; }
         public ICommand SelectedStatusChangedCommand { get; private set; }
         public ICommand ModifyStatusCommand { get; private set; }
+        public ICommand DeleteSpriteCommand { get; private set; }
+        public ICommand DeleteStatusCommand { get; private set; }
 
         public MainWindowViewModel(MainWindow mainWindow)
         {
@@ -154,6 +157,8 @@ namespace KPU_General_macro
             this.ModifyStatusCommand = new RelayCommand(this.OnModifyStatus);
             this.SelectedSpriteChangedCommand = new RelayCommand(this.OnSelectedSpriteChanged);
             this.SelectedStatusChangedCommand = new RelayCommand(this.OnSelectedStatusChanged);
+            this.DeleteSpriteCommand = new RelayCommand(this.OnDeleteSprite);
+            this.DeleteStatusCommand = new RelayCommand(this.OnDeleteStatus);
         }
 
         private void OnModifyStatus(object obj)
@@ -256,7 +261,9 @@ namespace KPU_General_macro
 
                 CreateStatusCommand = this.CreateStatusCommand,
                 ModifyStatusCommand = this.ModifyStatusCommand,
-                DataContext = new ResourceWindowViewModel(this.Resource.Sprites, this.Resource.Statuses),
+                DeleteSpriteCommand = this.DeleteSpriteCommand,
+                DeleteStatusCommand = this.DeleteStatusCommand,
+                DataContext = new ResourceWindowViewModel(this.Resource),
             };
 
             this._spriteWindow.Closed += this._spriteWindow_Closed;
@@ -387,7 +394,7 @@ namespace KPU_General_macro
             var selectedRect = (System.Windows.Rect)parameters[1];
             var selectedFrame = new Mat(this.SourceFrame, new OpenCvSharp.Rect { X = (int)selectedRect.X, Y = (int)selectedRect.Y, Width = (int)selectedRect.Width, Height = (int)selectedRect.Height });
 
-            var resourceViewModel = new ResourceWindowViewModel(this.Resource.Sprites, this.Resource.Statuses);
+            var resourceViewModel = new ResourceWindowViewModel(this.Resource);
             resourceViewModel.SpriteVM.Frame = selectedFrame;
 
             if (this._spriteWindow != null)
@@ -402,10 +409,54 @@ namespace KPU_General_macro
                 UnbindSpriteCommand = this.UnbindSpriteCommand,
 
                 CreateStatusCommand = this.CreateStatusCommand,
+                DeleteSpriteCommand = this.DeleteSpriteCommand,
+                DeleteStatusCommand = this.DeleteStatusCommand,
                 DataContext = resourceViewModel
             };
             this._spriteWindow.Closed += this._spriteWindow_Closed;
             this._spriteWindow.Show();
+        }
+
+        private void OnDeleteSprite(object obj)
+        {
+            var parameters = obj as object[];
+            var dataContext = parameters[0] as ResourceWindowViewModel;
+            var sprite = parameters[1] as Sprite;
+
+            foreach (var status in this.Resource.Statuses.Values)
+            {
+                status.Components
+                    .Where(x => x.Sprite == sprite).ToList()
+                    .ForEach(x =>
+                    {
+                        status.Components.Remove(x);
+                    });
+            }
+
+            dataContext.StatusVM.Components
+                .Where(x => x.Sprite == sprite).ToList()
+                .ForEach(x =>
+                {
+                    dataContext.StatusVM.Components.Remove(x);
+                });
+
+            this.Resource.Sprites.Remove(sprite.Name);
+            dataContext.SpriteVM.OnPropertyChanged(nameof(dataContext.SpriteVM.Sprites));
+            dataContext.StatusVM.OnPropertyChanged(nameof(dataContext.StatusVM.Components));
+
+            this.Resource.Save(this.OptionViewModel.ResourceFile.Content);
+        }
+
+        private void OnDeleteStatus(object obj)
+        {
+            var parameters = obj as object[];
+            var dataContext = parameters[0] as ResourceWindowViewModel;
+            var status = parameters[1] as Status;
+
+            this.Resource.Statuses.Remove(status.Name);
+            dataContext.StatusVM.OnPropertyChanged(nameof(dataContext.StatusVM.Statuses));
+            
+            this.Resource.Save(this.OptionViewModel.ResourceFile.Content);
         }
 
         private void App_Frame(OpenCvSharp.Mat frame)

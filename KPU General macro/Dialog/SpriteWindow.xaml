@@ -106,55 +106,13 @@
                                                Text="{Binding SpriteVM.ColorErrorFactorLabelText}" />
                                     </Grid>
                                 </StackPanel>
-
-                                <!--<Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="4*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition />
-                                        <RowDefinition />
-                                        <RowDefinition />
-                                    </Grid.RowDefinitions>
-                                    
-                                    <TextBlock Grid.Column="0"
-                                               Grid.Row="0"
-                                               VerticalAlignment="Center"
-                                               Text="이름" />
-                                    <TextBox Grid.Column="1" 
-                                             Grid.Row="0" />
-                                    <TextBlock Grid.Column="0" 
-                                               Grid.Row="1"
-                                               Text="임계값" />
-                                    <Slider Grid.Column="1" 
-                                            Grid.Row="1"
-                                            Minimum="0.0"
-                                            Maximum="100.0"
-                                            Value="95.0"/>
-                                    <TextBlock Grid.Column="2"
-                                               Grid.Row="1"
-                                               TextAlignment="Center"
-                                               VerticalAlignment="Center"
-                                               Margin="10 0"
-                                               Text="100%" />
-                                    <TextBlock Grid.Column="0"
-                                               Grid.Row="2"
-                                               VerticalAlignment="Center"
-                                               Text="기준 색상"/>
-                                    <TextBox Grid.Column="1" 
-                                             Grid.Row="2" />
-                                    <Button Grid.Column="2"
-                                            Grid.Row="2"
-                                            Content="찾기" />
-                                </Grid>-->
                             </StackPanel>
                         </Border>
                         <Border Grid.Column="1" Margin="0">
                             <local:SpriteListView x:Name="SpriteListView" 
                                                   ItemsSource="{Binding SpriteVM.Sprites}"
-                                                  SelectionChanged="SpriteListView_SelectionChanged"/>
+                                                  SelectionChanged="SpriteListView_SelectionChanged"
+                                                  DeleteCommand="{Binding DeleteSpriteCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}}"/>
                         </Border>
                     </Grid>
                 </DockPanel>
@@ -206,18 +164,12 @@
                         <Border Grid.Row="0"
                                 Grid.Column="1"
                                 Margin="0">
-                            <ListView x:Name="StatusListView" 
-                                      Background="Transparent"
-                                      Margin="10 0 0 0"
-                                      ItemsSource="{Binding StatusVM.Statuses}"
-                                      SelectionChanged="StatusListView_SelectionChanged">
-                                <ListView.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding Name}"
-                                                   Foreground="{StaticResource MainTextBrush}"/>
-                                    </DataTemplate>
-                                </ListView.ItemTemplate>
-                            </ListView>
+                            <local:StatusListView x:Name="StatusListView" 
+                                                  Background="Transparent"
+                                                  Margin="10 0 0 0"
+                                                  ItemsSource="{Binding StatusVM.Statuses}"
+                                                  SelectionChanged="StatusListView_SelectionChanged"
+                                                  DeleteCommand="{Binding DeleteStatusCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}}"/>
                         </Border>
 
                         <Border Grid.Row="2"
@@ -233,7 +185,7 @@
                                         IsEnabled="False"
                                         Content="수정"
                                         Click="ModifyStatusButton_Click"/>
-                                <Button Content="취소"
+                                <Button Content="닫기"
                                         Click="CancelButton_Click"/>
                             </StackPanel>
                         </Border>
@@ -242,6 +194,7 @@
                                 Grid.Column="1"
                                 Margin="10 10 0 0">
                             <local:SpriteListView x:Name="unbindedSpriteListView" 
+                                                  Deletable="False"
                                                   ItemsSource="{Binding StatusVM.UnbindedSprites}"
                                                   PreviewMouseLeftButtonDown="SpriteListView_PreviewMouseLeftButtonDown"
                                                   PreviewMouseMove="SpriteListView_PreviewMouseMove"

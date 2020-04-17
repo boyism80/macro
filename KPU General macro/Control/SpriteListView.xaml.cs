@@ -1,17 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace KPU_General_macro
 {
@@ -20,9 +9,32 @@ namespace KPU_General_macro
     /// </summary>
     public partial class SpriteListView : ListView
     {
+        public static readonly DependencyProperty DeleteCommandProperty = DependencyProperty.Register("DeleteCommand", typeof(ICommand), typeof(SpriteListView));
+        public ICommand DeleteCommand
+        {
+            get { return (ICommand)GetValue(DeleteCommandProperty); }
+            set { SetValue(DeleteCommandProperty, value); }
+        }
+
+        public static readonly DependencyProperty DeletableProperty = DependencyProperty.Register("Deletable", typeof(bool), typeof(SpriteListView), new PropertyMetadata(true));
+        public bool Deletable
+        {
+            get { return (bool)GetValue(DeletableProperty); }
+            set { SetValue(DeletableProperty, value); }
+        }
+
         public SpriteListView()
         {
             InitializeComponent();
+        }
+
+        private void DeleteButton_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
+            var parameters = new object[] { this.DataContext, button.DataContext };
+            
+            if (this.DeleteCommand.CanExecute(parameters))
+                this.DeleteCommand.Execute(parameters);
         }
     }
 }

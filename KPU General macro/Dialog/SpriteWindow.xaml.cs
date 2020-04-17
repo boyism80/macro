@@ -86,6 +86,20 @@ namespace KPU_General_macro.Dialog
             set { SetValue(SelectedStatusChangedCommandProperty, value); }
         }
 
+        public static readonly DependencyProperty DeleteSpriteCommandProperty = DependencyProperty.Register("DeleteSpriteCommand", typeof(ICommand), typeof(SpriteWindow));
+        public ICommand DeleteSpriteCommand
+        {
+            get { return (ICommand)GetValue(DeleteSpriteCommandProperty); }
+            set { SetValue(DeleteSpriteCommandProperty, value); }
+        }
+
+        public static readonly DependencyProperty DeleteStatusCommandProperty = DependencyProperty.Register("DeleteStatusCommand", typeof(ICommand), typeof(SpriteWindow));
+        public ICommand DeleteStatusCommand
+        {
+            get { return (ICommand)GetValue(DeleteStatusCommandProperty); }
+            set { SetValue(DeleteStatusCommandProperty, value); }
+        }
+
 
         public SpriteWindow(EditMode mode)
         {

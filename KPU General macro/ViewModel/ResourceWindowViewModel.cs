@@ -1,10 +1,12 @@
 ﻿using KPU_General_macro.Extension;
 using KPU_General_macro.Model;
 using OpenCvSharp;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing;
 using System.Linq;
+using System.Windows.Input;
 using System.Windows.Media.Imaging;
 
 namespace KPU_General_macro.ViewModel
@@ -146,15 +148,19 @@ namespace KPU_General_macro.ViewModel
         }
     }
 
-    public class ResourceWindowViewModel
+    public class ResourceWindowViewModel : BaseViewModel
     {
+        private Resource _resource;
+
         public SpriteWindowViewModel SpriteVM { get; private set; }
         public StatusWindowViewModel StatusVM { get; private set; }
 
-        public ResourceWindowViewModel(SpriteContainer spriteContainer, StatusContainer statusContainer)
+        public ResourceWindowViewModel(Resource resource)
         {
-            this.SpriteVM = new SpriteWindowViewModel(spriteContainer);
-            this.StatusVM = new StatusWindowViewModel(spriteContainer, statusContainer);
+            this._resource = resource;
+
+            this.SpriteVM = new SpriteWindowViewModel(resource.Sprites);
+            this.StatusVM = new StatusWindowViewModel(resource.Sprites, resource.Statuses);
         }
     }
 }
