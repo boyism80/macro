@@ -84,8 +84,8 @@ namespace KPU_General_macro.Model
                         writer.Write(status.Components.Count);
                         foreach (var component in status.Components)
                         {
-                            writer.Write(component.sprite.Name);
-                            writer.Write(component.requirement);
+                            writer.Write(component.Sprite.Name);
+                            writer.Write(component.Requirement);
                         }
                     }
                 }

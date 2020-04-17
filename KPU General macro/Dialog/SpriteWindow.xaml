@@ -188,8 +188,6 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBox Grid.Column="0"
                                              Text="{Binding StatusVM.Script}"/>
-                                    <Button Grid.Column="1"
-                                            Content="찾기" />
                                 </Grid>
                             </StackPanel>
                         </Border>
@@ -197,12 +195,12 @@
                         <Border Grid.Row="1"
                                 Grid.Column="0"
                                 Margin="0 10 0 0">
-                            <local:SpriteListView x:Name="bindedSpriteListView"
-                                                  ItemsSource="{Binding StatusVM.BindedSprites}"
-                                                  PreviewMouseLeftButtonDown="SpriteListView_PreviewMouseLeftButtonDown"
-                                                  PreviewMouseMove="SpriteListView_PreviewMouseMove"
-                                                  Drop="SpriteListView_Drop"
-                                                  MouseDoubleClick="SpriteListView_MouseDoubleClick"/>
+                            <local:StatusComponentListview x:Name="bindedStatusComponentListView"
+                                                           ItemsSource="{Binding StatusVM.BindedStatusComponents}"
+                                                           PreviewMouseLeftButtonDown="SpriteListView_PreviewMouseLeftButtonDown"
+                                                           PreviewMouseMove="SpriteListView_PreviewMouseMove"
+                                                           Drop="SpriteListView_Drop"
+                                                           MouseDoubleClick="SpriteListView_MouseDoubleClick"/>
                         </Border>
 
                         <Border Grid.Row="0"

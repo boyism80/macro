@@ -13,14 +13,15 @@
     <Grid>
         <Canvas>
             <Canvas.Background>
-                <ImageBrush ImageSource="{Binding Frame, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:Screen}}" />
+                <ImageBrush ImageSource="{Binding Frame, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:Screen}}"
+                            Stretch="Uniform"/>
             </Canvas.Background>
 
             <!--Draw selected area-->
-            <Rectangle Width="{Binding Path=Size.Width, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:Screen}}}"
-                   Height="{Binding Path=Size.Height, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:Screen}}}"
-                   Canvas.Left ="{Binding Path=Begin.X, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:Screen}}}"
-                   Canvas.Top="{Binding Path=Begin.Y, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:Screen}}}"
+            <Rectangle Width="{Binding Path=SelectedRect.Width, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:Screen}}}"
+                   Height="{Binding Path=SelectedRect.Height, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:Screen}}}"
+                   Canvas.Left ="{Binding Path=SelectedRect.X, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:Screen}}}"
+                   Canvas.Top="{Binding Path=SelectedRect.Y, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:Screen}}}"
                    Visibility="{Binding Path=SelectedRectVisibility, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:Screen}}}"
                    Stroke="{StaticResource HighlightBrush}" 
                    RadiusX="3"

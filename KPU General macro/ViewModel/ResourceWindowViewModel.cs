@@ -109,9 +109,9 @@ namespace KPU_General_macro.ViewModel
 
         public List<Status.Component> Components { get; private set; } = new List<Status.Component>();
         
-        public ObservableCollection<Sprite> BindedSprites
+        public ObservableCollection<Status.Component> BindedStatusComponents
         {
-            get { return new ObservableCollection<Sprite>(Components.Select(x => x.sprite)); }
+            get { return new ObservableCollection<Status.Component>(Components); }
         }
 
         public ObservableCollection<Sprite> UnbindedSprites
@@ -120,7 +120,7 @@ namespace KPU_General_macro.ViewModel
             {
                 var unbinded = new ObservableCollection<Sprite>(this._spriteContainer
                     .Select(x => x.Value)
-                    .Where(x => Components.Select(c => c.sprite).Contains(x) == false));
+                    .Where(x => Components.Select(c => c.Sprite).Contains(x) == false));
 
                 return unbinded;
             }
@@ -137,7 +137,7 @@ namespace KPU_General_macro.ViewModel
             switch (name)
             {
                 case nameof(this.Components):
-                    base.OnPropertyChanged(nameof(BindedSprites));
+                    base.OnPropertyChanged(nameof(BindedStatusComponents));
                     base.OnPropertyChanged(nameof(UnbindedSprites));
                     break;
             }

@@ -314,7 +314,7 @@ namespace KPU_General_macro
             var sprite = parameters[1] as Sprite;
             var isRequirement = (bool)parameters[2];
 
-            var component = dataContext.StatusVM.Components.Find(x => x.sprite == sprite);
+            var component = dataContext.StatusVM.Components.Find(x => x.Sprite == sprite);
             dataContext.StatusVM.Components.Remove(component);
             dataContext.StatusVM.OnPropertyChanged(nameof(dataContext.StatusVM.Components));
 
@@ -384,12 +384,8 @@ namespace KPU_General_macro
         private void OnSelectedRect(object obj)
         {
             var parameters = obj as object[];
-            var renderSize = (System.Windows.Size)parameters[2];
-            var ratio = new System.Windows.Size(this.SourceFrame.Width / renderSize.Width, this.SourceFrame.Height / renderSize.Height);
-
             var selectedRect = (System.Windows.Rect)parameters[1];
-            var selectedFrame = new Mat(this.SourceFrame, new OpenCvSharp.Rect(new OpenCvSharp.Point(selectedRect.X * ratio.Width, selectedRect.Y * ratio.Height),
-                                                          new OpenCvSharp.Size(selectedRect.Width * ratio.Width, selectedRect.Height * ratio.Height)));
+            var selectedFrame = new Mat(this.SourceFrame, new OpenCvSharp.Rect { X = (int)selectedRect.X, Y = (int)selectedRect.Y, Width = (int)selectedRect.Width, Height = (int)selectedRect.Height });
 
             var resourceViewModel = new ResourceWindowViewModel(this.Resource.Sprites, this.Resource.Statuses);
             resourceViewModel.SpriteVM.Frame = selectedFrame;
@@ -408,6 +404,7 @@ namespace KPU_General_macro
                 CreateStatusCommand = this.CreateStatusCommand,
                 DataContext = resourceViewModel
             };
+            this._spriteWindow.Closed += this._spriteWindow_Closed;
             this._spriteWindow.Show();
         }
 

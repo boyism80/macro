@@ -20,17 +20,17 @@ namespace KPU_General_macro.Model
             foreach (var component in status.Components)
             {
                 var percentage = 0.0;
-                var point = component.sprite.MatchTo(frame, ref percentage, null, null);
+                var point = component.Sprite.MatchTo(frame, ref percentage, null, null);
                 //System.Console.WriteLine("이름 : {0}, 일치율 : {1}", component.sprite.Name, percentage);
                 if (point == null)
                 {
-                    if (component.requirement == false)
+                    if (component.Requirement == false)
                         continue;
 
                     return null;
                 }
 
-                points.Add(component.sprite.Name, point.Value);
+                points.Add(component.Sprite.Name, point.Value);
             }
 
             return points;

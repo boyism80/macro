@@ -21,7 +21,7 @@ namespace KPU_General_macro.Dialog
         }
 
         private bool _dragging = false;
-        private SpriteListView _sourceListView;
+        private ListView _sourceListView;
 
         public static readonly DependencyProperty CreateSpriteCommandProperty = DependencyProperty.Register("CreateSpriteCommand", typeof(ICommand), typeof(SpriteWindow));
         public ICommand CreateSpriteCommand
@@ -138,7 +138,7 @@ namespace KPU_General_macro.Dialog
 
         private void SpriteListView_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            var listview = sender as SpriteListView;
+            var listview = sender as ListView;
             var element = listview.InputHitTest(e.GetPosition(listview));
             var item = FindAncestor<ListViewItem>(element as DependencyObject);
 
@@ -182,27 +182,28 @@ namespace KPU_General_macro.Dialog
         {
             if (e.Data.GetDataPresent("sprite") == false)
                 return;
-            var sprite = e.Data.GetData("sprite") as Sprite;
-
+            var data = e.Data.GetData("sprite");
 
             this._dragging = false;
 
-            var destListView = sender as SpriteListView;
+            var destListView = sender as ListView;
             if (this._sourceListView == destListView)
                 return;
 
-            if (this.OnSpriteMoved(destListView, sprite) == false)
-                return;
+            if (data is Sprite sprite)
+                this.OnSpriteMoved(destListView, sprite);
+            else if (data is Status.Component component)
+                this.OnSpriteMoved(destListView, component.Sprite);
         }
 
         private void SpriteListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            var sourceListView = sender as SpriteListView;
-            var destListView = sourceListView == this.bindedSpriteListView ? this.unbindedSpriteListView : this.bindedSpriteListView;
-            var sprite = sourceListView.SelectedValue as Sprite;
-
-            if (this.OnSpriteMoved(destListView, sprite) == false)
-                return;
+            var sourceListView = sender as ListView;
+            var destListView = sourceListView == this.bindedStatusComponentListView ? this.unbindedSpriteListView as ListView : this.bindedStatusComponentListView as ListView;
+            if (sourceListView.SelectedValue is Sprite sprite)
+                this.OnSpriteMoved(destListView, sprite);
+            else if (sourceListView.SelectedValue is Status.Component component)
+                this.OnSpriteMoved(destListView, component.Sprite);
         }
 
         private void CreateStatusButton_Click(object sender, RoutedEventArgs e)
@@ -217,10 +218,10 @@ namespace KPU_General_macro.Dialog
             this.Close();
         }
 
-        private bool OnSpriteMoved(SpriteListView to, Sprite sprite)
+        private bool OnSpriteMoved(ListView to, Sprite sprite)
         {
             var isRequirement = MessageBoxResult.Yes;
-            if (to == this.bindedSpriteListView)
+            if (to == this.bindedStatusComponentListView)
             {
                 isRequirement = MessageBox.Show("Requirement?", "Requirement", MessageBoxButton.YesNoCancel);
                 if (isRequirement == MessageBoxResult.Cancel)
@@ -228,7 +229,7 @@ namespace KPU_General_macro.Dialog
             }
 
             var parameters = new object[] { this.DataContext, sprite, isRequirement == MessageBoxResult.Yes };
-            if (to == this.bindedSpriteListView)
+            if (to == this.bindedStatusComponentListView)
             {
                 if (this.BindSpriteCommand.CanExecute(parameters))
                     this.BindSpriteCommand.Execute(parameters);

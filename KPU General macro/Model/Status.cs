@@ -7,15 +7,15 @@ namespace KPU_General_macro.Model
 {
     public class Status
     {
-        public struct Component
+        public class Component
         {
-            public Sprite sprite;
-            public bool requirement;
+            public Sprite Sprite { get; private set; }
+            public bool Requirement { get; set; }
 
             public Component(Sprite sprite, bool requirement)
             {
-                this.sprite = sprite;
-                this.requirement = requirement;
+                this.Sprite = sprite;
+                this.Requirement = requirement;
             }
         }
 
@@ -35,7 +35,7 @@ namespace KPU_General_macro.Model
         {
             foreach (var component in this.Components)
             {
-                if (component.requirement && component.sprite.Equals(sprite.Name))
+                if (component.Requirement && component.Sprite.Equals(sprite.Name))
                     return true;
             }
 
