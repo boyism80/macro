@@ -9,7 +9,9 @@
              d:DesignHeight="450" d:DesignWidth="800"
              MouseDown="Screen_MouseDown"
              MouseUp="Screen_MouseUp"
-             MouseMove="Screen_MouseMove">
+             MouseMove="Screen_MouseMove"
+             MouseEnter="UserControl_MouseEnter"
+             MouseLeave="UserControl_MouseLeave">
     <Grid>
         <Canvas>
             <Canvas.Background>
@@ -18,16 +20,21 @@
             </Canvas.Background>
 
             <!--Draw selected area-->
-            <Rectangle Width="{Binding Path=SelectedRect.Width, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:Screen}}}"
-                   Height="{Binding Path=SelectedRect.Height, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:Screen}}}"
-                   Canvas.Left ="{Binding Path=SelectedRect.X, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:Screen}}}"
-                   Canvas.Top="{Binding Path=SelectedRect.Y, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:Screen}}}"
-                   Visibility="{Binding Path=SelectedRectVisibility, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:Screen}}}"
+            <Rectangle Width="{Binding Path=SelectedRect.Width, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:Screen}}"
+                   Height="{Binding Path=SelectedRect.Height, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:Screen}}"
+                   Canvas.Left ="{Binding Path=SelectedRect.X, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:Screen}}"
+                   Canvas.Top="{Binding Path=SelectedRect.Y, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:Screen}}"
+                   Visibility="{Binding Path=SelectedRectVisibility, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:Screen}}"
                    Stroke="{StaticResource HighlightBrush}" 
                    RadiusX="3"
                    RadiusY="3"
                    StrokeThickness="1">
             </Rectangle>
+
+            <local:Label X="{Binding PointLabelLocation.X, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:Screen}}"
+                         Y="{Binding PointLabelLocation.Y, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:Screen}}"
+                         Text="{Binding CursorPointText, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:Screen}}"
+                         Visibility="{Binding CursorLabelVisibility, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:Screen}}"/>
         </Canvas>
     </Grid>
 </UserControl>

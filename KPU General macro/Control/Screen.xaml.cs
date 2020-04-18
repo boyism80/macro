@@ -18,22 +18,74 @@ namespace KPU_General_macro
             PropertyChanged(this, new PropertyChangedEventArgs(name));
         }
 
-        public Visibility RectVisibility
+        #region Curosr
+        /// <summary>
+        /// 커서 위치
+        /// </summary>
+        private Point _cursorPoint = new Point();
+        public Point CursorPoint
         {
-            get { return this.Frame != null ? Visibility.Visible : Visibility.Hidden; }
-        }
-
-        private double Ratio
-        {
-            get
+            get { return this._cursorPoint; }
+            private set
             {
-                if (this.Frame.Width > this.Frame.Height)
-                    return (this.ActualWidth / this.Frame.Width);
-                else
-                    return (this.ActualHeight / this.Frame.Height);
+                this._cursorPoint = value;
+                this.OnPropertyChanged(nameof(this.CursorPointText));
             }
         }
 
+        /// <summary>
+        /// 커서 레이블 표시 여부
+        /// </summary>
+        private Visibility _cursorLabelVisibility = Visibility.Hidden;
+        public Visibility CursorLabelVisibility
+        {
+            get
+            {
+                if (this.Frame == null)
+                    return Visibility.Hidden;
+
+                return this._cursorLabelVisibility;
+            }
+            set
+            {
+                this._cursorLabelVisibility = value;
+            }
+        }
+
+        /// <summary>
+        /// 커서 위치 텍스트
+        /// </summary>
+        public string CursorPointText
+        {
+            get
+            {
+                return $"{(int)this.CursorPoint.X}, {(int)this.CursorPoint.Y}";
+            }
+        }
+        public Point PointLabelLocation { get; private set; } = new Point();
+        #endregion
+
+
+
+        #region Selection
+        /// <summary>
+        /// 드래그 상태
+        /// </summary>
+        private bool Dragging { get; set; } = false;
+
+        /// <summary>
+        /// 드래그 영역 사이즈
+        /// </summary>
+        private Size Size { get; set; } = new Size();
+
+        /// <summary>
+        /// 드래그 시작점
+        /// </summary>
+        private Point Begin { get; set; } = new Point();
+
+        /// <summary>
+        /// 선택영역을 지정할 수 있는 영역
+        /// </summary>
         private Rect ValidRect
         {
             get
@@ -64,6 +116,9 @@ namespace KPU_General_macro
             }
         }
 
+        /// <summary>
+        /// 선택된 영역
+        /// </summary>
         public Rect SelectedRect
         {
             get
@@ -99,19 +154,22 @@ namespace KPU_General_macro
                     selectedRect.Width -= (selectedRect.Right - validRect.Right);
 
                 if (selectedRect.Bottom > validRect.Bottom)
-                    selectedRect.Height -= (validRect.Bottom - validRect.Bottom);
+                    selectedRect.Height -= (selectedRect.Bottom - validRect.Bottom);
 
                 return selectedRect;
             }
         }
 
+        /// <summary>
+        /// 현재 보여지는 프레임 기준의 선택된 영역
+        /// </summary>
         private Rect SelectedFrameRect
         {
             get
             {
                 var validRect = this.ValidRect;
                 var selectedRect = this.SelectedRect;
-                
+
                 selectedRect.X -= validRect.X;
                 selectedRect.Y -= validRect.Y;
 
@@ -125,10 +183,28 @@ namespace KPU_General_macro
             }
         }
 
-        public Size Size { get; private set; } = new Size();
-        public Point Begin { get; private set; } = new Point();
-        public bool Dragging { get; private set; } = false;
-        public Visibility SelectedRectVisibility { get; set; } = Visibility.Hidden;
+        /// <summary>
+        /// 선택영역 표시 여부
+        /// </summary>
+        public Visibility SelectedRectVisibility { get; private set; } = Visibility.Hidden;
+        #endregion
+
+
+
+
+        /// <summary>
+        /// 프레임과 컨트롤 크기 비율
+        /// </summary>
+        private double Ratio
+        {
+            get
+            {
+                if (this.Frame.Width > this.Frame.Height)
+                    return (this.ActualWidth / this.Frame.Width);
+                else
+                    return (this.ActualHeight / this.Frame.Height);
+            }
+        }
 
         public static readonly DependencyProperty FrameProperty = DependencyProperty.Register("Frame", typeof(BitmapImage), typeof(Screen));
         public BitmapImage Frame
@@ -137,8 +213,8 @@ namespace KPU_General_macro
             set 
             { 
                 SetValue(FrameProperty, value);
-                this.OnPropertyChanged(nameof(this.RectVisibility));
                 this.OnPropertyChanged(nameof(this.SelectedRect));
+                this.OnPropertyChanged(nameof(this.CursorLabelVisibility));
             }
         }
 
@@ -152,6 +228,38 @@ namespace KPU_General_macro
         public Screen()
         {
             InitializeComponent();
+        }
+
+        private void UserControl_MouseEnter(object sender, MouseEventArgs e)
+        {
+            this.CursorLabelVisibility = Visibility.Visible;
+            this.UpdateCursorPoint(e.GetPosition(this));
+        }
+
+        private void UserControl_MouseLeave(object sender, MouseEventArgs e)
+        {
+            this.CursorLabelVisibility = Visibility.Hidden;
+        }
+
+        private void UpdateCursorPoint(Point absolutePoint)
+        {
+            if (this.Frame == null)
+                return;
+
+            this.PointLabelLocation = absolutePoint;
+            this.CursorLabelVisibility = this.ValidRect.Contains(absolutePoint) ? Visibility.Visible : Visibility.Hidden;
+
+            var mappedPoint = new Point
+            {
+                X = (absolutePoint.X - this.ValidRect.X) / this.Ratio,
+                Y = (absolutePoint.Y - this.ValidRect.Y) / this.Ratio,
+            };
+
+            this.CursorPoint = new Point
+            {
+                X = Math.Max(0, Math.Min(this.Frame.Width, mappedPoint.X)),
+                Y = Math.Max(0, Math.Min(this.Frame.Height, mappedPoint.Y)),
+            };
         }
 
         private void Screen_MouseDown(object sender, MouseButtonEventArgs e)
@@ -193,19 +301,21 @@ namespace KPU_General_macro
 
         private void Screen_MouseMove(object sender, MouseEventArgs e)
         {
+            var coordination = e.GetPosition(this);
+            this.UpdateCursorPoint(coordination);
+
             if (this.Frame == null)
                 return;
 
             if (this.Dragging == false)
                 return;
 
-            var coordination = e.GetPosition(this);
             var moved = new Size(Math.Abs(coordination.X - this.Begin.X), Math.Abs(coordination.Y - this.Begin.Y));
 
             if (coordination.X <= this.Begin.X)
             {
                 this.Begin = new Point(coordination.X, this.Begin.Y);
-                this.Size = new Size(this.Size.Width + moved.Width, Size.Height);
+                this.Size = new Size(this.Size.Width + moved.Width, this.Size.Height);
             }
             else
             {
