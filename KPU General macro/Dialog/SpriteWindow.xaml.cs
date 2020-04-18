@@ -274,10 +274,6 @@ namespace KPU_General_macro.Dialog
         {
             this.ModifyStatusButton.IsEnabled = (this.StatusListView.SelectedIndex != -1);
 
-            if (this.Mode == EditMode.Create)
-                return;
-
-            var statusListView = sender as ListView;
             var status = StatusListView.SelectedValue;
 
             var parameters = new object[] { this.DataContext, status };

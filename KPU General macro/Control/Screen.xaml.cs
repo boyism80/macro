@@ -290,7 +290,7 @@ namespace KPU_General_macro
             if (this.Dragging == false)
                 return;
 
-            if (this.SelectRectCommand.CanExecute(this))
+            if(this.SelectedFrameRect.Width > 0 && this.SelectedFrameRect.Height > 0)
                 this.SelectRectCommand.Execute(new object[] { this.DataContext, this.SelectedFrameRect });
 
             this.Dragging = false;

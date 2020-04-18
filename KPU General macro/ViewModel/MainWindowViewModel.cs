@@ -360,25 +360,25 @@ namespace KPU_General_macro
         {
             var parameters = obj as object[];
             var dataContext = parameters[0] as ResourceWindowViewModel;
-            var spriteWindowVM = dataContext.SpriteVM;
             try
             {
-                if (string.IsNullOrEmpty(spriteWindowVM.Name))
+                if (string.IsNullOrEmpty(dataContext.SpriteVM.Name))
                     throw new Exception("이름을 입력하세요.");
 
-                if (this.Resource.Sprites.ContainsKey(spriteWindowVM.Name))
+                if (this.Resource.Sprites.ContainsKey(dataContext.SpriteVM.Name))
                     throw new Exception("이미 존재하는 스프라이트 이름입니다.");
 
-                if (string.IsNullOrEmpty(spriteWindowVM.Color))
-                    this.Resource.Sprites.Add(spriteWindowVM.Name, new Sprite(spriteWindowVM.Name, spriteWindowVM.Frame.ToBytes(), (float)spriteWindowVM.Threshold));
+                if (string.IsNullOrEmpty(dataContext.SpriteVM.Color))
+                    this.Resource.Sprites.Add(dataContext.SpriteVM.Name, new Sprite(dataContext.SpriteVM.Name, dataContext.SpriteVM.Frame.ToBytes(), (float)dataContext.SpriteVM.Threshold));
                 else
-                    this.Resource.Sprites.Add(spriteWindowVM.Name, new Sprite(spriteWindowVM.Name, spriteWindowVM.Frame.ToBytes(), (float)spriteWindowVM.Threshold, ColorTranslator.FromHtml(spriteWindowVM.Color), (float)spriteWindowVM.ColorErrorFactor));
+                    this.Resource.Sprites.Add(dataContext.SpriteVM.Name, new Sprite(dataContext.SpriteVM.Name, dataContext.SpriteVM.Frame.ToBytes(), (float)dataContext.SpriteVM.Threshold, ColorTranslator.FromHtml(dataContext.SpriteVM.Color), (float)dataContext.SpriteVM.ColorErrorFactor));
 
-                spriteWindowVM.OnPropertyChanged(nameof(this.Resource.Sprites));
-                
-                spriteWindowVM.Name = string.Empty;
-                spriteWindowVM.Threshold = SpriteWindowViewModel.INIT_THRESHOLD_VALUE;
-                spriteWindowVM.Color = string.Empty;
+                dataContext.SpriteVM.OnPropertyChanged(nameof(this.Resource.Sprites));
+                dataContext.StatusVM.OnPropertyChanged(nameof(dataContext.StatusVM.Components));
+
+                dataContext.SpriteVM.Name = string.Empty;
+                dataContext.SpriteVM.Threshold = SpriteWindowViewModel.INIT_THRESHOLD_VALUE;
+                dataContext.SpriteVM.Color = string.Empty;
 
                 this.Resource.Save(this.OptionViewModel.ResourceFile.Content);
             }
@@ -411,6 +411,9 @@ namespace KPU_General_macro
                 CreateStatusCommand = this.CreateStatusCommand,
                 DeleteSpriteCommand = this.DeleteSpriteCommand,
                 DeleteStatusCommand = this.DeleteStatusCommand,
+                SelectedStatusChangedCommand = this.SelectedStatusChangedCommand,
+
+                ModifyStatusCommand = this.ModifyStatusCommand,
                 DataContext = resourceViewModel
             };
             this._spriteWindow.Closed += this._spriteWindow_Closed;
