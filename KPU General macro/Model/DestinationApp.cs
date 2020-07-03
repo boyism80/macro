@@ -561,7 +561,7 @@ namespace KPU_General_macro.Model
             this.MouseUp(button.Equals("left") ? MouseButtons.Left : MouseButtons.Right, new System.Drawing.Point(x, y));
         }
 
-        public void Click(MouseButtons button, System.Drawing.Point location)
+        public void Click(MouseButtons button, System.Drawing.Point location, bool doubleClick = false)
         {
             if (this.OperationType == OperationType.Hardware)
             {
@@ -582,8 +582,8 @@ namespace KPU_General_macro.Model
                 up.Type = 0;
                 up.Data.Mouse.Flags = flag << 1;
 
-                var inputs = new INPUT[] { down, up };
-                var result = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
+                var inputs = doubleClick ? new INPUT[] { down, up, down, up } : new INPUT[] { down, up };
+                SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
 
                 this.SetActive(false, 50);
                 this.RestoreCursorPosition();
@@ -592,6 +592,12 @@ namespace KPU_General_macro.Model
             {
                 this.MouseDown(button, location);
                 this.MouseUp(button, location);
+
+                if (doubleClick)
+                {
+                    this.MouseDown(button, location);
+                    this.MouseUp(button, location);
+                }
             }
         }
 
@@ -704,44 +710,44 @@ namespace KPU_General_macro.Model
             }
         }
 
-        public void Click(MouseButtons button, int x, int y)
+        public void Click(MouseButtons button, int x, int y, bool doubleClick = false)
         {
-            this.Click(button, new System.Drawing.Point(x, y));
+            this.Click(button, new System.Drawing.Point(x, y), doubleClick);
         }
 
-        public void Click(string button, int x, int y)
+        public void Click(string button, int x, int y, bool doubleClick = false)
         {
-            this.Click(button.Equals("left") ? MouseButtons.Left : MouseButtons.Right, x, y);
+            this.Click(button.Equals("left") ? MouseButtons.Left : MouseButtons.Right, x, y, doubleClick);
         }
 
-        public void Click(string button, System.Drawing.Point point)
+        public void Click(string button, System.Drawing.Point point, bool doubleClick = false)
         {
-            this.Click(button.Equals("left") ? MouseButtons.Left : MouseButtons.Right, point.X, point.Y);
+            this.Click(button.Equals("left") ? MouseButtons.Left : MouseButtons.Right, point.X, point.Y, doubleClick);
         }
 
-        public void Click(string button, OpenCvSharp.Point point)
+        public void Click(string button, OpenCvSharp.Point point, bool doubleClick = false)
         {
-            this.Click(button.Equals("left") ? MouseButtons.Left : MouseButtons.Right, point.X, point.Y);
+            this.Click(button.Equals("left") ? MouseButtons.Left : MouseButtons.Right, point.X, point.Y, doubleClick);
         }
 
-        public void Click(int x, int y)
+        public void Click(int x, int y, bool doubleClick = false)
         {
-            this.Click(MouseButtons.Left, x, y);
+            this.Click(MouseButtons.Left, x, y, doubleClick);
         }
 
-        public void Click(System.Drawing.Point point)
+        public void Click(System.Drawing.Point point, bool doubleClick = false)
         {
-            this.Click(point.X, point.Y);
+            this.Click(point.X, point.Y, doubleClick);
         }
 
-        public void Click(OpenCvSharp.Point point)
+        public void Click(OpenCvSharp.Point point, bool doubleClick = false)
         {
-            this.Click(point.X, point.Y);
+            this.Click(point.X, point.Y, doubleClick);
         }
 
-        public void Click(PythonTuple point)
+        public void Click(PythonTuple point, bool doubleClick = false)
         {
-            this.Click((int)point[0], (int)point[1]);
+            this.Click((int)point[0], (int)point[1], doubleClick);
         }
 
         public void Escape()
