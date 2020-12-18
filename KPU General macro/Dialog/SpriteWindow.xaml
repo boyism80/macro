@@ -143,9 +143,15 @@
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <TextBox Grid.Column="0"
                                              Text="{Binding StatusVM.Script}"/>
+                                    <Button Grid.Column="1" 
+                                            Command="{Binding GenerateScriptCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}}"
+                                            CommandParameter="{Binding DataContext, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}}"
+                                            Content="기본 생성">
+                                    </Button>
                                 </Grid>
                             </StackPanel>
                         </Border>

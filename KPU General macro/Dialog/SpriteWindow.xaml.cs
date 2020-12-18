@@ -100,6 +100,13 @@ namespace KPU_General_macro.Dialog
             set { SetValue(DeleteStatusCommandProperty, value); }
         }
 
+        public static readonly DependencyProperty GenerateScriptCommandProperty = DependencyProperty.Register("GenerateScriptCommand", typeof(ICommand), typeof(SpriteWindow));
+        public ICommand GenerateScriptCommand
+        {
+            get { return (ICommand)GetValue(GenerateScriptCommandProperty); }
+            set { SetValue(GenerateScriptCommandProperty, value); }
+        }
+
 
         public SpriteWindow(EditMode mode)
         {
@@ -290,6 +297,11 @@ namespace KPU_General_macro.Dialog
             var parameters = new object[] { this.DataContext, status };
             if (this.ModifyStatusCommand.CanExecute(parameters))
                 this.ModifyStatusCommand.Execute(parameters);
+        }
+
+        private void GenerateScript_Click(object sender, RoutedEventArgs e)
+        {
+            
         }
     }
 }

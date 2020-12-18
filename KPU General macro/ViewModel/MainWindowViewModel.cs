@@ -26,7 +26,7 @@ namespace KPU_General_macro
     {
         public static SolidColorBrush INACTIVE_FRAME_BACKGROUND = new SolidColorBrush(Colors.White);
         public static SolidColorBrush ACTIVE_FRAME_BACKGROUND = new SolidColorBrush(System.Windows.Media.Color.FromRgb(222, 222, 222));
-        public const int MAXIMUM_IDLE_TIME = 1000 * 10;
+        public const int MAXIMUM_IDLE_TIME = 1000 * 2;
 
         private ScriptRuntime _pythonRuntime;
         private Mutex _pythonRuntimeLock = new Mutex();
@@ -127,6 +127,7 @@ namespace KPU_General_macro
         public ICommand ModifyStatusCommand { get; private set; }
         public ICommand DeleteSpriteCommand { get; private set; }
         public ICommand DeleteStatusCommand { get; private set; }
+        public ICommand GenerateScriptCommand { get; private set; }
 
         public MainWindowViewModel(MainWindow mainWindow)
         {
@@ -159,6 +160,37 @@ namespace KPU_General_macro
             this.SelectedStatusChangedCommand = new RelayCommand(this.OnSelectedStatusChanged);
             this.DeleteSpriteCommand = new RelayCommand(this.OnDeleteSprite);
             this.DeleteStatusCommand = new RelayCommand(this.OnDeleteStatus);
+            this.GenerateScriptCommand = new RelayCommand(this.OnGenerateScript);
+        }
+
+        private void OnGenerateScript(object obj)
+        {
+            var dataContext = obj as ResourceWindowViewModel;
+
+            try
+            {
+                if (string.IsNullOrEmpty(dataContext.StatusVM.Name))
+                    throw new Exception("이름을 입력하세요. Status 이름을 기반으로 스크립트가 생성됩니다.");
+
+                var component = dataContext.StatusVM.Components.FirstOrDefault() ??
+                    throw new Exception("선택된 컴포넌트가 없습니다.");
+
+                var code = $@"
+# -*- coding: utf-8 -*-
+def callback(vmodel, frame, parameter):
+	vmodel.App.Click(parameter['{component.Sprite.Name}'], True)
+";
+
+                var scriptName = $"{dataContext.StatusVM.Name.ToLower()}.py";
+                File.WriteAllText($"scripts/{scriptName}", code);
+                dataContext.StatusVM.Script = scriptName;
+                MessageBox.Show("생성했습니다.", "SUCCESS");
+                
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message, "ERROR");
+            }
         }
 
         private void OnModifyStatus(object obj)
@@ -263,6 +295,7 @@ namespace KPU_General_macro
                 ModifyStatusCommand = this.ModifyStatusCommand,
                 DeleteSpriteCommand = this.DeleteSpriteCommand,
                 DeleteStatusCommand = this.DeleteStatusCommand,
+                GenerateScriptCommand = this.GenerateScriptCommand,
                 DataContext = new ResourceWindowViewModel(this.Resource),
             };
 
@@ -411,6 +444,7 @@ namespace KPU_General_macro
                 CreateStatusCommand = this.CreateStatusCommand,
                 DeleteSpriteCommand = this.DeleteSpriteCommand,
                 DeleteStatusCommand = this.DeleteStatusCommand,
+                GenerateScriptCommand = this.GenerateScriptCommand,
                 SelectedStatusChangedCommand = this.SelectedStatusChangedCommand,
 
                 ModifyStatusCommand = this.ModifyStatusCommand,
