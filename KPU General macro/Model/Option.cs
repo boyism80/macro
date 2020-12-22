@@ -7,6 +7,8 @@ namespace KPU_General_macro.Model
     public class Option
     {
         public string ClassName { get; set; } = "LOSTARK";
+        public int RenderFPS { get; set; }
+        public int DetectFPS { get; set; }
 
         public string ResourceFile { get; set; } = Path.Combine(Directory.GetCurrentDirectory(), "templates", "resource.kpu");
         public string PythonDirectory { get; set; } = Path.Combine("D:\\", "Program Files (x86)", "Python", "Python27");
@@ -21,7 +23,9 @@ namespace KPU_General_macro.Model
         {
             var config = new JSONClass();
             config["class"] = this.ClassName;
-            config["software operatable"] = new JSONData(DestinationApp.Instance.OperationType == OperationType.Software);
+            config["software operatable"] = $"{DestinationApp.Instance.OperationType}";
+            config["render fps"] = new JSONData(this.RenderFPS);
+            config["detect fps"] = new JSONData(this.DetectFPS);
 
             config["sprites"] = this.ResourceFile;
             config["python directory"] = this.PythonDirectory;
@@ -41,7 +45,18 @@ namespace KPU_General_macro.Model
                 var config = JSONClass.LoadFromCompressedFile(filename);
 
                 this.ClassName = config["class"].Value;
-                DestinationApp.Instance.OperationType = config["software operatable"].AsBool ? OperationType.Software : OperationType.Hardware;
+                if (Enum.TryParse<OperationType>(config["software operatable"].Value, out var operation) == false)
+                    DestinationApp.Instance.OperationType = OperationType.Software;
+                else
+                    DestinationApp.Instance.OperationType = operation;
+
+                this.RenderFPS = config["render fps"].AsInt;
+                if (this.RenderFPS == 0)
+                    this.RenderFPS = 30;
+
+                this.DetectFPS = config["detect fps"].AsInt;
+                if (this.DetectFPS == 0)
+                    this.DetectFPS = 30;
 
                 this.ResourceFile = config["sprites"].Value;
                 this.PythonDirectory = config["python directory"].Value;

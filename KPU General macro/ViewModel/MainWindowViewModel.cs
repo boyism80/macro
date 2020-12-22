@@ -498,6 +498,9 @@ def callback(vmodel, frame, parameter):
 
         private void App_Frame(OpenCvSharp.Mat frame)
         {
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
+
 this.SourceFrameLock.WaitOne();
             if (this.SourceFrame != null)
                 this.SourceFrame.Dispose();
@@ -518,10 +521,15 @@ this._handleFrameThreadExecutableLock.WaitOne();
                 thread.Start();
             }
 this._handleFrameThreadExecutableLock.ReleaseMutex();
+            stopWatch.Stop();
+            Thread.Sleep(Math.Max(0, 1000 / OptionViewModel.Model.RenderFPS - (int)stopWatch.ElapsedMilliseconds));
         }
 
         private void FrameHandlerRoutine()
         {
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
+
             var frame = this.SourceFrame.Clone();
 
             try
@@ -567,6 +575,9 @@ this._handleFrameThreadExecutableLock.ReleaseMutex();
 
                 frame.Dispose();
             }
+
+            stopWatch.Stop();
+            Thread.Sleep(Math.Max(0, 1000 / this.OptionViewModel.Model.DetectFPS - (int)stopWatch.ElapsedMilliseconds));
         }
 
         private void OnRun(object obj)

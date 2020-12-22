@@ -13,7 +13,9 @@ namespace KPU_General_macro.ViewModel
         public Option Model { get; private set; } = new Option();
 
         public ExceptableText<string> ClassName { get; set; } = new ExceptableText<string>();
-        public bool SoftwareOperatable { get; set; } = true;
+        public int RenderFPS { get; set; } = 30;
+        public int DetectFPS { get; set; } = 30;
+        public OperationType Operation { get; set; }
         public ExceptableText<string> ResourceFile { get; set; } = new ExceptableText<string>();
         public ExceptableText<string> PythonDirectory { get; set; } = new ExceptableText<string>();
         public ExceptableText<string> InitializeScriptName { get; set; } = new ExceptableText<string>();
@@ -50,7 +52,7 @@ namespace KPU_General_macro.ViewModel
             this.ClassName.Complete += this.ClassName_Complete;
             this._exceptableTextList.Add(this.ClassName);
 
-            this.SoftwareOperatable = DestinationApp.Instance.OperationType == OperationType.Software;
+            this.Operation = DestinationApp.Instance.OperationType;
 
             this.ResourceFile.Content = this.Model.ResourceFile;
             this.ResourceFile.Assert += this.Directory_Assert;
@@ -166,7 +168,9 @@ namespace KPU_General_macro.ViewModel
             try
             {
                 this.Model.ClassName = this.ClassName.Content;
-                DestinationApp.Instance.OperationType = this.SoftwareOperatable ? OperationType.Software : OperationType.Hardware;
+                DestinationApp.Instance.OperationType = this.Operation;
+                this.Model.RenderFPS = this.RenderFPS;
+                this.Model.DetectFPS = this.DetectFPS;
                 this.Model.ResourceFile = Path.GetFullPath(this.ResourceFile.Content);
                 this.Model.PythonDirectory = Path.GetFullPath(this.PythonDirectory.Content);
                 this.Model.InitializeScriptName = this.InitializeScriptName.Content;
@@ -184,7 +188,9 @@ namespace KPU_General_macro.ViewModel
         private void ApplyToVModel()
         {
             this.ClassName.Content = this.Model.ClassName;
-            this.SoftwareOperatable = DestinationApp.Instance.OperationType == OperationType.Software;
+            this.Operation = DestinationApp.Instance.OperationType;
+            this.RenderFPS = this.Model.RenderFPS;
+            this.DetectFPS = this.Model.DetectFPS;
             this.ResourceFile.Content = this.Model.ResourceFile;
             this.PythonDirectory.Content = this.Model.PythonDirectory;
             this.InitializeScriptName.Content = this.Model.InitializeScriptName;

@@ -5,6 +5,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:KPU_General_macro.Dialog"
+        xmlns:model="clr-namespace:KPU_General_macro.Model"
         mc:Ignorable="d"
         ShowInTaskbar="False"
         WindowStartupLocation="CenterOwner"
@@ -36,14 +37,51 @@
                                 Visibility="{c:Binding !OptionViewModel.ClassName.IsValid, FalseToVisibility=Hidden}"/>
                             <TextBlock 
                                 Text="작동방식" />
-                            <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal"
+                                        Margin="0 0 0 24">
                                 <CheckBox 
                                     Content="Software"
-                                    IsChecked="{c:Binding OptionViewModel.SoftwareOperatable}"/>
+                                    IsChecked="{c:Binding '(OptionViewModel.Operation == model:OperationType.Software)'}"/>
                                 <CheckBox 
                                     Content="Hardware"
-                                    IsChecked="{c:Binding !OptionViewModel.SoftwareOperatable}"/>
+                                    IsChecked="{c:Binding '(OptionViewModel.Operation == model:OperationType.Hardware)'}"/>
                             </StackPanel>
+                            <TextBlock Text="렌더링 프레임" />
+                            <Grid Margin="0 0 0 16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="9*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <Slider Grid.Row="0" 
+                                        Grid.Column="0"
+                                        Minimum="1"
+                                        Maximum="60"
+                                        Value="{Binding OptionViewModel.RenderFPS}"/>
+                                <TextBlock
+                                    Grid.Row="0"
+                                    Grid.Column="1"
+                                    HorizontalAlignment="Right"
+                                    Text="{c:Binding OptionViewModel.RenderFPS, StringFormat={}{0} fps}" />
+                            </Grid>
+                            <TextBlock Text="디텍팅 프레임" />
+                            <Grid Margin="0 0 0 16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="9*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <Slider Grid.Row="0" 
+                                        Grid.Column="0"
+                                        Minimum="1"
+                                        Maximum="60"
+                                        Value="{Binding OptionViewModel.DetectFPS}"/>
+                                <TextBlock
+                                    Grid.Row="0"
+                                    Grid.Column="1"
+                                    HorizontalAlignment="Right"
+                                    Text="{c:Binding OptionViewModel.DetectFPS, StringFormat={}{0} fps}" />
+                            </Grid>
                         </StackPanel>
                     </StackPanel>
                 </Border>
