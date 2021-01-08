@@ -1,4 +1,5 @@
-﻿using OpenCvSharp;
+﻿using IronPython.Runtime;
+using OpenCvSharp;
 using System.Collections.Generic;
 
 namespace KPU_General_macro.Model
@@ -50,6 +51,16 @@ namespace KPU_General_macro.Model
 
             points = null;
             return null;
+        }
+
+        public PythonTuple Detect(Mat frame, Sprite sprite)
+        {
+            var percentage = 0.0;
+            var point = sprite.MatchTo(frame, ref percentage);
+            if (point == null)
+                return null;
+
+            return new PythonTuple(new object[] { point?.X, point?.Y });
         }
     }
 }

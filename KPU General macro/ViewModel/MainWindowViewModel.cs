@@ -719,10 +719,10 @@ this._handleFrameThreadExecutableLock.ReleaseMutex();
                 throw new Exception("You must set a valid python path.");
 
             if (Directory.Exists(path) == false)
-                throw new Exception(string.Format("{0} path does not exist.", path));
+                throw new Exception($"{path} path does not exist.");
 
             if (File.Exists(Path.Combine(path, "python.exe")) == false)
-                throw new Exception(string.Format("Cannot find python.exe file in '{0}'.", path));
+                throw new Exception($"Cannot find python.exe file in '{path}'.");
 
 this._pythonRuntimeLock.WaitOne();
             if (this._pythonRuntime != null)
@@ -808,7 +808,7 @@ this._pythonRuntimeLock.ReleaseMutex();
             try
             {
 this._pythonRuntimeLock.WaitOne();
-                var script = string.Format("scripts/{0}", fname);
+                var script = $"scripts/{fname}";
                 if (this._pythonRuntime == null)
                     return null;
 
