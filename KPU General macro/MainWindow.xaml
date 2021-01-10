@@ -44,7 +44,9 @@
                                                     BorderThickness="0"
                                                     Margin="5" >
                                                 <ContentControl>
-                                                    <Image Source="/Images/caption_logo.png"
+                                                    <Image Source="/Images/main_logo.png"
+                                                           Width="16"
+                                                           Height="16"
                                                            RenderOptions.BitmapScalingMode="NearestNeighbor"/>
                                                 </ContentControl>
                                             </Button>
@@ -140,19 +142,11 @@
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-
-                    <Ellipse 
-                        Grid.Column="0" 
-                        Width="50"
-                        Height="50"
-                        StrokeThickness="1"
-                        Margin="0 0 10 0"
-                        Stroke="{StaticResource SemiTextBrush}">
-                        <Ellipse.Fill>
-                            <ImageBrush ImageSource="/Images/main_logo.png"
-                                        Stretch="Uniform"/>
-                        </Ellipse.Fill>
-                    </Ellipse>
+                    <Image Grid.Column="0" 
+                           Source="/Images/main_logo.png"
+                           Width="50"
+                           Margin="0 0 10 0"
+                           Height="50"/>
                     <StackPanel 
                         Grid.Column="1"
                         Orientation="Vertical">
