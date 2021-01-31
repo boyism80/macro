@@ -35,9 +35,8 @@ namespace KPU_General_macro.Model
                     for (var i = 0; i < statusSize; i++)
                     {
                         var name = reader.ReadString();
-                        var script = reader.ReadString();
 
-                        var status = new Status(name, script);
+                        var status = new Status(name);
                         var bindedSpriteSize = reader.ReadInt32();
                         for (var i2 = 0; i2 < bindedSpriteSize; i2++)
                             status.Components.Add(new Status.Component(this.Sprites[reader.ReadString()], reader.ReadBoolean()));
@@ -80,7 +79,6 @@ namespace KPU_General_macro.Model
                     foreach (var status in this.Statuses.Values)
                     {
                         writer.Write(status.Name);                          // write status name : length + value
-                        writer.Write(status.Script);                        // write status script : length + value
                         writer.Write(status.Components.Count);
                         foreach (var component in status.Components)
                         {

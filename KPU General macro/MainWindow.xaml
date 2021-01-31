@@ -191,12 +191,12 @@
                     </StackPanel>
                     <StackPanel Orientation="Vertical"
                                 HorizontalAlignment="Center">
-                        <TextBlock Text="{Binding StatusName}"
+                        <TextBlock Text="{Binding RunningScriptName}"
                                    Foreground="{StaticResource MainTextBrush}"
                                    FontSize="24"
                                    FontWeight="Bold"
                                    TextAlignment="Center"/>
-                        <TextBlock Text="현재 상태"
+                        <TextBlock Text="스크립트"
                                    Foreground="{StaticResource MainTextBrush}"
                                    FontSize="12"
                                    TextAlignment="Center"/>

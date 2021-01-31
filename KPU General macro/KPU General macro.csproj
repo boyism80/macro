@@ -185,6 +185,7 @@
     <Compile Include="Plugin\SimpleJSON.cs" />
     <Compile Include="ViewModel\BaseViewModel.cs" />
     <Compile Include="ViewModel\LogViewModel.cs" />
+    <Compile Include="ViewModel\MainWindowViewModel.Command.cs" />
     <Compile Include="ViewModel\MainWindowViewModel.cs" />
     <Compile Include="ViewModel\OptionViewModel.cs" />
     <Compile Include="ViewModel\ResourceWindowViewModel.cs" />

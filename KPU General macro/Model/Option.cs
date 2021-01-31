@@ -15,8 +15,6 @@ namespace KPU_General_macro.Model
 
 
         public string InitializeScriptName { get; set; } = "init.py";
-        public string FrameScriptName { get; set; } = "frame.py";
-        public string RenderScriptName { get; set; } = "render.py";
         public string DisposeScriptName { get; set; } = "dipose.py";
 
         public void Save(string filename = "config.dat")
@@ -31,8 +29,6 @@ namespace KPU_General_macro.Model
             config["python directory"] = this.PythonDirectory;
 
             config["initialize script"] = this.InitializeScriptName;
-            config["frame script"] = this.FrameScriptName;
-            config["render script"] = this.RenderScriptName;
             config["dispose script"] = this.DisposeScriptName;
 
             config.SaveToCompressedFile(filename);
@@ -62,8 +58,6 @@ namespace KPU_General_macro.Model
                 this.PythonDirectory = config["python directory"].Value;
 
                 this.InitializeScriptName = config["initialize script"].Value;
-                this.FrameScriptName = config["frame script"].Value;
-                this.RenderScriptName = config["render script"].Value;
                 this.DisposeScriptName = config["dispose script"].Value;
 
                 return true;

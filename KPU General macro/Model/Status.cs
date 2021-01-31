@@ -1,7 +1,6 @@
 ﻿using IronPython.Runtime;
 using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace KPU_General_macro.Model
 {
@@ -20,14 +19,12 @@ namespace KPU_General_macro.Model
         }
 
         public string Name { get; set; }
-        public string Script { get; set; }
 
         public List<Component> Components { get; private set; }
 
-        public Status(string name, string script)
+        public Status(string name)
         {
             this.Name = name;
-            this.Script = script;
             this.Components = new List<Component>();
         }
 

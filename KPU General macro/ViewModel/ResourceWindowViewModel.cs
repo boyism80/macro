@@ -102,7 +102,6 @@ namespace KPU_General_macro.ViewModel
         private StatusContainer _statusContainer;
 
         public string Name { get; set; }
-        public string Script { get; set; }
 
         public ObservableCollection<Status> Statuses
         {

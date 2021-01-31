@@ -19,8 +19,6 @@ namespace KPU_General_macro.ViewModel
         public ExceptableText<string> ResourceFile { get; set; } = new ExceptableText<string>();
         public ExceptableText<string> PythonDirectory { get; set; } = new ExceptableText<string>();
         public ExceptableText<string> InitializeScriptName { get; set; } = new ExceptableText<string>();
-        public ExceptableText<string> FrameScriptName { get; set; } = new ExceptableText<string>();
-        public ExceptableText<string> RenderScriptName { get; set; } = new ExceptableText<string>();
         public ExceptableText<string> DisposeScriptName { get; set; } = new ExceptableText<string>();
 
         public bool Completable
@@ -69,32 +67,10 @@ namespace KPU_General_macro.ViewModel
             this.InitializeScriptName.Complete += this.InitializeScriptName_Complete;
             this._exceptableTextList.Add(this.InitializeScriptName);
 
-            this.FrameScriptName.Content = this.Model.FrameScriptName;
-            this.FrameScriptName.Assert += this.FrameScriptName_Assert;
-            this.FrameScriptName.Complete += this.FrameScriptName_Complete;
-            this._exceptableTextList.Add(this.FrameScriptName);
-
-            this.RenderScriptName.Content = this.Model.RenderScriptName;
-            this.RenderScriptName.Assert += this.RenderScriptName_Assert; ;
-            this.RenderScriptName.Complete += this.RenderScriptName_Complete; ;
-            this._exceptableTextList.Add(this.RenderScriptName);
-
             this.DisposeScriptName.Content = this.Model.DisposeScriptName;
             this.DisposeScriptName.Assert += this.DisposeScriptName_Assert;
             this.DisposeScriptName.Complete += this.DisposeScriptName_Complete;
             this._exceptableTextList.Add(this.DisposeScriptName);
-        }
-
-        private void RenderScriptName_Complete(object sender, EventArgs e)
-        {
-            this.OnPropertyChanged(nameof(this.RenderScriptName));
-            this.OnPropertyChanged(nameof(this.Completable));
-        }
-
-        private void RenderScriptName_Assert(string content)
-        {
-            if (string.IsNullOrEmpty(content))
-                throw new Exception("렌더 스크립트를 설정해야 합니다.");
         }
 
         private void DisposeScriptName_Complete(object sender, EventArgs e)
@@ -107,18 +83,6 @@ namespace KPU_General_macro.ViewModel
         {
             if (string.IsNullOrEmpty(content))
                 throw new Exception("디스포즈 스크립트를 설정해야 합니다.");
-        }
-
-        private void FrameScriptName_Complete(object sender, EventArgs e)
-        {
-            this.OnPropertyChanged(nameof(this.FrameScriptName));
-            this.OnPropertyChanged(nameof(this.Completable));
-        }
-
-        private void FrameScriptName_Assert(string content)
-        {
-            if (string.IsNullOrEmpty(content))
-                throw new Exception("프레임 스크립트를 설정해야 합니다.");
         }
 
         private void InitializeScriptName_Complete(object sender, EventArgs e)
@@ -174,7 +138,6 @@ namespace KPU_General_macro.ViewModel
                 this.Model.ResourceFile = Path.GetFullPath(this.ResourceFile.Content);
                 this.Model.PythonDirectory = Path.GetFullPath(this.PythonDirectory.Content);
                 this.Model.InitializeScriptName = this.InitializeScriptName.Content;
-                this.Model.FrameScriptName = this.FrameScriptName.Content;
                 this.Model.DisposeScriptName = this.DisposeScriptName.Content;
 
                 this.OnPropertyChanged(nameof(this.OperationTypeText));
@@ -194,7 +157,6 @@ namespace KPU_General_macro.ViewModel
             this.ResourceFile.Content = this.Model.ResourceFile;
             this.PythonDirectory.Content = this.Model.PythonDirectory;
             this.InitializeScriptName.Content = this.Model.InitializeScriptName;
-            this.FrameScriptName.Content = this.Model.FrameScriptName;
             this.DisposeScriptName.Content = this.Model.DisposeScriptName;
         }
 

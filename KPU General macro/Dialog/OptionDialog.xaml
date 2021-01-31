@@ -158,18 +158,6 @@
                                 Text="{Binding OptionViewModel.InitializeScriptName.ExceptionText}"
                                 Visibility="{c:Binding !OptionViewModel.InitializeScriptName.IsValid, FalseToVisibility=Hidden}"
                                 Style="{StaticResource Exception}"/>
-                            <TextBlock Text="프레임" />
-                            <TextBox Text="{Binding OptionViewModel.FrameScriptName.Content, UpdateSourceTrigger=PropertyChanged}" />
-                            <TextBlock 
-                                Text="{Binding OptionViewModel.FrameScriptName.ExceptionText}"
-                                Visibility="{c:Binding !OptionViewModel.FrameScriptName.IsValid, FalseToVisibility=Hidden}"
-                                Style="{StaticResource Exception}"/>
-                            <TextBlock Text="렌더링" />
-                            <TextBox Text="{Binding OptionViewModel.RenderScriptName.Content, UpdateSourceTrigger=PropertyChanged}" />
-                            <TextBlock 
-                                Text="{Binding OptionViewModel.RenderScriptName.ExceptionText}"
-                                Visibility="{c:Binding !OptionViewModel.RenderScriptName.IsValid, FalseToVisibility=Hidden}"
-                                Style="{StaticResource Exception}"/>
                             <TextBlock Text="디스포즈" />
                             <TextBox Text="{Binding OptionViewModel.DisposeScriptName.Content, UpdateSourceTrigger=PropertyChanged}" />
                             <TextBlock 

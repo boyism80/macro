@@ -34,7 +34,7 @@
                         <Button Content="취소"
                                 Click="OnCancelSprite"/>
                     </StackPanel>
-                    
+
                     <Grid DockPanel.Dock="Bottom">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="6*" />
@@ -70,7 +70,7 @@
                                                TextAlignment="Right"
                                                Text="{Binding SpriteVM.ThresholdLabelText}" />
                                 </Grid>
-                                
+
                                 <TextBlock Text="기준 색상"
                                            Margin="0 30 0 0"/>
                                 <Grid>
@@ -137,21 +137,12 @@
                             <StackPanel Orientation="Vertical">
                                 <TextBlock Text="이름" />
                                 <TextBox x:Name="StatusName" Text="{Binding StatusVM.Name}" />
-
-                                <TextBlock Text="스크립트" />
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBox Grid.Column="0"
-                                             Text="{Binding StatusVM.Script}"/>
-                                    <Button Grid.Column="1" 
-                                            Command="{Binding GenerateScriptCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}}"
-                                            CommandParameter="{Binding DataContext, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}}"
-                                            Content="기본 생성">
-                                    </Button>
                                 </Grid>
                             </StackPanel>
                         </Border>
