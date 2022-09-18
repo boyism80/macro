@@ -25,9 +25,9 @@ namespace KPUGeneralMacro.Model
                         var template = reader.ReadBytes(templateSize);
                         var usedColor = reader.ReadBoolean();
                         if (usedColor)
-                            this.Sprites.Add(name, new Sprite(name, template, threshold, Color.FromArgb(reader.ReadInt32()), reader.ReadSingle()));
+                            this.Sprites.Add(name, new LegacySprite(name, template, threshold, Color.FromArgb(reader.ReadInt32()), reader.ReadSingle()));
                         else
-                            this.Sprites.Add(name, new Sprite(name, template, threshold));
+                            this.Sprites.Add(name, new LegacySprite(name, template, threshold));
                     }
 
                     this.Statuses = new StatusContainer(Sprites);

@@ -170,6 +170,9 @@
     <Compile Include="Dialog\OptionDialog.xaml.cs">
       <DependentUpon>OptionDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Dialog\SpriteDialog.xaml.cs">
+      <DependentUpon>SpriteDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Dialog\SpriteWindow.xaml.cs">
       <DependentUpon>SpriteWindow.xaml</DependentUpon>
     </Compile>
@@ -180,6 +183,7 @@
     <Compile Include="Model\Log.cs" />
     <Compile Include="Model\Option.cs" />
     <Compile Include="Model\Resource.cs" />
+    <Compile Include="Model\LegacySprite.cs" />
     <Compile Include="Model\Sprite.cs" />
     <Compile Include="Model\Status.cs" />
     <Compile Include="Plugin\SimpleJSON.cs" />
@@ -221,6 +225,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Dialog\OptionDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Dialog\SpriteDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

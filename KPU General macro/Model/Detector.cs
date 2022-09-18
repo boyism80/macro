@@ -53,7 +53,7 @@ namespace KPUGeneralMacro.Model
             return null;
         }
 
-        public PythonTuple Detect(Mat frame, Sprite sprite)
+        public PythonTuple Detect(Mat frame, LegacySprite sprite)
         {
             var percentage = 0.0;
             var point = sprite.MatchTo(frame, ref percentage);

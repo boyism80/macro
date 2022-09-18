@@ -211,7 +211,7 @@ namespace KPUGeneralMacro.Dialog
             if (this._sourceListView == destListView)
                 return;
 
-            if (data is Sprite sprite)
+            if (data is LegacySprite sprite)
                 this.OnSpriteMoved(destListView, sprite);
             else if (data is Status.Component component)
                 this.OnSpriteMoved(destListView, component.Sprite);
@@ -221,7 +221,7 @@ namespace KPUGeneralMacro.Dialog
         {
             var sourceListView = sender as ListView;
             var destListView = sourceListView == this.bindedStatusComponentListView ? this.unbindedSpriteListView as ListView : this.bindedStatusComponentListView as ListView;
-            if (sourceListView.SelectedValue is Sprite sprite)
+            if (sourceListView.SelectedValue is LegacySprite sprite)
                 this.OnSpriteMoved(destListView, sprite);
             else if (sourceListView.SelectedValue is Status.Component component)
                 this.OnSpriteMoved(destListView, component.Sprite);
@@ -239,7 +239,7 @@ namespace KPUGeneralMacro.Dialog
             this.Close();
         }
 
-        private bool OnSpriteMoved(ListView to, Sprite sprite)
+        private bool OnSpriteMoved(ListView to, LegacySprite sprite)
         {
             var isRequirement = MessageBoxResult.Yes;
             if (to == this.bindedStatusComponentListView)

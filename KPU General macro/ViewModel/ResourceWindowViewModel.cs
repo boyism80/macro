@@ -71,9 +71,9 @@ namespace KPUGeneralMacro.ViewModel
             }
         }
 
-        public ObservableCollection<Sprite> Sprites
+        public ObservableCollection<LegacySprite> Sprites
         {
-            get { return new ObservableCollection<Sprite>(this._spriteContainer.Values); }
+            get { return new ObservableCollection<LegacySprite>(this._spriteContainer.Values); }
         }
 
         public SpriteWindowViewModel(SpriteContainer spriteContainer)
@@ -116,11 +116,11 @@ namespace KPUGeneralMacro.ViewModel
             get { return new ObservableCollection<Status.Component>(Components); }
         }
 
-        public ObservableCollection<Sprite> UnbindedSprites
+        public ObservableCollection<LegacySprite> UnbindedSprites
         {
             get
             {
-                var unbinded = new ObservableCollection<Sprite>(this._spriteContainer
+                var unbinded = new ObservableCollection<LegacySprite>(this._spriteContainer
                     .Select(x => x.Value)
                     .Where(x => Components.Select(c => c.Sprite).Contains(x) == false));
 

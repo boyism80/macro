@@ -9,10 +9,10 @@ namespace KPUGeneralMacro.Model
     {
         public class Component
         {
-            public Sprite Sprite { get; private set; }
+            public LegacySprite Sprite { get; private set; }
             public bool Requirement { get; set; }
 
-            public Component(Sprite sprite, bool requirement)
+            public Component(LegacySprite sprite, bool requirement)
             {
                 this.Sprite = sprite;
                 this.Requirement = requirement;
@@ -31,7 +31,7 @@ namespace KPUGeneralMacro.Model
             this.Components = new List<Component>();
         }
 
-        public bool Contains(Sprite sprite)
+        public bool Contains(LegacySprite sprite)
         {
             foreach (var component in this.Components)
             {

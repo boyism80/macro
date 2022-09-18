@@ -35,18 +35,12 @@ namespace KPUGeneralMacro
         private string _lastStatusName = string.Empty;
         private bool _handleFrameThreadExecutable = true;
         private Mutex _handleFrameThreadExecutableLock = new Mutex();
-        //private SpriteWindow _spriteWindow;
+        private SpriteDialog _spriteDialog;
 
         public Resource Resource { get; private set; } = new Resource();
         public MainWindow MainWindow { get; private set; }
 
-        public DestinationApp App
-        {
-            get
-            {
-                return DestinationApp.Instance;
-            }
-        }
+        public DestinationApp App => DestinationApp.Instance;
 
         public OptionViewModel OptionViewModel { get; private set; } = new OptionViewModel();
 
@@ -56,38 +50,24 @@ namespace KPUGeneralMacro
 
         public bool IsRunning { get; private set; } = false;
 
-        public string RunningStateText
-        {
-            get
-            {
-                return this.IsRunning ? "진행중" : "대기중";
-            }
-        }
+        public string RunningStateText => this.IsRunning ? "진행중" : "대기중";
 
-        public SolidColorBrush FrameBackgroundBrush
-        {
-            get
-            {
-                return this.Frame != null ? ACTIVE_FRAME_BACKGROUND : INACTIVE_FRAME_BACKGROUND;
-            }
-        }
+        public SolidColorBrush FrameBackgroundBrush => this.Frame != null ? ACTIVE_FRAME_BACKGROUND : INACTIVE_FRAME_BACKGROUND;
 
         public string ExceptionText { get; private set; } = string.Empty;
         public string StatusName { get; private set; } = "Unknown";
 
-        public string RunButtonText
-        {
-            get
-            {
-                return this.IsRunning ? "Stop" : "Run";
-            }
-        }
+        public string RunButtonText => this.IsRunning? "Stop" : "Run";
 
         private BitmapImage _frame;
         public BitmapImage Frame
         {
-            get { return this.IsRunning ? this._frame : null; }
-            set { this._frame = value; this.OnPropertyChanged(nameof(this.FrameBackgroundBrush)); }
+            get => this.IsRunning ? this._frame : null;
+            set 
+            {
+                this._frame = value; 
+                this.OnPropertyChanged(nameof(this.FrameBackgroundBrush)); 
+            }
         }
 
         public Mutex SourceFrameLock { get; private set; } = new Mutex();
@@ -140,7 +120,6 @@ namespace KPUGeneralMacro
             this.SetMaximizeCommand = new RelayCommand(this.OnSetMaximize);
             this.CloseCommand = new RelayCommand(this.OnClose);
             this.OptionCommand = new RelayCommand(this.OnOption);
-            this.EditResourceCommand = new RelayCommand(this.OnEditResource);
             this.RunCommand = new RelayCommand(this.OnRun);
 
             this.CompleteCommand = new RelayCommand(this.OnComplete);
@@ -154,7 +133,6 @@ namespace KPUGeneralMacro
             this.ChangedColorCommand = new RelayCommand(this.OnChangedCommand);
             this.BindSpriteCommand = new RelayCommand(this.OnBindSprite);
             this.UnbindSpriteCommand = new RelayCommand(this.OnUnbindSprite);
-            this.CreateStatusCommand = new RelayCommand(this.OnCreateStatus);
             this.ModifyStatusCommand = new RelayCommand(this.OnModifyStatus);
             this.SelectedSpriteChangedCommand = new RelayCommand(this.OnSelectedSpriteChanged);
             this.SelectedStatusChangedCommand = new RelayCommand(this.OnSelectedStatusChanged);
@@ -203,7 +181,6 @@ def callback(vmodel, frame, parameter):
                 return;
 
             this.Resource.Statuses.Remove(status.Name);
-            this.OnCreateStatus(new object[] { dataContext });
             dataContext.StatusVM.Components.Clear();
             dataContext.StatusVM.OnPropertyChanged(nameof(dataContext.StatusVM.Components));
         }
@@ -234,7 +211,7 @@ def callback(vmodel, frame, parameter):
         {
             var parameters = obj as object[];
             var dataContext = parameters[0] as ResourceWindowViewModel;
-            var sprite = parameters[1] as Sprite;
+            var sprite = parameters[1] as LegacySprite;
 
             if (sprite == null)
                 return;
@@ -250,7 +227,7 @@ def callback(vmodel, frame, parameter):
             {
                 var parameters = obj as object[];
                 var dataContext = parameters[0] as ResourceWindowViewModel;
-                var sprite = parameters[1] as Sprite;
+                var sprite = parameters[1] as LegacySprite;
                 if (sprite == null)
                     return;
 
@@ -273,85 +250,16 @@ def callback(vmodel, frame, parameter):
             }
         }
 
-        private void OnEditResource(object obj)
-        {
-            //if (this.IsRunning == false)
-            //    return;
-
-            //if (this._spriteWindow != null)
-            //    return;
-
-            //this._spriteWindow = new SpriteWindow(SpriteWindow.EditMode.Modify)
-            //{
-            //    Owner = this.MainWindow,
-            //    ModifySpriteCommand = this.ModifySpriteCommand,
-            //    ColorChangedCommand = this.ChangedColorCommand,
-            //    BindSpriteCommand = this.BindSpriteCommand,
-            //    UnbindSpriteCommand = this.UnbindSpriteCommand,
-            //    SelectedSpriteChangedCommand = this.SelectedSpriteChangedCommand,
-            //    SelectedStatusChangedCommand = this.SelectedStatusChangedCommand,
-
-            //    CreateStatusCommand = this.CreateStatusCommand,
-            //    ModifyStatusCommand = this.ModifyStatusCommand,
-            //    DeleteSpriteCommand = this.DeleteSpriteCommand,
-            //    DeleteStatusCommand = this.DeleteStatusCommand,
-            //    GenerateScriptCommand = this.GenerateScriptCommand,
-            //    DataContext = new ResourceWindowViewModel(this.Resource),
-            //};
-
-            //this._spriteWindow.Closed += this._spriteWindow_Closed;
-            //this._spriteWindow.Show();
-        }
-
         //private void _spriteWindow_Closed(object sender, EventArgs e)
         //{
         //    this._spriteWindow = null;
         //}
 
-        private void OnCreateStatus(object obj)
-        {
-            var parameters = obj as object[];
-            var dataContext = parameters[0] as ResourceWindowViewModel;
-
-            try
-            {
-                if (string.IsNullOrEmpty(dataContext.StatusVM.Name))
-                    throw new Exception("상태 이름을 입력하세요.");
-
-                if (string.IsNullOrEmpty(dataContext.StatusVM.Script))
-                    throw new Exception("스크립트 파일명을 입력하세요.");
-
-                if (this.Resource.Statuses.ContainsKey(dataContext.StatusVM.Name))
-                {
-                    if (MessageBox.Show("이미 존재하는 상태입니다. 덮어쓰시겠습니까?", "경고", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
-                        return;
-
-                    this.Resource.Statuses.Remove(dataContext.StatusVM.Name);
-                }
-
-                var createdStatus = new Status(dataContext.StatusVM.Name, dataContext.StatusVM.Script);
-                createdStatus.Components.AddRange(dataContext.StatusVM.Components);
-                this.Resource.Statuses.Add(dataContext.StatusVM.Name, createdStatus);
-
-                dataContext.StatusVM.Name = string.Empty;
-                dataContext.StatusVM.Script = string.Empty;
-                dataContext.StatusVM.Components.Clear();
-                dataContext.StatusVM.OnPropertyChanged(nameof(dataContext.StatusVM.Components));
-                dataContext.StatusVM.OnPropertyChanged(nameof(dataContext.StatusVM.Statuses));
-
-                this.Resource.Save(this.OptionViewModel.ResourceFile.Content);
-            }
-            catch (Exception e)
-            {
-                MessageBox.Show(e.Message);
-            }
-        }
-
         private void OnUnbindSprite(object obj)
         {
             var parameters = obj as object[];
             var dataContext = parameters[0] as ResourceWindowViewModel;
-            var sprite = parameters[1] as Sprite;
+            var sprite = parameters[1] as LegacySprite;
             var isRequirement = (bool)parameters[2];
 
             var component = dataContext.StatusVM.Components.Find(x => x.Sprite == sprite);
@@ -365,7 +273,7 @@ def callback(vmodel, frame, parameter):
         {
             var parameters = obj as object[];
             var dataContext = parameters[0] as ResourceWindowViewModel;
-            var sprite = parameters[1] as Sprite;
+            var sprite = parameters[1] as LegacySprite;
             var isRequirement = (bool)parameters[2];
 
             dataContext.StatusVM.Components.Add(new Status.Component(sprite, isRequirement));
@@ -402,9 +310,9 @@ def callback(vmodel, frame, parameter):
                     throw new Exception("이미 존재하는 스프라이트 이름입니다.");
 
                 if (string.IsNullOrEmpty(dataContext.SpriteVM.Color))
-                    this.Resource.Sprites.Add(dataContext.SpriteVM.Name, new Sprite(dataContext.SpriteVM.Name, dataContext.SpriteVM.Frame.ToBytes(), (float)dataContext.SpriteVM.Threshold));
+                    this.Resource.Sprites.Add(dataContext.SpriteVM.Name, new LegacySprite(dataContext.SpriteVM.Name, dataContext.SpriteVM.Frame.ToBytes(), (float)dataContext.SpriteVM.Threshold));
                 else
-                    this.Resource.Sprites.Add(dataContext.SpriteVM.Name, new Sprite(dataContext.SpriteVM.Name, dataContext.SpriteVM.Frame.ToBytes(), (float)dataContext.SpriteVM.Threshold, ColorTranslator.FromHtml(dataContext.SpriteVM.Color), (float)dataContext.SpriteVM.ColorErrorFactor));
+                    this.Resource.Sprites.Add(dataContext.SpriteVM.Name, new LegacySprite(dataContext.SpriteVM.Name, dataContext.SpriteVM.Frame.ToBytes(), (float)dataContext.SpriteVM.Threshold, ColorTranslator.FromHtml(dataContext.SpriteVM.Color), (float)dataContext.SpriteVM.ColorErrorFactor));
 
                 dataContext.SpriteVM.OnPropertyChanged(nameof(this.Resource.Sprites));
                 dataContext.StatusVM.OnPropertyChanged(nameof(dataContext.StatusVM.Components));
@@ -430,6 +338,19 @@ def callback(vmodel, frame, parameter):
             var resourceViewModel = new ResourceWindowViewModel(this.Resource);
             resourceViewModel.SpriteVM.Frame = selectedFrame;
 
+            var sprite = new Sprite(selectedFrame);
+
+            if (this._spriteDialog != null)
+                return;
+
+            this._spriteDialog = new SpriteDialog
+            {
+                DataContext = sprite
+            };
+
+            this._spriteDialog.Closed += _spriteDialog_Closed;
+            this._spriteDialog.Show();
+
             //if (this._spriteWindow != null)
             //    return;
 
@@ -454,11 +375,16 @@ def callback(vmodel, frame, parameter):
             //this._spriteWindow.Show();
         }
 
+        private void _spriteDialog_Closed(object sender, EventArgs e)
+        {
+            this._spriteDialog = null; 
+        }
+
         private void OnDeleteSprite(object obj)
         {
             var parameters = obj as object[];
             var dataContext = parameters[0] as ResourceWindowViewModel;
-            var sprite = parameters[1] as Sprite;
+            var sprite = parameters[1] as LegacySprite;
 
             foreach (var status in this.Resource.Statuses.Values)
             {
