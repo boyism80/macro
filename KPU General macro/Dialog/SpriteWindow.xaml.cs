@@ -1,10 +1,10 @@
-﻿using KPU_General_macro.Model;
+﻿using KPUGeneralMacro.Model;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace KPU_General_macro.Dialog
+namespace KPUGeneralMacro.Dialog
 {
     /// <summary>
     /// Interaction logic for SpriteWindow.xaml

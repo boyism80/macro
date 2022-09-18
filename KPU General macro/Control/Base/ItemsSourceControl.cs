@@ -9,7 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 
 
-namespace KPU_General_macro
+namespace KPUGeneralMacro
 {
     public abstract class ItemsSourceControl : UserControl, INotifyPropertyChanged
     {

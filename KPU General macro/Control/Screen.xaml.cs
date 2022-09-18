@@ -5,7 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 
-namespace KPU_General_macro
+namespace KPUGeneralMacro
 {
     /// <summary>
     /// Interaction logic for Screen.xaml

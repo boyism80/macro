@@ -2,7 +2,7 @@
 using System.Drawing;
 using System.IO;
 
-namespace KPU_General_macro.Model
+namespace KPUGeneralMacro.Model
 {
     public class Resource
     {

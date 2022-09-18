@@ -2,7 +2,7 @@
 using System.Globalization;
 using System.Windows;
 
-namespace KPU_General_macro
+namespace KPUGeneralMacro
 {
     public class MainWindowIconConverter : BaseValueConverter<MainWindowIconConverter>
     {

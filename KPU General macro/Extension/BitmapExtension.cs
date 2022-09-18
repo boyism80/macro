@@ -2,7 +2,7 @@
 using System.IO;
 using System.Windows.Media.Imaging;
 
-namespace KPU_General_macro.Extension
+namespace KPUGeneralMacro.Extension
 {
     public static class BitmapExtension
     {

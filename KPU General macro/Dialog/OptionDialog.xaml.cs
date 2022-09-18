@@ -12,7 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace KPU_General_macro.Dialog
+namespace KPUGeneralMacro.Dialog
 {
     /// <summary>
     /// Interaction logic for OptionDialog.xaml

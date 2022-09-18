@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows.Input;
 
-namespace KPU_General_macro
+namespace KPUGeneralMacro
 {
     public class RelayCommand<T> : ICommand
         where T : new()

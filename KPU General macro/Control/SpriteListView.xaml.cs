@@ -2,7 +2,7 @@
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace KPU_General_macro
+namespace KPUGeneralMacro
 {
     /// <summary>
     /// Interaction logic for SpriteListView.xaml

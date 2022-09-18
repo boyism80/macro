@@ -1,10 +1,10 @@
-﻿using KPU_General_macro.Model;
+﻿using KPUGeneralMacro.Model;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 
-namespace KPU_General_macro.ViewModel
+namespace KPUGeneralMacro.ViewModel
 {
     public class OptionViewModel : BaseViewModel
     {

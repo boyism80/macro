@@ -2,7 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 
-namespace KPU_General_macro
+namespace KPUGeneralMacro
 {
     /// <summary>
     /// Interaction logic for HistoryContainer.xaml

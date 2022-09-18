@@ -1,8 +1,8 @@
-﻿using KPU_General_macro.Model;
+﻿using KPUGeneralMacro.Model;
 using System;
 using System.Windows.Media;
 
-namespace KPU_General_macro.ViewModel
+namespace KPUGeneralMacro.ViewModel
 {
     public class LogViewModel : BaseViewModel
     {

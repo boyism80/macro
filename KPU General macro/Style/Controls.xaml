@@ -2,7 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity" 
                     xmlns:ei="http://schemas.microsoft.com/expression/2010/interactions"
-                    xmlns:local="clr-namespace:KPU_General_macro">
+                    xmlns:local="clr-namespace:KPUGeneralMacro">
 
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="Colors.xaml" />

@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 
-namespace KPU_General_macro
+namespace KPUGeneralMacro
 {
     /// <summary>
     /// Interaction logic for HistoryControl.xaml

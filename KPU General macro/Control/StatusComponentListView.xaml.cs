@@ -1,6 +1,6 @@
 ﻿using System.Windows.Controls;
 
-namespace KPU_General_macro
+namespace KPUGeneralMacro
 {
     /// <summary>
     /// Interaction logic for StatusComponentListView.xaml

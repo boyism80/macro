@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace KPU_General_macro.Properties {
+namespace KPUGeneralMacro.Properties {
     using System;
     
     

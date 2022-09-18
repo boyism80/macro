@@ -2,7 +2,7 @@
 using System;
 using System.ComponentModel;
 
-namespace KPU_General_macro
+namespace KPUGeneralMacro
 {
     [ImplementPropertyChanged]
     public class BaseViewModel : INotifyPropertyChanged

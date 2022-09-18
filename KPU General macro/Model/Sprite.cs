@@ -1,5 +1,5 @@
 ﻿using IronPython.Runtime;
-using KPU_General_macro.Extension;
+using KPUGeneralMacro.Extension;
 using OpenCvSharp;
 using System;
 using System.Collections.Generic;
@@ -7,7 +7,7 @@ using System.Drawing;
 using System.IO;
 using System.Windows.Media.Imaging;
 
-namespace KPU_General_macro.Model
+namespace KPUGeneralMacro.Model
 {
     public class Sprite
     {

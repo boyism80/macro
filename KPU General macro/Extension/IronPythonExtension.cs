@@ -1,7 +1,7 @@
 ﻿using IronPython.Runtime;
 using System.Collections.Generic;
 
-namespace KPU_General_macro.Extension
+namespace KPUGeneralMacro.Extension
 {
     public static class IronPythonEx
     {

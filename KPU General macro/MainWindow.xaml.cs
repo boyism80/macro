@@ -1,7 +1,7 @@
-﻿using KPU_General_macro.Model;
+﻿using KPUGeneralMacro.Model;
 using System.Windows;
 
-namespace KPU_General_macro
+namespace KPUGeneralMacro
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml

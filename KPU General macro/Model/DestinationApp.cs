@@ -1,5 +1,5 @@
 ﻿using IronPython.Runtime;
-using KPU_General_macro.Extension;
+using KPUGeneralMacro.Extension;
 using OpenCvSharp;
 using System;
 using System.Diagnostics;
@@ -7,8 +7,9 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
+using System.Linq;
 
-namespace KPU_General_macro.Model
+namespace KPUGeneralMacro.Model
 {
     public enum OperationType
     {
@@ -461,13 +462,8 @@ namespace KPU_General_macro.Model
 
         private IntPtr FindAppHandle(string className)
         {
-            foreach (var process in Process.GetProcesses())
-            {
-                if (process.ProcessName.Equals(className))
-                    return process.MainWindowHandle;
-            }
-
-            return IntPtr.Zero;
+            var found = Process.GetProcesses().FirstOrDefault(x => x.ProcessName == className);
+            return found?.MainWindowHandle ?? IntPtr.Zero;
         }
 
         public void BindToApp(string className)

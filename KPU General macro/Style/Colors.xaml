@@ -1,6 +1,6 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:local="clr-namespace:KPU_General_macro">
+                    xmlns:local="clr-namespace:KPUGeneralMacro">
     <Color x:Key="MainText">#ffffff</Color>
     <SolidColorBrush x:Key="MainTextBrush" Color="{StaticResource MainText}" />
 

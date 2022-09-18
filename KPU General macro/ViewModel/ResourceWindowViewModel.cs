@@ -1,5 +1,5 @@
-﻿using KPU_General_macro.Extension;
-using KPU_General_macro.Model;
+﻿using KPUGeneralMacro.Extension;
+using KPUGeneralMacro.Model;
 using OpenCvSharp;
 using System;
 using System.Collections.Generic;
@@ -9,7 +9,7 @@ using System.Linq;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 
-namespace KPU_General_macro.ViewModel
+namespace KPUGeneralMacro.ViewModel
 {
     public class SpriteWindowViewModel : BaseViewModel
     {

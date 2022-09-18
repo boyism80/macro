@@ -1,9 +1,9 @@
 ﻿using IronPython.Hosting;
 using IronPython.Runtime;
-using KPU_General_macro.Dialog;
-using KPU_General_macro.Extension;
-using KPU_General_macro.Model;
-using KPU_General_macro.ViewModel;
+using KPUGeneralMacro.Dialog;
+using KPUGeneralMacro.Extension;
+using KPUGeneralMacro.Model;
+using KPUGeneralMacro.ViewModel;
 using Microsoft.Scripting.Hosting;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using OpenCvSharp;
@@ -20,7 +20,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace KPU_General_macro
+namespace KPUGeneralMacro
 {
     public class MainWindowViewModel : BaseViewModel, IDisposable
     {
@@ -92,13 +92,13 @@ namespace KPU_General_macro
 
         public Mutex SourceFrameLock { get; private set; } = new Mutex();
         public Mat SourceFrame { get; private set; }
-        public Detector Detector { get; private set; }
+        //public Detector Detector { get; private set; }
         public bool InitStopWatch { get; set; } = false;
 
-        public PythonDictionary Sprite { get; private set; } = new PythonDictionary();
-        public PythonDictionary Status { get; private set; } = new PythonDictionary();
-        public PythonDictionary Timers { get; private set; } = new PythonDictionary();
-        public PythonDictionary State { get; private set; } = new PythonDictionary();
+        //public PythonDictionary Sprite { get; private set; } = new PythonDictionary();
+        //public PythonDictionary Status { get; private set; } = new PythonDictionary();
+        //public PythonDictionary Timers { get; private set; } = new PythonDictionary();
+        //public PythonDictionary State { get; private set; } = new PythonDictionary();
 
         public ObservableCollection<LogViewModel> LogItems { get; private set; } = new ObservableCollection<LogViewModel>();
 
@@ -539,27 +539,27 @@ this._handleFrameThreadExecutableLock.WaitOne();
 this._handleFrameThreadExecutableLock.ReleaseMutex();
 
                 var points = new Dictionary<string, OpenCvSharp.Point>();
-                var statusName = this.Detector.Detect(frame, out points);
-                this.StatusName = statusName ?? throw new Exception();
+                //var statusName = this.Detector.Detect(frame, out points);
+                //this.StatusName = statusName ?? throw new Exception();
 
-                if (this._lastStatusName.Equals(statusName))
-                {
-                    this._idleStopwatch.Stop();
-                    if (this._idleStopwatch.ElapsedMilliseconds > MAXIMUM_IDLE_TIME || this.InitStopWatch)
-                    {
-                        this._lastStatusName = string.Empty;
-                        this._idleStopwatch.Reset();
-                        this.InitStopWatch = false;
-                    }
+                //if (this._lastStatusName.Equals(statusName))
+                //{
+                //    this._idleStopwatch.Stop();
+                //    if (this._idleStopwatch.ElapsedMilliseconds > MAXIMUM_IDLE_TIME || this.InitStopWatch)
+                //    {
+                //        this._lastStatusName = string.Empty;
+                //        this._idleStopwatch.Reset();
+                //        this.InitStopWatch = false;
+                //    }
 
-                    this._idleStopwatch.Start();
-                }
-                else
-                {
-                    this.ExecPython(this.Resource.Statuses[statusName].Script, frame, points.ToDict(), true);
-                    this._lastStatusName = statusName;
-                    this._idleStopwatch.Reset();
-                }
+                //    this._idleStopwatch.Start();
+                //}
+                //else
+                //{
+                //    this.ExecPython(this.Resource.Statuses[statusName].Script, frame, points.ToDict(), true);
+                //    this._lastStatusName = statusName;
+                //    this._idleStopwatch.Reset();
+                //}
             }
             catch (Exception e)
             {
@@ -752,24 +752,24 @@ this._pythonRuntimeLock.ReleaseMutex();
 
         private void LoadResources(string resourceFileName)
         {
-            this.Resource.Load(resourceFileName);
+            //this.Resource.Load(resourceFileName);
 
-            this.Sprite = this.Resource.Sprites.ToDict();
-            this.Status = this.Resource.Statuses.ToDict();
-            this.Detector = new Detector(this.Resource.Sprites, this.Resource.Statuses);
+            //this.Sprite = this.Resource.Sprites.ToDict();
+            //this.Status = this.Resource.Statuses.ToDict();
+            //this.Detector = new Detector(this.Resource.Sprites, this.Resource.Statuses);
         }
 
         private void ReleaseResources()
         {
-            this.Resource.Clear();
+            //this.Resource.Clear();
 
-            this.Sprite.Clear();
-            this.Sprite = null;
+            //this.Sprite.Clear();
+            //this.Sprite = null;
 
-            this.Status.Clear();
-            this.Status = null;
+            //this.Status.Clear();
+            //this.Status = null;
 
-            this.Detector = null;
+            //this.Detector = null;
         }
 
         private void randomTimer_Tick(object status)
@@ -778,30 +778,30 @@ this._pythonRuntimeLock.ReleaseMutex();
             var script = parameters[0];
             var name = parameters[1];
 
-            this.UnsetTimer(name);
+            //this.UnsetTimer(name);
             this.ExecPython(script);
         }
 
-        public Timer SetTimer(string name, int interval, string script)
-        {
-            if (this.Timers.ContainsKey(name))
-                return null;
+        //public Timer SetTimer(string name, int interval, string script)
+        //{
+        //    if (this.Timers.ContainsKey(name))
+        //        return null;
 
-            var createdTimer = new Timer(this.randomTimer_Tick, new string[] { script, name }, interval, Timeout.Infinite);
-            this.Timers.Add(name, createdTimer);
+        //    var createdTimer = new Timer(this.randomTimer_Tick, new string[] { script, name }, interval, Timeout.Infinite);
+        //    this.Timers.Add(name, createdTimer);
 
-            return createdTimer;
-        }
+        //    return createdTimer;
+        //}
 
-        public void UnsetTimer(string name)
-        {
-            if (this.Timers.ContainsKey(name) == false)
-                return;
+        //public void UnsetTimer(string name)
+        //{
+        //    if (this.Timers.ContainsKey(name) == false)
+        //        return;
 
-            var timer = this.Timers[name] as System.Threading.Timer;
-            timer.Dispose();
-            this.Timers.Remove(name);
-        }
+        //    var timer = this.Timers[name] as System.Threading.Timer;
+        //    timer.Dispose();
+        //    this.Timers.Remove(name);
+        //}
 
         private object ExecPython(string fname, Mat frame = null, object parameter = null, bool log = false)
         {
