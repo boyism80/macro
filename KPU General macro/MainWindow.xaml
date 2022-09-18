@@ -94,10 +94,6 @@
                                                 <MenuItem Header="옵션"
                                                           Command="{Binding OptionCommand}"/>
                                             </MenuItem>
-                                            <MenuItem Header="리소스">
-                                                <MenuItem Header="편집"
-                                                          Command="{Binding EditResourceCommand}"/>
-                                            </MenuItem>
                                         </Menu>
                                     </Grid>
 

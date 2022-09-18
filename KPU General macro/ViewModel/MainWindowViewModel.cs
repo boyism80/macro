@@ -35,7 +35,7 @@ namespace KPUGeneralMacro
         private string _lastStatusName = string.Empty;
         private bool _handleFrameThreadExecutable = true;
         private Mutex _handleFrameThreadExecutableLock = new Mutex();
-        private SpriteWindow _spriteWindow;
+        //private SpriteWindow _spriteWindow;
 
         public Resource Resource { get; private set; } = new Resource();
         public MainWindow MainWindow { get; private set; }
@@ -275,38 +275,38 @@ def callback(vmodel, frame, parameter):
 
         private void OnEditResource(object obj)
         {
-            if (this.IsRunning == false)
-                return;
+            //if (this.IsRunning == false)
+            //    return;
 
-            if (this._spriteWindow != null)
-                return;
+            //if (this._spriteWindow != null)
+            //    return;
 
-            this._spriteWindow = new SpriteWindow(SpriteWindow.EditMode.Modify)
-            {
-                Owner = this.MainWindow,
-                ModifySpriteCommand = this.ModifySpriteCommand,
-                ColorChangedCommand = this.ChangedColorCommand,
-                BindSpriteCommand = this.BindSpriteCommand,
-                UnbindSpriteCommand = this.UnbindSpriteCommand,
-                SelectedSpriteChangedCommand = this.SelectedSpriteChangedCommand,
-                SelectedStatusChangedCommand = this.SelectedStatusChangedCommand,
+            //this._spriteWindow = new SpriteWindow(SpriteWindow.EditMode.Modify)
+            //{
+            //    Owner = this.MainWindow,
+            //    ModifySpriteCommand = this.ModifySpriteCommand,
+            //    ColorChangedCommand = this.ChangedColorCommand,
+            //    BindSpriteCommand = this.BindSpriteCommand,
+            //    UnbindSpriteCommand = this.UnbindSpriteCommand,
+            //    SelectedSpriteChangedCommand = this.SelectedSpriteChangedCommand,
+            //    SelectedStatusChangedCommand = this.SelectedStatusChangedCommand,
 
-                CreateStatusCommand = this.CreateStatusCommand,
-                ModifyStatusCommand = this.ModifyStatusCommand,
-                DeleteSpriteCommand = this.DeleteSpriteCommand,
-                DeleteStatusCommand = this.DeleteStatusCommand,
-                GenerateScriptCommand = this.GenerateScriptCommand,
-                DataContext = new ResourceWindowViewModel(this.Resource),
-            };
+            //    CreateStatusCommand = this.CreateStatusCommand,
+            //    ModifyStatusCommand = this.ModifyStatusCommand,
+            //    DeleteSpriteCommand = this.DeleteSpriteCommand,
+            //    DeleteStatusCommand = this.DeleteStatusCommand,
+            //    GenerateScriptCommand = this.GenerateScriptCommand,
+            //    DataContext = new ResourceWindowViewModel(this.Resource),
+            //};
 
-            this._spriteWindow.Closed += this._spriteWindow_Closed;
-            this._spriteWindow.Show();
+            //this._spriteWindow.Closed += this._spriteWindow_Closed;
+            //this._spriteWindow.Show();
         }
 
-        private void _spriteWindow_Closed(object sender, EventArgs e)
-        {
-            this._spriteWindow = null;
-        }
+        //private void _spriteWindow_Closed(object sender, EventArgs e)
+        //{
+        //    this._spriteWindow = null;
+        //}
 
         private void OnCreateStatus(object obj)
         {
@@ -430,28 +430,28 @@ def callback(vmodel, frame, parameter):
             var resourceViewModel = new ResourceWindowViewModel(this.Resource);
             resourceViewModel.SpriteVM.Frame = selectedFrame;
 
-            if (this._spriteWindow != null)
-                return;
+            //if (this._spriteWindow != null)
+            //    return;
 
-            this._spriteWindow = new SpriteWindow(SpriteWindow.EditMode.Create)
-            { 
-                Owner = this.MainWindow, 
-                CreateSpriteCommand = this.CreateSpriteCommand,
-                ColorChangedCommand = this.ChangedColorCommand,
-                BindSpriteCommand = this.BindSpriteCommand,
-                UnbindSpriteCommand = this.UnbindSpriteCommand,
+            //this._spriteWindow = new SpriteWindow(SpriteWindow.EditMode.Create)
+            //{ 
+            //    Owner = this.MainWindow, 
+            //    CreateSpriteCommand = this.CreateSpriteCommand,
+            //    ColorChangedCommand = this.ChangedColorCommand,
+            //    BindSpriteCommand = this.BindSpriteCommand,
+            //    UnbindSpriteCommand = this.UnbindSpriteCommand,
 
-                CreateStatusCommand = this.CreateStatusCommand,
-                DeleteSpriteCommand = this.DeleteSpriteCommand,
-                DeleteStatusCommand = this.DeleteStatusCommand,
-                GenerateScriptCommand = this.GenerateScriptCommand,
-                SelectedStatusChangedCommand = this.SelectedStatusChangedCommand,
+            //    CreateStatusCommand = this.CreateStatusCommand,
+            //    DeleteSpriteCommand = this.DeleteSpriteCommand,
+            //    DeleteStatusCommand = this.DeleteStatusCommand,
+            //    GenerateScriptCommand = this.GenerateScriptCommand,
+            //    SelectedStatusChangedCommand = this.SelectedStatusChangedCommand,
 
-                ModifyStatusCommand = this.ModifyStatusCommand,
-                DataContext = resourceViewModel
-            };
-            this._spriteWindow.Closed += this._spriteWindow_Closed;
-            this._spriteWindow.Show();
+            //    ModifyStatusCommand = this.ModifyStatusCommand,
+            //    DataContext = resourceViewModel
+            //};
+            //this._spriteWindow.Closed += this._spriteWindow_Closed;
+            //this._spriteWindow.Show();
         }
 
         private void OnDeleteSprite(object obj)
@@ -640,8 +640,8 @@ this._handleFrameThreadExecutableLock.ReleaseMutex();
             this.ExecPython(this.OptionViewModel.Model.DisposeScriptName);
             this.IsRunning = false;
 
-            if (this._spriteWindow != null)
-                this._spriteWindow.Close();
+            //if (this._spriteWindow != null)
+            //    this._spriteWindow.Close();
         }
 
         private void OnBrowsePythonDirectory(object obj)
