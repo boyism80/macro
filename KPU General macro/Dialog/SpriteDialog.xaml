@@ -23,16 +23,61 @@
                 <TabControl Height="300">
                     <TabItem Header="기본">
                         <StackPanel Orientation="Vertical">
-                            <TextBlock Text="임계값" Margin="0 30 0 10"/>
-                            <Slider x:Name="Threshold1" Minimum="0.0" Maximum="1.0" />
-                            <TextBlock Text="임계값" Margin="0 30 0 10"/>
-                            <Slider x:Name="Threshold2" Minimum="0.0" Maximum="1.0" />
-                            <TextBlock Text="임계값" Margin="0 30 0 10"/>
-                            <Slider x:Name="Threshold3" Minimum="0.0" Maximum="1.0" />
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition />
+                                    <RowDefinition />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2.5*" />
+                                    <ColumnDefinition Width="1*" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Row="0"
+                                            Orientation="Vertical" Grid.Column="0" Margin="10 10" VerticalAlignment="Center">
+                                    <TextBlock Text="이름"/>
+                                    <TextBox />
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="1" 
+                                            Orientation="Vertical" Grid.Column="0" Margin="10 10" VerticalAlignment="Center">
+                                    <TextBlock Text="임계값"/>
+                                    <Slider x:Name="Threshold2" Minimum="0.0" Maximum="1.0" />
+                                </StackPanel>
+                                <TextBlock Grid.Row="1" 
+                                           Text="0%" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0 0 10 0"/>
+                            </Grid>
                         </StackPanel>
                     </TabItem>
                     <TabItem Header="고급">
+                        <StackPanel Orientation="Vertical">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition />
+                                    <RowDefinition />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2.5*" />
+                                    <ColumnDefinition Width="1*" />
+                                </Grid.ColumnDefinitions>
 
+                                <StackPanel Grid.Row="0"
+                                            Orientation="Vertical" Grid.Column="0" Margin="10 10" VerticalAlignment="Center">
+                                    <TextBlock Text="기준 색상"/>
+                                    <Button Content="캡처" Margin="0" />
+                                </StackPanel>
+                                <TextBlock Grid.Row="0" 
+                                           Text="FFFFFF" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0 0 10 0"/>
+
+                                <StackPanel Grid.Row="1" 
+                                            Orientation="Vertical" Grid.Column="0" Margin="10 10" VerticalAlignment="Center">
+                                    <TextBlock Text="색상 임계값"/>
+                                    <Slider x:Name="Threshold3" Minimum="0.0" Maximum="1.0" />
+                                </StackPanel>
+                                <TextBlock Grid.Row="1" 
+                                           Text="0%" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0 0 10 0"/>
+                            </Grid>
+                        </StackPanel>
                     </TabItem>
                 </TabControl>
             </StackPanel>

@@ -17,10 +17,11 @@ namespace KPUGeneralMacro.Model
 
         public string Name { get; set; }
         public byte[] Bytes { get; private set; }
-        public BitmapImage Bitmap => mat.ToBitmap();
         public float Factor { get; set; }
         public ExtensionColor? ExtensionColor { get; set; }
         public Rectangle? FixedArea { get; set; }
+
+        public BitmapImage Bitmap => mat.ToBitmap();
 
         public Sprite(Mat mat)
         {
