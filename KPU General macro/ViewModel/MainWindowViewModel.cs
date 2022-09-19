@@ -35,7 +35,7 @@ namespace KPUGeneralMacro
         private string _lastStatusName = string.Empty;
         private bool _handleFrameThreadExecutable = true;
         private Mutex _handleFrameThreadExecutableLock = new Mutex();
-        private SpriteDialog _spriteDialog;
+        private Dialog.SpriteDialog _spriteDialog;
 
         public Resource Resource { get; private set; } = new Resource();
         public MainWindow MainWindow { get; private set; }
@@ -338,14 +338,14 @@ def callback(vmodel, frame, parameter):
             var resourceViewModel = new ResourceWindowViewModel(this.Resource);
             resourceViewModel.SpriteVM.Frame = selectedFrame;
 
-            var sprite = new Sprite(selectedFrame);
-
             if (this._spriteDialog != null)
                 return;
 
-            this._spriteDialog = new SpriteDialog
+            var sprite = new Sprite(selectedFrame);
+            var context = new ViewModel.SpriteDialog(sprite);
+            this._spriteDialog = new Dialog.SpriteDialog
             {
-                DataContext = sprite
+                DataContext = context
             };
 
             this._spriteDialog.Closed += _spriteDialog_Closed;
@@ -436,7 +436,7 @@ this.SourceFrameLock.ReleaseMutex();
             this.ExecPython(this.OptionViewModel.Model.RenderScriptName, frame);
             this.Frame = frame.ToBitmap();
             this._elapsedStopwatch.Stop();
-            this.ElapsedTime = this.ElapsedTime.Add(TimeSpan.FromMilliseconds(this._elapsedStopwatch.ElapsedMilliseconds));
+            this.ElapsedTime = this.ElapsedTime + TimeSpan.FromMilliseconds(this._elapsedStopwatch.ElapsedMilliseconds);
             this._elapsedStopwatch.Restart();
 
 

@@ -192,6 +192,7 @@
     <Compile Include="ViewModel\MainWindowViewModel.cs" />
     <Compile Include="ViewModel\OptionViewModel.cs" />
     <Compile Include="ViewModel\ResourceWindowViewModel.cs" />
+    <Compile Include="ViewModel\SpriteDialog.cs" />
     <Page Include="Control\Component\HistoryControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

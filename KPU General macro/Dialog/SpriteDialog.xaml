@@ -19,7 +19,23 @@
     <DockPanel Style="{StaticResource WindowDialog}" LastChildFill="False" >
         <DockPanel Width="{Binding Path=ActualWidth, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DockPanel}}">
             <StackPanel Margin="10" DockPanel.Dock="Top" Orientation="Vertical">
-                <Image Height="320" Stretch="Uniform" Source="{Binding Bitmap}"/>
+                <TabControl Height="300">
+                    <TabItem Header="일반">
+                        <Image x:Name="Frame" Height="320" Stretch="Uniform" Source="{Binding Sprite.Bitmap}">
+                            <Image.InputBindings>
+                                <MouseBinding Gesture="LeftClick" Command="{Binding CaptureCommand}" CommandParameter="{Binding ElementName=Frame}" />
+                            </Image.InputBindings>
+                        </Image>
+                    </TabItem>
+
+                    <TabItem Header="마스크">
+                        <Image x:Name="MaskFrame" Height="320" Stretch="Uniform" Source="{Binding Sprite.MaskBitmap}">
+                            <Image.InputBindings>
+                                <MouseBinding Gesture="LeftClick" Command="{Binding CaptureCommand}" CommandParameter="{Binding ElementName=MaskFrame}" />
+                            </Image.InputBindings>
+                        </Image>
+                    </TabItem>
+                </TabControl>
                 <TabControl Height="300">
                     <TabItem Header="기본">
                         <StackPanel Orientation="Vertical">
@@ -36,13 +52,13 @@
                                 <StackPanel Grid.Row="0"
                                             Orientation="Vertical" Grid.Column="0" Margin="10 10" VerticalAlignment="Center">
                                     <TextBlock Text="이름"/>
-                                    <TextBox />
+                                    <TextBox Text="{Binding Sprite.Name}" />
                                 </StackPanel>
 
                                 <StackPanel Grid.Row="1" 
                                             Orientation="Vertical" Grid.Column="0" Margin="10 10" VerticalAlignment="Center">
                                     <TextBlock Text="임계값"/>
-                                    <Slider x:Name="Threshold2" Minimum="0.0" Maximum="1.0" />
+                                    <Slider x:Name="Threshold" Minimum="0.0" Maximum="1.0" Value="{Binding Sprite.Factor}" />
                                 </StackPanel>
                                 <TextBlock Grid.Row="1" 
                                            Text="0%" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0 0 10 0"/>
@@ -50,8 +66,9 @@
                         </StackPanel>
                     </TabItem>
                     <TabItem Header="고급">
-                        <StackPanel Orientation="Vertical">
-                            <Grid>
+                        <StackPanel Orientation="Vertical" Margin="10 0 10 0">
+                            <CheckBox Content="확장 색상" Margin="0 20 0 20" IsChecked="{Binding Sprite.ExtColor.Activated}" />
+                            <Grid IsEnabled="{Binding Sprite.ExtColor.Activated}">
                                 <Grid.RowDefinitions>
                                     <RowDefinition />
                                     <RowDefinition />
@@ -62,20 +79,20 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Row="0"
-                                            Orientation="Vertical" Grid.Column="0" Margin="10 10" VerticalAlignment="Center">
+                                            Orientation="Vertical" Grid.Column="0" VerticalAlignment="Center">
                                     <TextBlock Text="기준 색상"/>
                                     <Button Content="캡처" Margin="0" />
                                 </StackPanel>
                                 <TextBlock Grid.Row="0" 
-                                           Text="FFFFFF" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0 0 10 0"/>
+                                           Text="{Binding Sprite.ExtColor.Hex, FallbackValue=FFFFFF}" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0 0 10 0"/>
 
                                 <StackPanel Grid.Row="1" 
-                                            Orientation="Vertical" Grid.Column="0" Margin="10 10" VerticalAlignment="Center">
+                                            Orientation="Vertical" Grid.Column="0" Margin="0 10 0 10" VerticalAlignment="Center">
                                     <TextBlock Text="색상 임계값"/>
-                                    <Slider x:Name="Threshold3" Minimum="0.0" Maximum="1.0" />
+                                    <Slider x:Name="Threshold3" Minimum="0.0" Maximum="1.0" Value="{Binding Sprite.ExtColor.Factor}" />
                                 </StackPanel>
                                 <TextBlock Grid.Row="1" 
-                                           Text="0%" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0 0 10 0"/>
+                                           Text="{Binding Sprite.ExtColor.FactorPercent, StringFormat={}{0}%, FallbackValue=0.00%}" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0 0 10 0"/>
                             </Grid>
                         </StackPanel>
                     </TabItem>

@@ -23,5 +23,10 @@ namespace KPUGeneralMacro.Dialog
         {
             InitializeComponent();
         }
+
+        private void Sprite_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+
+        }
     }
 }
