@@ -3,6 +3,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:colorpicker="clr-namespace:ColorPicker;assembly=ColorPicker"
         mc:Ignorable="d"
         ShowInTaskbar="False"
         WindowStartupLocation="CenterOwner"
@@ -81,15 +82,17 @@
                                 <StackPanel Grid.Row="0"
                                             Orientation="Vertical" Grid.Column="0" VerticalAlignment="Center">
                                     <TextBlock Text="기준 색상"/>
-                                    <Button Content="캡처" Margin="0" />
+                                    <colorpicker:SquarePicker x:Name="ColorPicker" ColorState="{Binding ElementName=maindisplay, Path=ColorState, Mode=TwoWay}" SelectedColor="{Binding Sprite.ExtColor.MediaPivot, UpdateSourceTrigger=PropertyChanged}" ColorChanged="ColorPicker_ColorChanged" />
                                 </StackPanel>
-                                <TextBlock Grid.Row="0" 
-                                           Text="{Binding Sprite.ExtColor.Hex, FallbackValue=FFFFFF}" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0 0 10 0"/>
+                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <colorpicker:ColorDisplay x:Name="maindisplay" UseHintColor="True" HintColor="CadetBlue" SelectedColor="{Binding Sprite.Extcolor.Pivot}"/>
+                                    <TextBlock Text="{Binding Sprite.ExtColor.Hex, FallbackValue=FFFFFF}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0 0 10 0"/>
+                                </StackPanel>
 
                                 <StackPanel Grid.Row="1" 
                                             Orientation="Vertical" Grid.Column="0" Margin="0 10 0 10" VerticalAlignment="Center">
                                     <TextBlock Text="색상 임계값"/>
-                                    <Slider x:Name="Threshold3" Minimum="0.0" Maximum="1.0" Value="{Binding Sprite.ExtColor.Factor}" />
+                                    <Slider x:Name="Threshold3" Minimum="0.0" Maximum="1.0" Value="{Binding Sprite.ExtColor.Factor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 </StackPanel>
                                 <TextBlock Grid.Row="1" 
                                            Text="{Binding Sprite.ExtColor.FactorPercent, StringFormat={}{0}%, FallbackValue=0.00%}" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0 0 10 0"/>

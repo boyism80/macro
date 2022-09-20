@@ -24,9 +24,10 @@ namespace KPUGeneralMacro.Dialog
             InitializeComponent();
         }
 
-        private void Sprite_MouseDown(object sender, MouseButtonEventArgs e)
+        private void ColorPicker_ColorChanged(object sender, RoutedEventArgs e)
         {
-
+            var ctx = this.DataContext as ViewModel.SpriteDialog;
+            ctx.Sprite.ExtColor.MediaPivot = this.ColorPicker.SelectedColor;
         }
     }
 }

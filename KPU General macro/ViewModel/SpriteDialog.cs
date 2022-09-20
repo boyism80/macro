@@ -1,13 +1,17 @@
 ﻿using OpenCvSharp;
-using System;
+using PropertyChanged;
+using System.ComponentModel;
 using System.Drawing;
-using System.Windows;
 using System.Windows.Input;
 
 namespace KPUGeneralMacro.ViewModel
 {
-    public class SpriteDialog
+    [ImplementPropertyChanged]
+    public class SpriteDialog : INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler PropertyChanged;
+        public void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
         private Model.Sprite _sprite;
         public Model.Sprite Sprite
         {

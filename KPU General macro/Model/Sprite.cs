@@ -5,9 +5,36 @@ using PropertyChanged;
 using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Media.Imaging;
+using System;
 
 namespace KPUGeneralMacro.Model
 {
+    // 아래 두개 클래스는 뷰모델인데?;;
+    public static class MatExt
+    {
+        public static Mat ToMask(this Mat mat, Color pivot, float factor)
+        {
+            var e = 255 * factor;
+            var colors = new int[] { pivot.B, pivot.G, pivot.R };
+            var splitted = mat.Split().Select((x, i) =>
+            {
+                var inv = new Mat();
+                Cv2.BitwiseNot(x, inv);
+
+                var over = x.Threshold((int)Math.Max(0, colors[i] - e), 255, ThresholdTypes.Binary);
+                var under = inv.Threshold((int)Math.Max(0, 255 - colors[i] - e), 255, ThresholdTypes.Binary);
+
+                Cv2.BitwiseAnd(over, under, x);
+                return x;
+            }).ToArray();
+
+            return (splitted[0] & splitted[1] & splitted[2]).ToMat();
+        }
+
+        public static Mat ToMask(this Mat mat, ExtensionColor ext) => mat.ToMask(ext.Pivot, ext.Factor);
+    }
+
+
     [ImplementPropertyChanged]
     public class ExtensionColor : INotifyPropertyChanged
     {
@@ -41,9 +68,13 @@ namespace KPUGeneralMacro.Model
                 this.OnPropertyChanged(this._owner, nameof(Sprite.MaskBitmap));
             }
         }
+        public System.Windows.Media.Color MediaPivot
+        {
+            get => System.Windows.Media.Color.FromArgb(255, this.Pivot.R, this.Pivot.G, this.Pivot.B);
+            set => this.Pivot = Color.FromArgb(value.R, value.G, value.B);
+        }
 
         private float _factor = 1.0f;
-
         public float Factor
         {
             get => _factor;
@@ -74,16 +105,16 @@ namespace KPUGeneralMacro.Model
         {
             get
             {
-                var mat = new Mat();
-                this.Source.CopyTo(mat);
-
                 if (this.ExtColor.Activated)
                 {
-                    var mask = Mask;
-                    Cv2.Merge(mat.Split().Select(x => (x & mask).ToMat()).ToArray(), mat);
+                    var mat = new Mat();
+                    this.Source.CopyTo(mat, Mask);
+                    return mat;
                 }
-
-                return mat;
+                else
+                {
+                    return this.Source;
+                }
             }
         }
         public Mat Mask
@@ -92,23 +123,8 @@ namespace KPUGeneralMacro.Model
             {
                 if (this.ExtColor.Activated == false)
                     return this.Source;
-
-                var colors = new int[] { this.ExtColor.Pivot.B, this.ExtColor.Pivot.G, this.ExtColor.Pivot.R };
-                var splitted = this.Source.Split().Select((x, i) =>
-                {
-                    var inv = new Mat();
-                    Cv2.BitwiseNot(x, inv);
-
-                    var e = 255 * this.ExtColor.Factor;
-                    var over = x.Threshold((int)(colors[i] - e), 255, ThresholdTypes.Binary);
-                    var under = inv.Threshold((int)(255 - colors[i] - e), 255, ThresholdTypes.Binary);
-
-                    Cv2.BitwiseAnd(over, under, x);
-
-                    return x;
-                }).ToArray();
-
-                return (splitted[0] & splitted[1] & splitted[2]).ToMat();
+                else
+                    return this.Source.ToMask(this.ExtColor);
             }
         }
         public string Name { get; set; }
