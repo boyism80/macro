@@ -1,5 +1,5 @@
 ﻿using KPUGeneralMacro.Extension;
-using KPUGeneralMacro.Model;
+using KPUGeneralMacro.ViewModel;
 using OpenCvSharp;
 using System;
 using System.Collections.Generic;

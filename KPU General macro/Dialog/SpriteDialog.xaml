@@ -102,8 +102,8 @@
                 </TabControl>
             </StackPanel>
             <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Height="30" Margin="10 15">
-                <Button Content="확인"/>
-                <Button Content="취소"/>
+                <Button Content="확인" Command="{Binding CompleteCommand}" CommandParameter="{Binding Sprite}"/>
+                <Button Content="취소" Command="{Binding CancelCommand}"/>
             </StackPanel>
         </DockPanel>
     </DockPanel>

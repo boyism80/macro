@@ -2,7 +2,7 @@
 using System;
 using System.IO;
 
-namespace KPUGeneralMacro.Model
+namespace KPUGeneralMacro.ViewModel
 {
     public class Option
     {

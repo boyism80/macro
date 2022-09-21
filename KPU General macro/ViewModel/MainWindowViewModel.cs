@@ -2,7 +2,6 @@
 using IronPython.Runtime;
 using KPUGeneralMacro.Dialog;
 using KPUGeneralMacro.Extension;
-using KPUGeneralMacro.Model;
 using KPUGeneralMacro.ViewModel;
 using Microsoft.Scripting.Hosting;
 using Microsoft.WindowsAPICodePack.Dialogs;
@@ -19,7 +18,6 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Threading;
 
 namespace KPUGeneralMacro
 {
@@ -293,11 +291,6 @@ def callback(vmodel, frame, parameter):
             spriteWindowVM.Color = ColorTranslator.ToHtml(color);
         }
 
-        private void OnCancelSprite(object obj)
-        {
-            throw new NotImplementedException();
-        }
-
         private void OnCreateSprite(object obj)
         {
             var parameters = obj as object[];
@@ -342,14 +335,15 @@ def callback(vmodel, frame, parameter):
             if (this._spriteDialog != null)
                 return;
 
-            var sprite = new Sprite(selectedFrame);
-            var context = new ViewModel.SpriteDialog(sprite);
             this._spriteDialog = new Dialog.SpriteDialog
             {
-                DataContext = context
+                DataContext = new ViewModel.SpriteDialog(selectedFrame)
+                { 
+                    CompleteCommand = new RelayCommand(this.OnCompleteSprite),
+                    CancelCommand = new RelayCommand(this.OnCancelSprite)
+                }
             };
 
-            this._spriteDialog.Closed += _spriteDialog_Closed;
             this._spriteDialog.Show();
 
             //if (this._spriteWindow != null)
@@ -376,9 +370,24 @@ def callback(vmodel, frame, parameter):
             //this._spriteWindow.Show();
         }
 
-        private void _spriteDialog_Closed(object sender, EventArgs e)
+        private void OnCompleteSprite(object obj)
         {
-            this._spriteDialog = null; 
+            if (this._spriteDialog == null)
+                return;
+
+            var sprite = (obj as ViewModel.Sprite).Model;
+
+            this._spriteDialog.Close();
+            this._spriteDialog = null;
+        }
+
+        private void OnCancelSprite(object obj)
+        {
+            if (this._spriteDialog == null)
+                return;
+
+            this._spriteDialog.Close();
+            this._spriteDialog = null;
         }
 
         private void OnDeleteSprite(object obj)

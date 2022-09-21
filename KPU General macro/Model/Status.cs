@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace KPUGeneralMacro.Model
+namespace KPUGeneralMacro.ViewModel
 {
     public class Status
     {

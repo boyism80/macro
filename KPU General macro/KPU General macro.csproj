@@ -8,7 +8,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{2A9E0958-10E0-4B49-A03E-AA333568181C}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>KPU_General_macro</RootNamespace>
+    <RootNamespace>KPUGeneralmacro</RootNamespace>
     <AssemblyName>KPU General macro</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -184,6 +184,7 @@
     </Compile>
     <Compile Include="Extension\BitmapExtension.cs" />
     <Compile Include="Extension\IronPythonExtension.cs" />
+    <Compile Include="Extension\Mat.cs" />
     <Compile Include="Model\DestinationApp.cs" />
     <Compile Include="Model\Detector.cs" />
     <Compile Include="Model\Log.cs" />
@@ -198,6 +199,7 @@
     <Compile Include="ViewModel\MainWindowViewModel.cs" />
     <Compile Include="ViewModel\OptionViewModel.cs" />
     <Compile Include="ViewModel\ResourceWindowViewModel.cs" />
+    <Compile Include="ViewModel\Sprite.cs" />
     <Compile Include="ViewModel\SpriteDialog.cs" />
     <Page Include="Control\Component\HistoryControl.xaml">
       <SubType>Designer</SubType>

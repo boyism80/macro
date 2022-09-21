@@ -12,8 +12,8 @@ namespace KPUGeneralMacro.ViewModel
         public event PropertyChangedEventHandler PropertyChanged;
         public void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
-        private Model.Sprite _sprite;
-        public Model.Sprite Sprite
+        private ViewModel.Sprite _sprite;
+        public ViewModel.Sprite Sprite
         {
             get => this._sprite;
             private set => this._sprite = value;
@@ -28,12 +28,25 @@ namespace KPUGeneralMacro.ViewModel
         }
 
         public ICommand CaptureCommand { get; private set; }
+        public ICommand CompleteCommand { get; set; }
+        public ICommand CancelCommand { get; set; }
 
-        public SpriteDialog(Model.Sprite sprite)
+        public SpriteDialog(Mat frame)
         {
-            this.Sprite = sprite;
-
+            this.Sprite = new Sprite(frame);
             this.CaptureCommand = new RelayCommand(this.OnCapture);
+            this.CompleteCommand = new RelayCommand(this.OnComplete);
+            this.CancelCommand = new RelayCommand(this.OnCancel);
+        }
+
+        private void OnCancel(object obj)
+        {
+            this.Sprite = null;
+        }
+
+        private void OnComplete(object obj)
+        {
+            
         }
 
         private void OnCapture(object obj)

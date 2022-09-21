@@ -2,7 +2,7 @@
 using System.ComponentModel;
 using System.Windows.Media;
 
-namespace KPUGeneralMacro.Model
+namespace KPUGeneralMacro.ViewModel
 {
     public class Log
     {

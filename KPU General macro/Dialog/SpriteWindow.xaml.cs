@@ -1,4 +1,4 @@
-﻿using KPUGeneralMacro.Model;
+﻿using KPUGeneralMacro.ViewModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;

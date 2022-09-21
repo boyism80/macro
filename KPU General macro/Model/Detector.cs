@@ -2,7 +2,7 @@
 using OpenCvSharp;
 using System.Collections.Generic;
 
-namespace KPUGeneralMacro.Model
+namespace KPUGeneralMacro.ViewModel
 {
     public class Detector
     {

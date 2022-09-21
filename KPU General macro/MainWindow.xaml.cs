@@ -1,4 +1,4 @@
-﻿using KPUGeneralMacro.Model;
+﻿using KPUGeneralMacro.ViewModel;
 using System.Windows;
 
 namespace KPUGeneralMacro

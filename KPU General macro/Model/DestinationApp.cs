@@ -9,7 +9,7 @@ using System.Threading;
 using System.Windows.Forms;
 using System.Linq;
 
-namespace KPUGeneralMacro.Model
+namespace KPUGeneralMacro.ViewModel
 {
     public enum OperationType
     {
