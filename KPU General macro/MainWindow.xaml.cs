@@ -1,4 +1,5 @@
 ﻿using KPUGeneralMacro.ViewModel;
+using System;
 using System.Windows;
 
 namespace KPUGeneralMacro
@@ -15,6 +16,12 @@ namespace KPUGeneralMacro
             InitializeComponent();
 
             this.MainWindowViewModel = new MainWindowViewModel(this);
+            try
+            {
+                this.MainWindowViewModel.Load();
+            }
+            catch
+            { }
             this.DataContext = this.MainWindowViewModel;
         }
 
@@ -22,6 +29,8 @@ namespace KPUGeneralMacro
         {
             this.MainWindowViewModel.Dispose();
             DestinationApp.Instance.Stop();
+
+            this.MainWindowViewModel.Save();
         }
     }
 }

@@ -182,9 +182,10 @@
     <Compile Include="Dialog\SpriteWindow.xaml.cs">
       <DependentUpon>SpriteWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Extension\BitmapExtension.cs" />
-    <Compile Include="Extension\IronPythonExtension.cs" />
+    <Compile Include="Extension\Bitmap.cs" />
+    <Compile Include="Extension\IronPython.cs" />
     <Compile Include="Extension\Mat.cs" />
+    <Compile Include="Extension\Sprite.cs" />
     <Compile Include="Model\DestinationApp.cs" />
     <Compile Include="Model\Detector.cs" />
     <Compile Include="Model\Log.cs" />

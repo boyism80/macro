@@ -1,5 +1,6 @@
 ﻿using IronPython.Hosting;
 using IronPython.Runtime;
+using KPUGeneralmacro.Extension;
 using KPUGeneralMacro.Dialog;
 using KPUGeneralMacro.Extension;
 using KPUGeneralMacro.ViewModel;
@@ -68,6 +69,8 @@ namespace KPUGeneralMacro
                 this.OnPropertyChanged(nameof(this.FrameBackgroundBrush)); 
             }
         }
+
+        public Dictionary<string, Model.Sprite> Sprites { get; private set; } = new Dictionary<string, Model.Sprite>();
 
         public Mutex SourceFrameLock { get; private set; } = new Mutex();
         public Mat SourceFrame { get; private set; }
@@ -345,40 +348,55 @@ def callback(vmodel, frame, parameter):
             };
 
             this._spriteDialog.Show();
+            this._spriteDialog.Closed += this._spriteDialog_Closed;
+        }
 
-            //if (this._spriteWindow != null)
-            //    return;
-
-            //this._spriteWindow = new SpriteWindow(SpriteWindow.EditMode.Create)
-            //{ 
-            //    Owner = this.MainWindow, 
-            //    CreateSpriteCommand = this.CreateSpriteCommand,
-            //    ColorChangedCommand = this.ChangedColorCommand,
-            //    BindSpriteCommand = this.BindSpriteCommand,
-            //    UnbindSpriteCommand = this.UnbindSpriteCommand,
-
-            //    CreateStatusCommand = this.CreateStatusCommand,
-            //    DeleteSpriteCommand = this.DeleteSpriteCommand,
-            //    DeleteStatusCommand = this.DeleteStatusCommand,
-            //    GenerateScriptCommand = this.GenerateScriptCommand,
-            //    SelectedStatusChangedCommand = this.SelectedStatusChangedCommand,
-
-            //    ModifyStatusCommand = this.ModifyStatusCommand,
-            //    DataContext = resourceViewModel
-            //};
-            //this._spriteWindow.Closed += this._spriteWindow_Closed;
-            //this._spriteWindow.Show();
+        private void _spriteDialog_Closed(object sender, EventArgs e)
+        {
+            this._spriteDialog = null;
         }
 
         private void OnCompleteSprite(object obj)
         {
-            if (this._spriteDialog == null)
-                return;
+            try
+            {
+                if (this._spriteDialog == null)
+                    return;
 
-            var sprite = (obj as ViewModel.Sprite).Model;
+                var sprite = (obj as ViewModel.Sprite).Model;
+                if (string.IsNullOrEmpty(sprite.Name))
+                    throw new Exception("스프라이트 이름을 입력해야 합니다.");
 
-            this._spriteDialog.Close();
-            this._spriteDialog = null;
+                if (this.Sprites.ContainsKey(sprite.Name))
+                    throw new Exception($"{sprite.Name} : 존재하는 스프라이트 이름입니다.");
+
+                this.Sprites.Add(sprite.Name, sprite);
+                this.Save("sprites.dat");
+                this._spriteDialog.Close();
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message);
+            }
+        }
+
+        public void Save(string filename = "sprites.dat")
+        {
+            using (var writer = new BinaryWriter(File.Open(filename, FileMode.OpenOrCreate)))
+            {
+                writer.Write(this.Sprites);
+            }
+        }
+
+        public void Load(string filename = "sprites.dat")
+        {
+            if (File.Exists(filename) == false)
+                throw new Exception($"{filename} 파일을 찾을 수 없습니다.");
+
+            using (var reader = new BinaryReader(File.Open(filename, FileMode.Open)))
+            {
+                this.Sprites = reader.ReadSprites();
+            }
         }
 
         private void OnCancelSprite(object obj)
@@ -387,7 +405,6 @@ def callback(vmodel, frame, parameter):
                 return;
 
             this._spriteDialog.Close();
-            this._spriteDialog = null;
         }
 
         private void OnDeleteSprite(object obj)
