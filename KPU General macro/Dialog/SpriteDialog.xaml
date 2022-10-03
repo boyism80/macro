@@ -8,101 +8,125 @@
         ShowInTaskbar="False"
         WindowStartupLocation="CenterOwner"
         Style="{StaticResource DefaultWindowStyle}"
-        Title="리소스" Height="768" Width="640">
+        Title="리소스" Height="768" Width="960">
     <WindowChrome.WindowChrome>
         <WindowChrome 
             ResizeBorderThickness="10"
             CaptionHeight="30"
             CornerRadius="0"
-            GlassFrameThickness="0"
-            />
+            GlassFrameThickness="0"/>
     </WindowChrome.WindowChrome>
     <DockPanel Style="{StaticResource WindowDialog}" LastChildFill="False" >
         <DockPanel Width="{Binding Path=ActualWidth, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DockPanel}}">
-            <StackPanel Margin="10" DockPanel.Dock="Top" Orientation="Vertical">
-                <TabControl Height="300">
-                    <TabItem Header="일반">
-                        <Image x:Name="Frame" Height="320" Stretch="Uniform" Source="{Binding Sprite.Bitmap}">
-                            <Image.InputBindings>
-                                <MouseBinding Gesture="LeftClick" Command="{Binding CaptureCommand}" CommandParameter="{Binding ElementName=Frame}" />
-                            </Image.InputBindings>
-                        </Image>
-                    </TabItem>
+            <Grid DockPanel.Dock="Top">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="0.6*" />
+                    <ColumnDefinition Width="0.4*" />
+                </Grid.ColumnDefinitions>
 
-                    <TabItem Header="마스크">
-                        <Image x:Name="MaskFrame" Height="320" Stretch="Uniform" Source="{Binding Sprite.MaskBitmap}">
-                            <Image.InputBindings>
-                                <MouseBinding Gesture="LeftClick" Command="{Binding CaptureCommand}" CommandParameter="{Binding ElementName=MaskFrame}" />
-                            </Image.InputBindings>
-                        </Image>
-                    </TabItem>
-                </TabControl>
-                <TabControl Height="300">
-                    <TabItem Header="기본">
-                        <StackPanel Orientation="Vertical">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition />
-                                    <RowDefinition />
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="2.5*" />
-                                    <ColumnDefinition Width="1*" />
-                                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Margin="10" Orientation="Vertical">
+                    <TabControl Height="300">
+                        <TabItem Header="일반">
+                            <Image x:Name="Frame" Stretch="Uniform" Source="{Binding Sprite.Bitmap}">
+                                <Image.InputBindings>
+                                    <MouseBinding Gesture="LeftClick" Command="{Binding CaptureCommand}" CommandParameter="{Binding ElementName=Frame}" />
+                                </Image.InputBindings>
+                            </Image>
+                        </TabItem>
 
-                                <StackPanel Grid.Row="0"
+                        <TabItem Header="마스크">
+                            <Image x:Name="MaskFrame" Stretch="Uniform" Source="{Binding Sprite.MaskBitmap}">
+                                <Image.InputBindings>
+                                    <MouseBinding Gesture="LeftClick" Command="{Binding CaptureCommand}" CommandParameter="{Binding ElementName=MaskFrame}" />
+                                </Image.InputBindings>
+                            </Image>
+                        </TabItem>
+                    </TabControl>
+                    <TabControl Height="300">
+                        <TabItem Header="기본">
+                            <StackPanel Orientation="Vertical">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition />
+                                        <RowDefinition />
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2.5*" />
+                                        <ColumnDefinition Width="1*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Row="0"
                                             Orientation="Vertical" Grid.Column="0" Margin="10 10" VerticalAlignment="Center">
-                                    <TextBlock Text="이름"/>
-                                    <TextBox Text="{Binding Sprite.Name}" />
-                                </StackPanel>
+                                        <TextBlock Text="이름"/>
+                                        <TextBox Text="{Binding Sprite.Name, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBlock Text="{Binding NameException}" Foreground="Red" />
+                                    </StackPanel>
 
-                                <StackPanel Grid.Row="1" 
+                                    <StackPanel Grid.Row="1" 
                                             Orientation="Vertical" Grid.Column="0" Margin="10 10" VerticalAlignment="Center">
-                                    <TextBlock Text="임계값"/>
-                                    <Slider x:Name="Threshold" Minimum="0.0" Maximum="1.0" Value="{Binding Sprite.Factor}" />
-                                </StackPanel>
-                                <TextBlock Grid.Row="1" 
+                                        <TextBlock Text="임계값"/>
+                                        <Slider x:Name="Threshold" Minimum="0.0" Maximum="1.0" Value="{Binding Sprite.Factor}" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Row="1" 
                                            Text="0%" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0 0 10 0"/>
-                            </Grid>
-                        </StackPanel>
-                    </TabItem>
-                    <TabItem Header="고급">
-                        <StackPanel Orientation="Vertical" Margin="10 0 10 0">
-                            <CheckBox Content="확장 색상" Margin="0 20 0 20" IsChecked="{Binding Sprite.ExtColor.Activated}" />
-                            <Grid IsEnabled="{Binding Sprite.ExtColor.Activated}">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition />
-                                    <RowDefinition />
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="2.5*" />
-                                    <ColumnDefinition Width="1*" />
-                                </Grid.ColumnDefinitions>
+                                </Grid>
+                            </StackPanel>
+                        </TabItem>
+                        <TabItem Header="고급">
+                            <StackPanel Orientation="Vertical" Margin="10 0 10 0">
+                                <CheckBox Content="확장 색상" Margin="0 20 0 20" IsChecked="{Binding Sprite.ExtColor.Activated}" />
+                                <Grid IsEnabled="{Binding Sprite.ExtColor.Activated}">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition />
+                                        <RowDefinition />
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2.5*" />
+                                        <ColumnDefinition Width="1*" />
+                                    </Grid.ColumnDefinitions>
 
-                                <StackPanel Grid.Row="0"
+                                    <StackPanel Grid.Row="0"
                                             Orientation="Vertical" Grid.Column="0" VerticalAlignment="Center">
-                                    <TextBlock Text="기준 색상"/>
-                                    <colorpicker:SquarePicker x:Name="ColorPicker" ColorState="{Binding ElementName=maindisplay, Path=ColorState, Mode=TwoWay}" SelectedColor="{Binding Sprite.ExtColor.MediaPivot, UpdateSourceTrigger=PropertyChanged}" ColorChanged="ColorPicker_ColorChanged" />
-                                </StackPanel>
-                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                    <colorpicker:ColorDisplay x:Name="maindisplay" UseHintColor="True" HintColor="CadetBlue" SelectedColor="{Binding Sprite.Extcolor.Pivot}"/>
-                                    <TextBlock Text="{Binding Sprite.ExtColor.Hex, FallbackValue=FFFFFF}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0 0 10 0"/>
-                                </StackPanel>
+                                        <TextBlock Text="기준 색상"/>
+                                        <colorpicker:SquarePicker x:Name="ColorPicker" ColorState="{Binding ElementName=maindisplay, Path=ColorState, Mode=TwoWay}" SelectedColor="{Binding Sprite.ExtColor.MediaPivot, UpdateSourceTrigger=PropertyChanged}" ColorChanged="ColorPicker_ColorChanged" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                        <colorpicker:ColorDisplay x:Name="maindisplay" UseHintColor="True" HintColor="CadetBlue" SelectedColor="{Binding Sprite.Extcolor.Pivot}"/>
+                                        <TextBlock Text="{Binding Sprite.ExtColor.Hex, FallbackValue=FFFFFF}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0 0 10 0"/>
+                                    </StackPanel>
 
-                                <StackPanel Grid.Row="1" 
+                                    <StackPanel Grid.Row="1" 
                                             Orientation="Vertical" Grid.Column="0" Margin="0 10 0 10" VerticalAlignment="Center">
-                                    <TextBlock Text="색상 임계값"/>
-                                    <Slider x:Name="Threshold3" Minimum="0.0" Maximum="1.0" Value="{Binding Sprite.ExtColor.Factor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                </StackPanel>
-                                <TextBlock Grid.Row="1" 
+                                        <TextBlock Text="색상 임계값"/>
+                                        <Slider x:Name="Threshold3" Minimum="0.0" Maximum="1.0" Value="{Binding Sprite.ExtColor.Factor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Row="1" 
                                            Text="{Binding Sprite.ExtColor.FactorPercent, StringFormat={}{0}%, FallbackValue=0.00%}" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0 0 10 0"/>
+                                </Grid>
+                            </StackPanel>
+                        </TabItem>
+                    </TabControl>
+                </StackPanel>
+                <ListBox Name="Sprites" Grid.Column="1" 
+                         Background="Transparent" 
+                         ItemsSource="{Binding Sprites}"
+                         SelectionChanged="SpriteSelectionChanged">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="60" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Image Grid.Column="0" Stretch="Uniform" Source="{Binding Bitmap}" />
+                                <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="White" Margin="10 0 0 0" VerticalAlignment="Center" />
                             </Grid>
-                        </StackPanel>
-                    </TabItem>
-                </TabControl>
-            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
             <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Height="30" Margin="10 15">
-                <Button Content="확인" Command="{Binding CompleteCommand}" CommandParameter="{Binding Sprite}"/>
+                <Button Content="확인" IsEnabled="{Binding IsEnabled}" Command="{Binding CompleteCommand}" CommandParameter="{Binding Sprite}"/>
                 <Button Content="취소" Command="{Binding CancelCommand}"/>
             </StackPanel>
         </DockPanel>

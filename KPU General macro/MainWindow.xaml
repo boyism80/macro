@@ -91,8 +91,10 @@
                                               Foreground="{StaticResource MainTextBrush}" 
                                               Padding="10 10">
                                             <MenuItem Header="설정">
-                                                <MenuItem Header="옵션"
-                                                          Command="{Binding OptionCommand}"/>
+                                                <MenuItem Header="옵션" Command="{Binding OptionCommand}"/>
+                                            </MenuItem>
+                                            <MenuItem Header="편집">
+                                                <MenuItem Header="스프라이트" Command="{Binding EditSpriteCommand}"/>
                                             </MenuItem>
                                         </Menu>
                                     </Grid>

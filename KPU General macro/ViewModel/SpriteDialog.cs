@@ -1,42 +1,80 @@
 ﻿using OpenCvSharp;
 using PropertyChanged;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Input;
 
 namespace KPUGeneralMacro.ViewModel
 {
+    public enum SpriteDialogMode
+    {
+        Create, Edit
+    }
+
     [ImplementPropertyChanged]
     public class SpriteDialog : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
         public void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
+        public SpriteDialogMode Mode { get; private set; }
+
+        public ViewModel.Sprite Original { get; set; }
+
         private ViewModel.Sprite _sprite;
         public ViewModel.Sprite Sprite
         {
             get => this._sprite;
-            private set => this._sprite = value;
+            set => this._sprite = value;
         }
 
-
-        private bool _isCapturePivot = false;
-        public bool IsCapturePivot
+        public string _nameException = string.Empty;
+        public string NameException
         {
-            get => this._isCapturePivot;
-            set => this._isCapturePivot = value;
+            get => _nameException;
+            set => _nameException = value;
         }
+
+        public bool IsEnabled
+        {
+            get
+            {
+                if (this.Mode == SpriteDialogMode.Edit)
+                {
+                    if (this.Sprite == null)
+                        return false;
+                }
+
+                if (string.IsNullOrEmpty(NameException))
+                    return true;
+
+                return false;
+            }
+        }
+
+        public ObservableCollection<ViewModel.Sprite> Sprites { get; private set; } = new ObservableCollection<Sprite>();
 
         public ICommand CaptureCommand { get; private set; }
         public ICommand CompleteCommand { get; set; }
         public ICommand CancelCommand { get; set; }
 
-        public SpriteDialog(Mat frame)
+        public SpriteDialog(IEnumerable<Model.Sprite> sprites)
         {
-            this.Sprite = new Sprite(frame);
+            this.Mode = SpriteDialogMode.Edit;
+            this.Sprites = new ObservableCollection<Sprite>(sprites.Select(x => new Sprite(this, x)));
             this.CaptureCommand = new RelayCommand(this.OnCapture);
             this.CompleteCommand = new RelayCommand(this.OnComplete);
             this.CancelCommand = new RelayCommand(this.OnCancel);
+        }
+
+        public SpriteDialog(Mat frame, IEnumerable<Model.Sprite> sprites) : this(sprites)
+        {
+            this.Mode = SpriteDialogMode.Create;
+            this.Original = null;
+            this.Sprite = new Sprite(this, frame);
         }
 
         private void OnCancel(object obj)
@@ -51,8 +89,6 @@ namespace KPUGeneralMacro.ViewModel
 
         private void OnCapture(object obj)
         {
-            IsCapturePivot = false;
-
             var image = obj as System.Windows.Controls.Image;
             var position = Mouse.GetPosition(image);
 

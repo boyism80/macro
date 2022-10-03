@@ -8,7 +8,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{2A9E0958-10E0-4B49-A03E-AA333568181C}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>KPUGeneralmacro</RootNamespace>
+    <RootNamespace>KPUGeneralMacro</RootNamespace>
     <AssemblyName>KPU General macro</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -164,23 +164,11 @@
     <Compile Include="Control\Screen.xaml.cs">
       <DependentUpon>Screen.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Control\SpriteListView.xaml.cs">
-      <DependentUpon>SpriteListView.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Control\StatusComponentListView.xaml.cs">
-      <DependentUpon>StatusComponentListView.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Control\StatusListView.xaml.cs">
-      <DependentUpon>StatusListView.xaml</DependentUpon>
-    </Compile>
     <Compile Include="Dialog\OptionDialog.xaml.cs">
       <DependentUpon>OptionDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="Dialog\SpriteDialog.xaml.cs">
       <DependentUpon>SpriteDialog.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Dialog\SpriteWindow.xaml.cs">
-      <DependentUpon>SpriteWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Extension\Bitmap.cs" />
     <Compile Include="Extension\IronPython.cs" />
@@ -199,7 +187,6 @@
     <Compile Include="ViewModel\LogViewModel.cs" />
     <Compile Include="ViewModel\MainWindowViewModel.cs" />
     <Compile Include="ViewModel\OptionViewModel.cs" />
-    <Compile Include="ViewModel\ResourceWindowViewModel.cs" />
     <Compile Include="ViewModel\Sprite.cs" />
     <Compile Include="ViewModel\SpriteDialog.cs" />
     <Page Include="Control\Component\HistoryControl.xaml">
@@ -222,27 +209,11 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Control\SpriteListView.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Control\StatusComponentListView.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Control\StatusListView.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Include="Dialog\OptionDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Dialog\SpriteDialog.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Dialog\SpriteWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

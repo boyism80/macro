@@ -2,9 +2,6 @@
 
 namespace KPUGeneralMacro.Dialog
 {
-    /// <summary>
-    /// Interaction logic for SpriteDialog.xaml
-    /// </summary>
     public partial class SpriteDialog : Window
     {
         public SpriteDialog()
@@ -22,6 +19,20 @@ namespace KPUGeneralMacro.Dialog
                 return;
 
             ctx.Sprite.ExtColor.MediaPivot = this.ColorPicker.SelectedColor;
+        }
+
+        private void SpriteSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            var ctx = this.DataContext as ViewModel.SpriteDialog;
+            if (ctx == null)
+                return;
+
+            if (ctx.Mode == ViewModel.SpriteDialogMode.Create)
+                return;
+
+            var selected = this.Sprites.SelectedItem as ViewModel.Sprite;
+            ctx.Original = new ViewModel.Sprite(ctx, selected.Model);
+            ctx.Sprite = new ViewModel.Sprite(selected);
         }
     }
 }
