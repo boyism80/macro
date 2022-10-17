@@ -8,18 +8,17 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 using System.Linq;
+using System.Threading.Tasks;
 
-namespace KPUGeneralMacro.ViewModel
+namespace KPUGeneralMacro.Model
 {
     public enum OperationType
     {
         Software, Hardware
     }
 
-    public sealed class DestinationApp : BaseViewModel
+    public class App
     {
-        public static DestinationApp Instance { get; private set; } = new DestinationApp();
-
         #region Windows enumerator
         public enum TernaryRasterOperations : uint
         {
@@ -330,13 +329,12 @@ namespace KPUGeneralMacro.ViewModel
         public delegate void FrameEventHandler(Mat frame);
         #endregion
 
-        private Thread _streamingThread;
         private System.Drawing.Point _prevCursorPosition;
         private string _className;
 
         public IntPtr Hwnd { get; private set; }
 
-        public OperationType OperationType { get; set; } = OperationType.Software;
+        public OperationType OperationType { get; set; } = OperationType.Hardware;
 
         public Rectangle Area { get; private set; }
 
@@ -374,9 +372,16 @@ namespace KPUGeneralMacro.ViewModel
 
         public event FrameEventHandler Frame;
 
-        private DestinationApp()
+        private App(string className)
         {
+            this.Hwnd = this.FindAppHandle(className);
+            if (this.Hwnd == IntPtr.Zero)
+            {
+                this.Hwnd = IntPtr.Zero;
+                throw new Exception($"Could not find the app '{className}'");
+            }
 
+            this.ClassName = className;
         }
 
         private System.Drawing.Rectangle GetArea()
@@ -427,22 +432,12 @@ namespace KPUGeneralMacro.ViewModel
             if (this.IsRunning)
                 return false;
 
-            if (this._streamingThread != null)
-                return false;
-
             this.IsRunning = true;
-            this._streamingThread = new Thread(new ThreadStart(this.StreamingThreadRoutine));
-            this._streamingThread.Start();
+            Task.Run(this.OnFrame);
             return true;
         }
 
-        public void Stop()
-        {
-            this.IsRunning = false;
-            this._streamingThread = null;
-        }
-
-        private void StreamingThreadRoutine()
+        private void OnFrame()
         {
             while (this.IsRunning)
             {
@@ -460,28 +455,25 @@ namespace KPUGeneralMacro.ViewModel
             }
         }
 
+        public void Stop()
+        {
+            this.IsRunning = false;
+        }
+
         private IntPtr FindAppHandle(string className)
         {
             var found = Process.GetProcesses().FirstOrDefault(x => x.ProcessName == className);
             return found?.MainWindowHandle ?? IntPtr.Zero;
         }
 
-        public void BindToApp(string className)
+        public static App Find(string className)
         {
-            this.Hwnd = this.FindAppHandle(className);
-            if (this.Hwnd == IntPtr.Zero)
-            {
-                this.Hwnd = IntPtr.Zero;
-                throw new Exception($"Could not find the app '{className}'");
-            }
-
-            this.ClassName = className;
+            return new App(className);
         }
 
         public void Unbind()
         {
             this.Hwnd = IntPtr.Zero;
-            this.OnPropertyChanged(nameof(this.ClassName));
         }
 
         public void SetActive(bool active, int sleepTime = 0)
@@ -613,6 +605,11 @@ namespace KPUGeneralMacro.ViewModel
         public void StoreCursorPosition(int x, int y)
         {
             this.StoreCursorPosition(new System.Drawing.Point(x, y));
+        }
+
+        public void KeyPress(int key, int sleepTime = 100)
+        {
+            KeyPress((Keys)key, sleepTime);
         }
 
         public void KeyPress(Keys key, int sleepTime = 100)
@@ -753,7 +750,7 @@ namespace KPUGeneralMacro.ViewModel
 
         public void SendMessage(int message, IntPtr w, IntPtr l)
         {
-            DestinationApp.SendMessage(this.Hwnd, message, w, l);
+            App.SendMessage(this.Hwnd, message, w, l);
         }
     }
 }

@@ -234,7 +234,7 @@
                     Background="{Binding FrameBackgroundBrush}"
                     BorderBrush="#1272d8"
                     BorderThickness="1">
-                <local:Screen Frame="{Binding Frame}" 
+                <local:Screen Frame="{Binding Bitmap}" 
                               SelectRectCommand="{Binding SelectedRectCommand}"/>
             </Border>
 
@@ -268,8 +268,8 @@
                             <MultiBinding 
                                 FallbackValue="해상도 : Unknown"
                                 StringFormat="{}해상도 : {0}x{1}">
-                                <Binding Path="Frame.Width"/>
-                                <Binding Path="Frame.Height"/>
+                                <Binding Path="Bitmap.Width"/>
+                                <Binding Path="Bitmap.Height"/>
                             </MultiBinding>
                         </TextBlock.Text>
                     </TextBlock>
@@ -299,7 +299,7 @@
                     <local:HistoryContainer 
                         DockPanel.Dock="Bottom"
                         Margin="0 0 0 10"
-                        ItemsSource="{Binding LogItems}" />
+                        ItemsSource="{Binding Logs}" />
                 </DockPanel>
             </Border>
         </Grid>

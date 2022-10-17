@@ -1,4 +1,5 @@
-﻿using SimpleJSON;
+﻿using KPUGeneralMacro.Model;
+using SimpleJSON;
 using System;
 using System.IO;
 
@@ -23,7 +24,7 @@ namespace KPUGeneralMacro.ViewModel
         {
             var config = new JSONClass();
             config["class"] = this.ClassName;
-            config["software operatable"] = $"{DestinationApp.Instance.OperationType}";
+            //config["software operatable"] = $"{App.Ist.OperationType}";
             config["render fps"] = new JSONData(this.RenderFPS);
             config["detect fps"] = new JSONData(this.DetectFPS);
 
@@ -45,10 +46,10 @@ namespace KPUGeneralMacro.ViewModel
                 var config = JSONClass.LoadFromCompressedFile(filename);
 
                 this.ClassName = config["class"].Value;
-                if (Enum.TryParse<OperationType>(config["software operatable"].Value, out var operation) == false)
-                    DestinationApp.Instance.OperationType = OperationType.Software;
-                else
-                    DestinationApp.Instance.OperationType = operation;
+                //if (Enum.TryParse<OperationType>(config["software operatable"].Value, out var operation) == false)
+                //    App.Ist.OperationType = OperationType.Software;
+                //else
+                //    App.Ist.OperationType = operation;
 
                 this.RenderFPS = config["render fps"].AsInt;
                 if (this.RenderFPS == 0)

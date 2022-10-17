@@ -1,4 +1,4 @@
-﻿using KPUGeneralMacro.ViewModel;
+﻿using KPUGeneralMacro.Model;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -41,7 +41,9 @@ namespace KPUGeneralMacro.ViewModel
         {
             get
             {
-                return DestinationApp.Instance.OperationType == OperationType.Software ? "Software" : "Hardware";
+                //return App.Ist.OperationType == OperationType.Software ? "Software" : "Hardware";
+                // TODO
+                return "Software";
             }
         }
 
@@ -52,7 +54,7 @@ namespace KPUGeneralMacro.ViewModel
             this.ClassName.Complete += this.ClassName_Complete;
             this._exceptableTextList.Add(this.ClassName);
 
-            this.Operation = DestinationApp.Instance.OperationType;
+            //this.Operation = App.Ist.OperationType;
 
             this.ResourceFile.Content = this.Model.ResourceFile;
             this.ResourceFile.Assert += this.Directory_Assert;
@@ -168,7 +170,7 @@ namespace KPUGeneralMacro.ViewModel
             try
             {
                 this.Model.ClassName = this.ClassName.Content;
-                DestinationApp.Instance.OperationType = this.Operation;
+                //App.Ist.OperationType = this.Operation;
                 this.Model.RenderFPS = this.RenderFPS;
                 this.Model.DetectFPS = this.DetectFPS;
                 this.Model.ResourceFile = Path.GetFullPath(this.ResourceFile.Content);
@@ -188,7 +190,7 @@ namespace KPUGeneralMacro.ViewModel
         private void ApplyToVModel()
         {
             this.ClassName.Content = this.Model.ClassName;
-            this.Operation = DestinationApp.Instance.OperationType;
+            //this.Operation = App.Ist.OperationType;
             this.RenderFPS = this.Model.RenderFPS;
             this.DetectFPS = this.Model.DetectFPS;
             this.ResourceFile.Content = this.Model.ResourceFile;

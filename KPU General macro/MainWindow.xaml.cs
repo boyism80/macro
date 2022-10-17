@@ -28,8 +28,7 @@ namespace KPUGeneralMacro
         private void Window_Closed(object sender, System.EventArgs e)
         {
             this.MainWindowViewModel.Dispose();
-            DestinationApp.Instance.Stop();
-
+            this.MainWindowViewModel.Stop();
             this.MainWindowViewModel.Save();
         }
     }

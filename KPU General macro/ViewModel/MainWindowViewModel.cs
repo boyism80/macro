@@ -11,10 +11,10 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -22,6 +22,31 @@ using System.Windows.Media.Imaging;
 
 namespace KPUGeneralMacro
 {
+    public static class LogExt
+    {
+        public static void Add(this ObservableCollection<LogViewModel> logs, string message)
+        {
+            try
+            {
+                logs.Add(new LogViewModel(message, DateTime.Now));
+            }
+            catch
+            { }
+        }
+    }
+
+    public static class PythonExt
+    {
+        public static PythonDictionary ToPythonDictionary<K, V>(this IDictionary<K, V> dict)
+        {
+            var pythonDict = new PythonDictionary();
+            foreach (var pair in dict)
+                pythonDict.Add(pair.Key, pair.Value);
+
+            return pythonDict;
+        }
+    }
+
     public class MainWindowViewModel : BaseViewModel, IDisposable
     {
         public static SolidColorBrush INACTIVE_FRAME_BACKGROUND = new SolidColorBrush(Colors.White);
@@ -30,17 +55,14 @@ namespace KPUGeneralMacro
 
         private ScriptRuntime _pythonRuntime;
         private Mutex _pythonRuntimeLock = new Mutex();
-        private Stopwatch _elapsedStopwatch = new Stopwatch();
-        private Stopwatch _idleStopwatch = new Stopwatch();
+        private readonly Stopwatch _elapsedStopwatch = new Stopwatch();
+        private readonly Stopwatch _idleStopwatch = new Stopwatch();
         private string _lastStatusName = string.Empty;
-        private bool _handleFrameThreadExecutable = true;
-        private Mutex _handleFrameThreadExecutableLock = new Mutex();
         private Dialog.SpriteDialog _spriteDialog;
 
-        public Resource Resource { get; private set; } = new Resource();
         public MainWindow MainWindow { get; private set; }
 
-        public DestinationApp App => DestinationApp.Instance;
+        public Model.App target { get; private set; }
 
         public OptionViewModel OptionViewModel { get; private set; } = new OptionViewModel();
 
@@ -52,31 +74,66 @@ namespace KPUGeneralMacro
 
         public string RunningStateText => this.IsRunning ? "진행중" : "대기중";
 
-        public SolidColorBrush FrameBackgroundBrush => this.Frame != null ? ACTIVE_FRAME_BACKGROUND : INACTIVE_FRAME_BACKGROUND;
+        public SolidColorBrush FrameBackgroundBrush => this.Bitmap != null ? ACTIVE_FRAME_BACKGROUND : INACTIVE_FRAME_BACKGROUND;
 
         public string ExceptionText { get; private set; } = string.Empty;
         public string StatusName { get; private set; } = "Unknown";
 
         public string RunButtonText => this.IsRunning? "Stop" : "Run";
 
-        private BitmapImage _frame;
-        public BitmapImage Frame
+        private BitmapImage _bitmap;
+        public BitmapImage Bitmap
         {
-            get => this.IsRunning ? this._frame : null;
+            get
+            {
+                if (this.IsRunning == false)
+                    return null;
+
+                return this._bitmap;
+            }
             set 
             {
-                this._frame = value; 
+                this._bitmap = value; 
                 this.OnPropertyChanged(nameof(this.FrameBackgroundBrush)); 
             }
         }
 
         public Dictionary<string, Model.Sprite> Sprites { get; private set; } = new Dictionary<string, Model.Sprite>();
+        public PythonDictionary sprites => Sprites.ToPythonDictionary();
 
-        public Mutex SourceFrameLock { get; private set; } = new Mutex();
-        public Mat SourceFrame { get; private set; }
-        public bool InitStopWatch { get; set; } = false;
+        private Mutex _sourceFrameLock = new Mutex();
+        private Mat _sourceFrame = null;
+        public Mat Frame
+        {
+            get
+            {
+                try
+                {
+                    this._sourceFrameLock.WaitOne();
+                    if (this._sourceFrame == null)
+                        return null;
 
-        public ObservableCollection<LogViewModel> LogItems { get; private set; } = new ObservableCollection<LogViewModel>();
+                    var mat = new Mat();
+                    this._sourceFrame.CopyTo(mat);
+                    return mat;
+                }
+                finally
+                {
+                    this._sourceFrameLock.ReleaseMutex();
+                }
+            }
+            set
+            {
+                this._sourceFrameLock.WaitOne();
+                if (this._sourceFrame != null)
+                    this._sourceFrame.Dispose();
+
+                this._sourceFrame = value;
+                this._sourceFrameLock.ReleaseMutex();
+            }
+        }
+
+        public ObservableCollection<LogViewModel> Logs { get; private set; } = new ObservableCollection<LogViewModel>();
 
         public Visibility DarkBackgroundVisibility { get; private set; } = Visibility.Hidden;
 
@@ -99,8 +156,6 @@ namespace KPUGeneralMacro
         public MainWindowViewModel(MainWindow mainWindow)
         {
             this.MainWindow = mainWindow;
-            DestinationApp.Instance.Frame += this.App_Frame;
-
             this.OptionViewModel.Load();
 
             this.SetMinimizeCommand = new RelayCommand(this.OnSetMinimize);
@@ -140,7 +195,7 @@ namespace KPUGeneralMacro
         {
             var parameters = obj as object[];
             var selectedRect = (System.Windows.Rect)parameters[1];
-            var selectedFrame = new Mat(this.SourceFrame, new OpenCvSharp.Rect { X = (int)selectedRect.X, Y = (int)selectedRect.Y, Width = (int)selectedRect.Width, Height = (int)selectedRect.Height });
+            var selectedFrame = new Mat(this.Frame, new OpenCvSharp.Rect { X = (int)selectedRect.X, Y = (int)selectedRect.Y, Width = (int)selectedRect.Width, Height = (int)selectedRect.Height });
 
             if (this._spriteDialog != null)
                 return;
@@ -249,62 +304,14 @@ namespace KPUGeneralMacro
             var stopWatch = new Stopwatch();
             stopWatch.Start();
 
-this.SourceFrameLock.WaitOne();
-            if (this.SourceFrame != null)
-                this.SourceFrame.Dispose();
-
-            this.SourceFrame = frame;
-this.SourceFrameLock.ReleaseMutex();
-            this.ExecPython(this.OptionViewModel.Model.RenderScriptName, frame);
-            this.Frame = frame.ToBitmap();
+            this.Frame = frame;
+            this.Bitmap = frame.ToBitmap();
             this._elapsedStopwatch.Stop();
             this.ElapsedTime = this.ElapsedTime + TimeSpan.FromMilliseconds(this._elapsedStopwatch.ElapsedMilliseconds);
             this._elapsedStopwatch.Restart();
 
-
-this._handleFrameThreadExecutableLock.WaitOne();
-            if (this._handleFrameThreadExecutable)
-            {
-                var thread = new Thread(new ThreadStart(this.FrameHandlerRoutine));
-                thread.Start();
-            }
-this._handleFrameThreadExecutableLock.ReleaseMutex();
             stopWatch.Stop();
             Thread.Sleep(Math.Max(0, 1000 / OptionViewModel.Model.RenderFPS - (int)stopWatch.ElapsedMilliseconds));
-        }
-
-        private void FrameHandlerRoutine()
-        {
-            var stopWatch = new Stopwatch();
-            stopWatch.Start();
-
-            var frame = this.SourceFrame.Clone();
-
-            try
-            {
-this._handleFrameThreadExecutableLock.WaitOne();
-                this._handleFrameThreadExecutable = false;
-this._handleFrameThreadExecutableLock.ReleaseMutex();
-
-                var points = new Dictionary<string, OpenCvSharp.Point>();
-            }
-            catch (Exception e)
-            {
-                this.StatusName = "Unknown";
-            }
-            finally
-            {
-                this.ExecPython(this.OptionViewModel.Model.FrameScriptName, frame, null, true);
-
-this._handleFrameThreadExecutableLock.WaitOne();
-                this._handleFrameThreadExecutable = true;
-this._handleFrameThreadExecutableLock.ReleaseMutex();
-
-                frame.Dispose();
-            }
-
-            stopWatch.Stop();
-            Thread.Sleep(Math.Max(0, 1000 / this.OptionViewModel.Model.DetectFPS - (int)stopWatch.ElapsedMilliseconds));
         }
 
         private void OnRun(object obj)
@@ -333,16 +340,29 @@ this._handleFrameThreadExecutableLock.ReleaseMutex();
                 this.LoadResources(this.OptionViewModel.Model.ResourceFile);
                 this._elapsedStopwatch.Restart();
                 this._idleStopwatch.Reset();
-                DestinationApp.Instance.BindToApp(this.OptionViewModel.Model.ClassName);
-                DestinationApp.Instance.Start();
+                if (this.target != null)
+                    target.Frame -= this.App_Frame;
+
+                target = Model.App.Find(this.OptionViewModel.Model.ClassName);
+                target.Frame += this.App_Frame;
+                target.Start();
                 this.IsRunning = true;
 
-                this.ExecPython(this.OptionViewModel.Model.InitializeScriptName);
                 this.ExceptionText = string.Empty;
+
+                Task.Run(() => 
+                {
+                    this.ExecPython("scripts/do.py");
+                });
             }
             catch (Exception e)
             {
-                DestinationApp.Instance.Stop();
+                if (target != null)
+                {
+                    target.Stop();
+                    target.Frame -= this.App_Frame;
+                    target = null;
+                }
                 this.ReleasePythonModule();
                 this.ReleaseResources();
                 this._elapsedStopwatch.Reset();
@@ -358,13 +378,16 @@ this._handleFrameThreadExecutableLock.ReleaseMutex();
                 return;
 
             this.ReleasePythonModule();
-            DestinationApp.Instance.Stop();
-            DestinationApp.Instance.Unbind();
+            if (target != null)
+            {
+                target.Stop();
+                target.Frame -= this.App_Frame;
+                target = null;
+            }
             this.ElapsedTime = new TimeSpan();
             this._elapsedStopwatch.Reset();
             this._idleStopwatch.Reset();
             this._lastStatusName = string.Empty;
-            this.ExecPython(this.OptionViewModel.Model.DisposeScriptName);
             this.IsRunning = false;
 
             //if (this._spriteWindow != null)
@@ -499,50 +522,18 @@ this._pythonRuntimeLock.ReleaseMutex();
             //this.Detector = null;
         }
 
-        private void randomTimer_Tick(object status)
-        {
-            var parameters = status as string[];
-            var script = parameters[0];
-            var name = parameters[1];
-
-            //this.UnsetTimer(name);
-            this.ExecPython(script);
-        }
-
-        //public Timer SetTimer(string name, int interval, string script)
-        //{
-        //    if (this.Timers.ContainsKey(name))
-        //        return null;
-
-        //    var createdTimer = new Timer(this.randomTimer_Tick, new string[] { script, name }, interval, Timeout.Infinite);
-        //    this.Timers.Add(name, createdTimer);
-
-        //    return createdTimer;
-        //}
-
-        //public void UnsetTimer(string name)
-        //{
-        //    if (this.Timers.ContainsKey(name) == false)
-        //        return;
-
-        //    var timer = this.Timers[name] as System.Threading.Timer;
-        //    timer.Dispose();
-        //    this.Timers.Remove(name);
-        //}
-
-        private object ExecPython(string fname, Mat frame = null, object parameter = null, bool log = false)
+        private object ExecPython(string path)
         {
             try
             {
 this._pythonRuntimeLock.WaitOne();
-                var script = $"scripts/{fname}";
                 if (this._pythonRuntime == null)
                     return null;
 
-                dynamic scope = this._pythonRuntime.UseFile(script);
-                var ret = scope.callback(this, frame, parameter);
-                if (log && ret != null)
-                    this.AddHistory($"{script} Returns : {ret}");
+                dynamic scope = this._pythonRuntime.UseFile(path);
+                var ret = scope.callback(this);
+                if (ret != null)
+                    this.Logs.Add($"{path} Returns : {ret}");
 
                 return ret;
             }
@@ -565,163 +556,6 @@ this._pythonRuntimeLock.ReleaseMutex();
         {
             this.OptionViewModel.Save();
             this.Stop();
-        }
-
-        private int? MatchNumber(Mat source)
-        {
-            var maximum = 0.0;
-            var percentage = 0.0;
-            var selected = new int?();
-            for (var num = 9; num > 0; num--)
-            {
-                var location = this.Resource.Sprites[num.ToString()].MatchTo(source, ref percentage, null as OpenCvSharp.Point?, null as OpenCvSharp.Size?, true, false);
-                if (location == null)
-                    continue;
-
-                if (percentage > maximum)
-                {
-                    selected = num;
-                    maximum = percentage;
-                }
-            }
-
-            return selected;
-        }
-
-        public List<OpenCvSharp.Rect>[] Compare(Mat frame, OpenCvSharp.Point offset1, OpenCvSharp.Point offset2, OpenCvSharp.Size size, int threshold = 64, int count = 5)
-        {
-            var source1 = new Mat(frame, new OpenCvSharp.Rect(offset1, size));
-            var source2 = new Mat(frame, new OpenCvSharp.Rect(offset2, size));
-
-            var difference = new Mat();
-            Cv2.Absdiff(source1, source2, difference);
-
-            difference = difference.Threshold(threshold, 255, ThresholdTypes.Binary); // 이거 애매함
-            difference = difference.MedianBlur(5);
-
-            var kernel = Mat.Ones(5, 5, MatType.CV_8UC1);
-            difference = difference.Dilate(kernel);
-            difference = difference.CvtColor(ColorConversionCodes.BGR2GRAY);
-
-            var percentage = Cv2.CountNonZero(difference) * 100.0f / (difference.Width * difference.Height);
-            if (percentage > 10.0f)
-                return null;
-
-            var labels = new Mat();
-            var stats = new Mat();
-            var centroids = new Mat();
-            var countLabels = difference.ConnectedComponentsWithStats(labels, stats, centroids);
-
-            var areaList1 = new List<OpenCvSharp.Rect>();
-            var areaList2 = new List<OpenCvSharp.Rect>();
-            for (var i = 1; i < countLabels; i++)
-            {
-                var x = stats.Get<int>(i, 0);
-                var y = stats.Get<int>(i, 1);
-                var width = stats.Get<int>(i, 2);
-                var height = stats.Get<int>(i, 3);
-                areaList1.Add(new OpenCvSharp.Rect(offset1.X + x, offset1.Y + y, width, height));
-                areaList2.Add(new OpenCvSharp.Rect(offset2.X + x, offset2.Y + y, width, height));
-            }
-
-            areaList1.Sort((area1, area2) => area1.Width * area1.Height > area2.Width * area2.Height ? -1 : 1);
-            areaList2.Sort((area1, area2) => area1.Width * area1.Height > area2.Width * area2.Height ? -1 : 1);
-
-            var cloned = frame.Clone();
-            foreach (var area in areaList1)
-                cloned.Rectangle(area, new Scalar(0, 0, 255));
-
-            //Cv2.ImShow("before", cloned);
-            //Cv2.WaitKey(0);
-            //Cv2.DestroyAllWindows();
-            //cloned.Dispose();
-
-            var deletedList = new List<OpenCvSharp.Rect>();
-            var basedLength = 250;
-            for (var i1 = 0; i1 < areaList1.Count; i1++)
-            {
-                if (deletedList.Contains(areaList1[i1]))
-                    continue;
-
-                for (var i2 = i1 + 1; i2 < areaList1.Count; i2++)
-                {
-                    var scaleLength = Math.Min(50, (int)(10 + 250 / ((Math.Max(areaList1[i1].Width, areaList1[i1].Height) + Math.Max(areaList1[i2].Width, areaList1[i2].Height)) / 2.0f)));
-                    var scaledArea = new OpenCvSharp.Rect(areaList1[i1].X - scaleLength, areaList1[i1].Y - scaleLength, areaList1[i1].Width + scaleLength * 2, areaList1[i1].Height + scaleLength * 2);
-                    var overlapped = scaledArea & areaList1[i2];
-                    if (overlapped.Width != 0 && overlapped.Height != 0)
-                        deletedList.Add(areaList1[i2]);
-                }
-            }
-
-            foreach (var deleted in deletedList)
-                areaList1.Remove(deleted);
-
-            cloned = frame.Clone();
-            foreach (var area in areaList1)
-                cloned.Rectangle(area, new Scalar(0, 0, 255));
-
-            //Cv2.ImShow("after", cloned);
-            //Cv2.WaitKey(0);
-            //Cv2.DestroyAllWindows();
-            //cloned.Dispose();
-
-
-            if (areaList1.Count != count)
-            {
-                if (threshold < 0)
-                    return null;
-
-                return Compare(frame, offset1, offset2, size, threshold - 1, count);
-            }
-
-            deletedList.Clear();
-            for (var i1 = 0; i1 < areaList2.Count; i1++)
-            {
-                if (deletedList.Contains(areaList2[i1]))
-                    continue;
-
-                for (var i2 = i1 + 1; i2 < areaList2.Count; i2++)
-                {
-                    var scaleLength = Math.Min(50, (int)(10 + 250 / ((Math.Max(areaList2[i1].Width, areaList2[i1].Height) + Math.Max(areaList2[i2].Width, areaList2[i2].Height)) / 2.0f)));
-                    var scaledArea = new OpenCvSharp.Rect(areaList2[i1].X - scaleLength, areaList2[i1].Y - scaleLength, areaList2[i1].Width + scaleLength * 2, areaList2[i1].Height + scaleLength * 2);
-                    var overlapped = scaledArea & areaList2[i2];
-                    if (overlapped.Width != 0 && overlapped.Height != 0)
-                        deletedList.Add(areaList2[i2]);
-                }
-            }
-
-            foreach (var deleted in deletedList)
-                areaList2.Remove(deleted);
-
-            return new List<OpenCvSharp.Rect>[] { areaList1, areaList2 };
-        }
-
-        public IronPython.Runtime.List Compare(Mat frame, PythonTuple offset1, PythonTuple offset2, PythonTuple size, int threshold = 64, int count = 5)
-        {
-            try
-            {
-                var areaLists = this.Compare(frame, new OpenCvSharp.Point((int)offset1[0], (int)offset1[1]), new OpenCvSharp.Point((int)offset2[0], (int)offset2[1]), new OpenCvSharp.Size((int)size[0], (int)size[1]), threshold, count);
-                if (areaLists == null)
-                    throw new Exception();
-
-                var pythonAreaLists = new IronPython.Runtime.List();
-                foreach (var areaList in areaLists)
-                {
-                    var pythonAreaList = new IronPython.Runtime.List();
-                    foreach (var area in areaList)
-                    {
-                        var pythonArea = new PythonTuple(new object[] { area.X, area.Y, area.Width, area.Height });
-                        pythonAreaList.Add(pythonArea);
-                    }
-                    pythonAreaLists.Add(pythonAreaList);
-                }
-
-                return pythonAreaLists;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
         }
 
         public bool DrawRectangles(Mat frame, List<OpenCvSharp.Rect> areas, uint color = 0xffff0000)
@@ -758,19 +592,31 @@ this._pythonRuntimeLock.ReleaseMutex();
             }
         }
 
-        public void Sleep(int m)
+        private Dictionary<string, Model.Sprite.DetectionResult> Detect(params string[] spriteNames)
         {
-            Thread.Sleep(m);
+            return spriteNames.Select(x =>
+            {
+                if (this.Sprites.TryGetValue(x, out var sprite) == false)
+                    return null;
+
+                return sprite;
+            })
+            .Where(x => x != null)
+            .ToDictionary(x => x.Name, x => x.MatchTo(this.Frame));
         }
 
-        public void AddHistory(string message, DateTime? datetime = null)
+        public PythonDictionary Detect(PythonTuple spriteNames, double minPercentage = 0.0)
         {
-            try
+            while (true)
             {
-                this.LogItems.Add(new LogViewModel(message, datetime != null ? datetime.Value : DateTime.Now));
+                var result = Detect(spriteNames.Select(x => x as string).ToArray());
+                result = result.Where(x => x.Value.Percentage >= minPercentage).ToDictionary(x => x.Key, x => x.Value);
+                if (result.Count == 0)
+                    continue;
+
+                return result.ToDictionary(x => x.Key, x => x.Value.ToPythonDictionary())
+                    .ToPythonDictionary();
             }
-            catch (Exception)
-            { }
         }
     }
 }
