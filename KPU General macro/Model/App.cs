@@ -444,6 +444,9 @@ namespace KPUGeneralMacro.Model
                 try
                 {
                     var frame = this.Capture();
+                    if (frame == null)
+                        continue;
+
                     this.Area = this.GetArea();
                     this.PyArea = Area.ToTuple();
                     this.Frame?.Invoke(frame);
@@ -560,7 +563,7 @@ namespace KPUGeneralMacro.Model
                     flag = flag << 2;
 
                 this.SetActive(true, 0);
-                Thread.Sleep(30);
+                Thread.Sleep(250);
 
                 var down = new INPUT();
                 down.Type = 0;
@@ -652,6 +655,11 @@ namespace KPUGeneralMacro.Model
                 this.KeyPress((Keys)c, sleepTime);
         }
 
+        public void KeyDown(int key, int sleepTime = 100)
+        {
+            KeyDown((Keys)key, sleepTime);
+        }
+
         public void KeyDown(Keys key, int sleepTime = 100)
         {
             if (this.OperationType == OperationType.Hardware)
@@ -675,6 +683,11 @@ namespace KPUGeneralMacro.Model
             {
                 SendMessage(this.Hwnd, 0x0100, new IntPtr((int)key), IntPtr.Zero);
             }
+        }
+
+        public void KeyUp(int key, int sleepTime = 100)
+        {
+            KeyUp((Keys)key, sleepTime);
         }
 
         public void KeyUp(Keys key, int sleepTime = 100)
@@ -743,9 +756,19 @@ namespace KPUGeneralMacro.Model
             this.Click((int)point[0], (int)point[1], doubleClick);
         }
 
+        public void RClick(PythonTuple point, bool doubleClick = false)
+        {
+            this.Click(MouseButtons.Right, (int)point[0], (int)point[1], doubleClick);
+        }
+
         public void Escape()
         {
             this.KeyPress(Keys.Escape);
+        }
+
+        public void Enter()
+        {
+            this.KeyPress(Keys.Enter);
         }
 
         public void SendMessage(int message, IntPtr w, IntPtr l)

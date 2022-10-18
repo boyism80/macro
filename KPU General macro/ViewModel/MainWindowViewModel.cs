@@ -54,7 +54,6 @@ namespace KPUGeneralMacro
         public const int MAXIMUM_IDLE_TIME = 1000 * 2;
 
         private ScriptRuntime _pythonRuntime;
-        private Mutex _pythonRuntimeLock = new Mutex();
         private readonly Stopwatch _elapsedStopwatch = new Stopwatch();
         private readonly Stopwatch _idleStopwatch = new Stopwatch();
         private string _lastStatusName = string.Empty;
@@ -377,7 +376,6 @@ namespace KPUGeneralMacro
             if (this.IsRunning == false)
                 return;
 
-            this.ReleasePythonModule();
             if (target != null)
             {
                 target.Stop();
@@ -389,6 +387,7 @@ namespace KPUGeneralMacro
             this._idleStopwatch.Reset();
             this._lastStatusName = string.Empty;
             this.IsRunning = false;
+            this.ReleasePythonModule();
 
             //if (this._spriteWindow != null)
             //    this._spriteWindow.Close();
@@ -474,13 +473,11 @@ namespace KPUGeneralMacro
             if (File.Exists(Path.Combine(path, "python.exe")) == false)
                 throw new Exception($"Cannot find python.exe file in '{path}'.");
 
-this._pythonRuntimeLock.WaitOne();
             if (this._pythonRuntime != null)
                 this._pythonRuntime.Shutdown();
 
             this._pythonRuntime = Python.CreateRuntime();
             var engine = this._pythonRuntime.GetEngine("IronPython");
-this._pythonRuntimeLock.ReleaseMutex();
             var paths = engine.GetSearchPaths();
             paths.Add(path);
             paths.Add(Path.Combine(path, @"DLLs"));
@@ -492,12 +489,10 @@ this._pythonRuntimeLock.ReleaseMutex();
 
         private void ReleasePythonModule()
         {
-this._pythonRuntimeLock.WaitOne();
             if(this._pythonRuntime != null)
                 this._pythonRuntime.Shutdown();
 
             this._pythonRuntime = null;
-this._pythonRuntimeLock.ReleaseMutex();
         }
 
         private void LoadResources(string resourceFileName)
@@ -526,29 +521,28 @@ this._pythonRuntimeLock.ReleaseMutex();
         {
             try
             {
-this._pythonRuntimeLock.WaitOne();
                 if (this._pythonRuntime == null)
                     return null;
 
                 dynamic scope = this._pythonRuntime.UseFile(path);
                 var ret = scope.callback(this);
                 if (ret != null)
-                    this.Logs.Add($"{path} Returns : {ret}");
+                    this.Logs.Add($"{path} return : {ret}");
 
                 return ret;
             }
             catch (System.IO.FileNotFoundException)
             {
+                this.Logs.Add($"{path} does not exists");
                 return null;
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+                this.Logs.Add($"{path} return : {e.Message}");
                 return null;
             }
             finally
             {
-this._pythonRuntimeLock.ReleaseMutex();
             }
         }
 
@@ -592,7 +586,7 @@ this._pythonRuntimeLock.ReleaseMutex();
             }
         }
 
-        private Dictionary<string, Model.Sprite.DetectionResult> Detect(params string[] spriteNames)
+        private Dictionary<string, Model.Sprite.DetectionResult> Detect(List<string> spriteNames, OpenCvSharp.Rect? area = null)
         {
             return spriteNames.Select(x =>
             {
@@ -602,21 +596,35 @@ this._pythonRuntimeLock.ReleaseMutex();
                 return sprite;
             })
             .Where(x => x != null)
-            .ToDictionary(x => x.Name, x => x.MatchTo(this.Frame));
+            .ToDictionary(x => x.Name, x => x.MatchTo(this.Frame, area));
         }
 
-        public PythonDictionary Detect(PythonTuple spriteNames, double minPercentage = 0.0)
+        public PythonDictionary Detect(PythonTuple spriteNames, double minPercentage = 0.0, PythonDictionary area = null)
         {
-            while (true)
+            while (this.IsRunning)
             {
-                var result = Detect(spriteNames.Select(x => x as string).ToArray());
+                var areaCv = area != null ? 
+                    (OpenCvSharp.Rect?)new OpenCvSharp.Rect((int)area["x"], (int)area["y"], (int)area["width"], (int)area["height"]) : 
+                    null;
+
+                var result = Detect(spriteNames.Select(x => x as string).ToList(), area: areaCv);
                 result = result.Where(x => x.Value.Percentage >= minPercentage).ToDictionary(x => x.Key, x => x.Value);
                 if (result.Count == 0)
+                {
+                    Thread.Sleep(100);
                     continue;
+                }
 
                 return result.ToDictionary(x => x.Key, x => x.Value.ToPythonDictionary())
                     .ToPythonDictionary();
             }
+
+            return new PythonDictionary();
+        }
+
+        public void Sleep(int milliseconds)
+        {
+            Thread.Sleep(milliseconds);
         }
     }
 }

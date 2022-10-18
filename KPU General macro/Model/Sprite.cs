@@ -53,6 +53,9 @@ namespace KPUGeneralMacro.Model
             var to = this.ExtensionColor.Activated ?
                 this.Mat.ToMask(this.ExtensionColor.Pivot, this.ExtensionColor.Factor) : this.Mat.Clone();
 
+            if (area != null)
+                from = new Mat(from, area.Value);
+
             try
             {
                 var matched = from.MatchTemplate(to, TemplateMatchModes.CCoeffNormed);
@@ -82,7 +85,7 @@ namespace KPUGeneralMacro.Model
 
                 return result;
             }
-            catch
+            catch(Exception e)
             {
                 throw;
             }

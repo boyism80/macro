@@ -18,7 +18,7 @@
     </WindowChrome.WindowChrome>
     <DockPanel Style="{StaticResource WindowDialog}" LastChildFill="False" >
         <DockPanel Width="{Binding Path=ActualWidth, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DockPanel}}">
-            <Grid DockPanel.Dock="Top">
+            <Grid DockPanel.Dock="Top" Height="650">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="0.6*" />
                     <ColumnDefinition Width="0.4*" />
@@ -118,7 +118,9 @@
                                     <ColumnDefinition Width="60" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <Image Grid.Column="0" Stretch="Uniform" Source="{Binding Bitmap}" />
+                                <Border Grid.Column="0" Background="Gray">
+                                    <Image Stretch="Uniform" Height="60" Source="{Binding Bitmap}" />
+                                </Border>
                                 <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="White" Margin="10 0 0 0" VerticalAlignment="Center" />
                             </Grid>
                         </DataTemplate>
