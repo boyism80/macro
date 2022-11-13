@@ -8,6 +8,7 @@
         WindowStyle="None"
         AllowsTransparency="True"
         WindowStartupLocation="CenterScreen"
+        Loaded="Window_Loaded"
         Closed="Window_Closed"
         Title="KPU General macro" Height="968" Width="1280" MinHeight="800" MinWidth="1280">
 
@@ -234,8 +235,9 @@
                     Background="{Binding FrameBackgroundBrush}"
                     BorderBrush="#1272d8"
                     BorderThickness="1">
-                <local:Screen Frame="{Binding Bitmap}" 
-                              SelectRectCommand="{Binding SelectedRectCommand}"/>
+                <local:Screen Bitmap="{Binding Bitmap}" 
+                              SelectRectCommand="{Binding SelectedRectCommand}"
+                              SizeChanged="MainScreen_SizeChanged"/>
             </Border>
 
             <Border Grid.Row="0"

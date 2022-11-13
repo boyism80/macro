@@ -4,11 +4,12 @@ using OpenCvSharp;
 using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Linq;
+using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Windows.Forms;
-using System.Linq;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace KPUGeneralMacro.Model
 {
@@ -19,6 +20,7 @@ namespace KPUGeneralMacro.Model
 
     public class App
     {
+        #region API
         #region Windows enumerator
         public enum TernaryRasterOperations : uint
         {
@@ -74,8 +76,6 @@ namespace KPUGeneralMacro.Model
             DIB_RGB_COLORS = 0,
             DIB_PAL_COLORS = 1
         }
-
-
 
         #endregion
 
@@ -274,6 +274,7 @@ namespace KPUGeneralMacro.Model
         static extern int GetDIBits([In] IntPtr hdc, [In] IntPtr hbmp, uint uStartScan, uint cScanLines, [Out] byte[] lpvBits, ref BITMAPINFO lpbi, DIB_Color_Mode uUsage);
 
 
+
 #pragma warning disable 649
         internal struct INPUT
         {
@@ -324,10 +325,10 @@ namespace KPUGeneralMacro.Model
 
 #pragma warning restore 649
         #endregion
-
-        #region Delegates
-        public delegate void FrameEventHandler(Mat frame);
         #endregion
+
+
+        public delegate void FrameEventHandler(Mat frame);
 
         private System.Drawing.Point _prevCursorPosition;
         private string _className;
@@ -372,6 +373,9 @@ namespace KPUGeneralMacro.Model
 
         public event FrameEventHandler Frame;
 
+        public TimeSpan GCDelay = TimeSpan.FromSeconds(1);
+        public DateTime LastGcCollectDate { get; private set; } = DateTime.Now;
+
         private App(string className)
         {
             this.Hwnd = this.FindAppHandle(className);
@@ -382,6 +386,11 @@ namespace KPUGeneralMacro.Model
             }
 
             this.ClassName = className;
+        }
+
+        static App()
+        {
+            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
         }
 
         private System.Drawing.Rectangle GetArea()
@@ -451,10 +460,18 @@ namespace KPUGeneralMacro.Model
                     this.PyArea = Area.ToTuple();
                     this.Frame?.Invoke(frame);
 
-                    //frame.Dispose();
+                    frame.Dispose();
+
+                    if (DateTime.Now - LastGcCollectDate > GCDelay)
+                    {
+                        GC.Collect();
+                        LastGcCollectDate = DateTime.Now;
+                    }
                 }
-                catch (Exception)
-                { }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
             }
         }
 
@@ -575,8 +592,9 @@ namespace KPUGeneralMacro.Model
 
                 var inputs = doubleClick ? new INPUT[] { down, up, down, up } : new INPUT[] { down, up };
                 SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
+                Thread.Sleep(250);
 
-                this.SetActive(false, 50);
+                this.SetActive(false, 0);
                 this.RestoreCursorPosition();
             }
             else
@@ -592,6 +610,85 @@ namespace KPUGeneralMacro.Model
             }
         }
 
+        public void Click(MouseButtons button, System.Drawing.Point location, params Keys[] keys)
+        {
+            if (this.OperationType == OperationType.Hardware)
+            {
+                this.StoreCursorPosition(location);
+
+                var downList = keys.Select(key =>
+                {
+                    return new INPUT
+                    {
+                        Type = 1,
+                        Data = new MOUSEKEYBDHARDWAREINPUT
+                        {
+                            Keyboard = new KEYBDINPUT
+                            {
+                                Vk = (ushort)key,
+                                Scan = 0,
+                                Flags = 0x0000,
+                                Time = 0,
+                                ExtraInfo = IntPtr.Zero,
+                            }
+                        }
+                    };
+                });
+
+                var upList = keys.Reverse().Select(key =>
+                {
+                    return new INPUT
+                    {
+                        Type = 1,
+                        Data = new MOUSEKEYBDHARDWAREINPUT
+                        {
+                            Keyboard = new KEYBDINPUT
+                            {
+                                Vk = (ushort)key,
+                                Scan = 0,
+                                Flags = 0x0002,
+                                Time = 0,
+                                ExtraInfo = IntPtr.Zero,
+                            }
+                        }
+                    };
+                });
+
+                var flag = (uint)0x0002;
+                if (button != MouseButtons.Left)
+                    flag = flag << 2;
+
+                this.SetActive(true, 0);
+                Thread.Sleep(250);
+
+                var down = new INPUT();
+                down.Type = 0;
+                down.Data.Mouse.Flags = flag;
+
+                var up = new INPUT();
+                up.Type = 0;
+                up.Data.Mouse.Flags = flag << 1;
+
+                var inputs = downList.Concat(new[] { down, up }).Concat(upList).ToArray();
+                SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
+                Thread.Sleep(250);
+
+                this.SetActive(false, 0);
+                this.RestoreCursorPosition();
+            }
+            else
+            {
+                foreach (var key in keys)
+                    this.KeyDown(key);
+
+                this.MouseDown(button, location);
+                this.MouseUp(button, location);
+
+                foreach (var key in keys.Reverse())
+                    this.KeyUp(key);
+            }
+        }
+
         public void StoreCursorPosition(System.Drawing.Point location)
         {
             var area = this.Area;
@@ -600,9 +697,27 @@ namespace KPUGeneralMacro.Model
             Cursor.Position = new System.Drawing.Point(area.X + location.X, area.Y + location.Y);
         }
 
+        public void StoreCursorPosition(PythonTuple point)
+        {
+            StoreCursorPosition((int)point[0], (int)point[1]);
+        }
+
         public void RestoreCursorPosition()
         {
             Cursor.Position = this._prevCursorPosition;
+        }
+
+        public PythonTuple GetCursorPosition()
+        {
+            return new PythonTuple(new[] { Cursor.Position.X, Cursor.Position.Y });
+        }
+
+        public PythonTuple SetCursorPosition(PythonTuple point)
+        {
+            var prev = Cursor.Position;
+            Cursor.Position = new System.Drawing.Point((int)point[0], (int)point[1]);
+
+            return new PythonTuple(new[] { prev.X, prev.Y });
         }
 
         public void StoreCursorPosition(int x, int y)
@@ -649,10 +764,66 @@ namespace KPUGeneralMacro.Model
             }
         }
 
+        public void KeyPress(params Keys[] keys)
+        {
+            if (this.OperationType == OperationType.Hardware)
+            {
+                this.SetActive(true, 100);
+
+                var downList = keys.Select(key =>
+                {
+                    var down = new INPUT();
+                    down.Type = 1;
+                    down.Data.Keyboard.Vk = (ushort)key;
+                    down.Data.Keyboard.Scan = 0;
+                    down.Data.Keyboard.Flags = 0x0000;
+                    down.Data.Keyboard.Time = 0;
+                    down.Data.Keyboard.ExtraInfo = IntPtr.Zero;
+
+                    return down;
+                });
+
+                var upList = keys.Reverse().Select(key =>
+                {
+                    var up = new INPUT();
+                    up.Type = 1;
+                    up.Data.Keyboard.Vk = (ushort)key;
+                    up.Data.Keyboard.Scan = 0;
+                    up.Data.Keyboard.Flags = 0x0002;
+                    up.Data.Keyboard.Time = 0;
+                    up.Data.Keyboard.ExtraInfo = IntPtr.Zero;
+
+                    return up;
+                });
+
+                var inputs = downList.Concat(upList).ToArray();
+                SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
+
+                this.SetActive(false, 100);
+            }
+            else
+            {
+                foreach (var key in keys)
+                {
+                    this.KeyDown(key);
+                }
+
+                foreach (var key in keys.Reverse())
+                {
+                    this.KeyUp(key);
+                }
+            }
+        }
+
         public void KeyPress(string key, int sleepTime = 100)
         {
             foreach (var c in key)
                 this.KeyPress((Keys)c, sleepTime);
+        }
+
+        public void KeyPress(PythonTuple keys)
+        {
+            KeyPress(keys.ToKeys().ToArray());
         }
 
         public void KeyDown(int key, int sleepTime = 100)
@@ -707,7 +878,7 @@ namespace KPUGeneralMacro.Model
                 var inputs = new INPUT[] { up };
                 SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
 
-                /// return mouse 
+                // return mouse 
                 this.SetActive(false, sleepTime);
             }
             else
@@ -759,6 +930,11 @@ namespace KPUGeneralMacro.Model
         public void RClick(PythonTuple point, bool doubleClick = false)
         {
             this.Click(MouseButtons.Right, (int)point[0], (int)point[1], doubleClick);
+        }
+
+        public void RClick(PythonTuple point, PythonTuple keys)
+        {
+            this.Click(MouseButtons.Right, new System.Drawing.Point((int)point[0], (int)point[1]), keys.ToKeys().ToArray());
         }
 
         public void Escape()

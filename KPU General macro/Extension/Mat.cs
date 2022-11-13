@@ -1,5 +1,6 @@
 ﻿using OpenCvSharp;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 
@@ -24,6 +25,22 @@ namespace KPUGeneralMacro.Extension
             }).ToArray();
 
             return (splitted[0] & splitted[1] & splitted[2]).ToMat();
+        }
+
+        public static IEnumerable<RotatedRect> GetRotatedRects(this Mat mat, float threshold)
+        {
+            if (mat.Type() != MatType.CV_8UC1)
+                mat.ConvertTo(mat, MatType.CV_8UC1);
+
+            mat = mat.Erode(null).Dilate(null);
+
+            mat.FindContours(out var contours, out _, RetrievalModes.External, ContourApproximationModes.ApproxSimple);
+
+            return contours.Select(x => 
+            {
+                var detectedRect = Cv2.MinAreaRect(x);
+                return detectedRect;
+            });
         }
     }
 }

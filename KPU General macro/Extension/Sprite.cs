@@ -16,12 +16,14 @@ namespace KPUGeneralmacro.Extension
             writer.Write(sprite.Name);
             writer.Write(bytes.Length);
             writer.Write(bytes);
+            writer.Write(sprite.Threshold);
             writer.Write(sprite.ExtensionColor);
         }
 
         public static void Write(this BinaryWriter writer, ExtensionColor extColor)
         {
             writer.Write(extColor.Activated);
+            writer.Write(extColor.DetectColor);
             writer.Write(extColor.Pivot.ToArgb());
             writer.Write(extColor.Factor);
         }
@@ -41,6 +43,7 @@ namespace KPUGeneralmacro.Extension
             {
                 Name = reader.ReadString(),
                 Mat = Cv2.ImDecode(reader.ReadBytes(reader.ReadInt32()), ImreadModes.AnyColor),
+                Threshold = reader.ReadSingle(),
                 ExtensionColor = reader.ReadExtColor()
             };
         }
@@ -50,6 +53,7 @@ namespace KPUGeneralmacro.Extension
             return new ExtensionColor
             {
                 Activated = reader.ReadBoolean(),
+                DetectColor = reader.ReadBoolean(),
                 Pivot = Color.FromArgb(reader.ReadInt32()),
                 Factor = reader.ReadSingle()
             };

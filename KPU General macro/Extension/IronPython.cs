@@ -1,5 +1,8 @@
 ﻿using IronPython.Runtime;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Windows.Forms;
 
 namespace KPUGeneralMacro.Extension
 {
@@ -37,6 +40,34 @@ namespace KPUGeneralMacro.Extension
                 pythonDict.Add(pair.Key, pair.Value);
 
             return pythonDict;
+        }
+
+        public static IEnumerable<Keys> ToKeys(this PythonTuple keys)
+        { 
+            return keys.Select(x => x as string)
+                .Select(x =>
+                {
+                    switch (x)
+                    {
+                        case "ALT":
+                            return Keys.LMenu;
+
+                        case "ENTER":
+                            return Keys.Enter;
+
+                        case "CTRL":
+                            return Keys.LControlKey;
+
+                        case "`":
+                            return Keys.Oem3;
+
+                        default:
+                            if (Enum.TryParse<Keys>(x, out var key) == false)
+                                throw new Exception("invalid key");
+
+                            return key;
+                    }
+                }).ToArray();
         }
     }
 }

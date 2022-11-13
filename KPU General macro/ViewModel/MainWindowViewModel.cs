@@ -13,6 +13,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -47,21 +48,23 @@ namespace KPUGeneralMacro
         }
     }
 
-    public class MainWindowViewModel : BaseViewModel, IDisposable
+    public partial class MainWindowViewModel : BaseViewModel, IDisposable
     {
+        [DllImport("user32.dll")]
+        static extern short GetAsyncKeyState(System.Windows.Forms.Keys vKey);
+
         public static SolidColorBrush INACTIVE_FRAME_BACKGROUND = new SolidColorBrush(Colors.White);
         public static SolidColorBrush ACTIVE_FRAME_BACKGROUND = new SolidColorBrush(System.Windows.Media.Color.FromRgb(222, 222, 222));
         public const int MAXIMUM_IDLE_TIME = 1000 * 2;
 
         private ScriptRuntime _pythonRuntime;
         private readonly Stopwatch _elapsedStopwatch = new Stopwatch();
-        private readonly Stopwatch _idleStopwatch = new Stopwatch();
-        private string _lastStatusName = string.Empty;
         private Dialog.SpriteDialog _spriteDialog;
 
         public MainWindow MainWindow { get; private set; }
 
         public Model.App target { get; private set; }
+        public PythonDictionary heap { get; private set; } = new PythonDictionary();
 
         public OptionViewModel OptionViewModel { get; private set; } = new OptionViewModel();
 
@@ -70,13 +73,13 @@ namespace KPUGeneralMacro
         public TimeSpan ElapsedTime { get; private set; } = new TimeSpan();
 
         public bool IsRunning { get; private set; } = false;
+        public bool IsExecutePython { get; private set; }
 
         public string RunningStateText => this.IsRunning ? "진행중" : "대기중";
 
         public SolidColorBrush FrameBackgroundBrush => this.Bitmap != null ? ACTIVE_FRAME_BACKGROUND : INACTIVE_FRAME_BACKGROUND;
 
         public string ExceptionText { get; private set; } = string.Empty;
-        public string StatusName { get; private set; } = "Unknown";
 
         public string RunButtonText => this.IsRunning? "Stop" : "Run";
 
@@ -112,9 +115,11 @@ namespace KPUGeneralMacro
                     if (this._sourceFrame == null)
                         return null;
 
-                    var mat = new Mat();
-                    this._sourceFrame.CopyTo(mat);
-                    return mat;
+                    return this._sourceFrame.Clone();
+                }
+                catch (Exception)
+                {
+                    return null;
                 }
                 finally
                 {
@@ -124,10 +129,8 @@ namespace KPUGeneralMacro
             set
             {
                 this._sourceFrameLock.WaitOne();
-                if (this._sourceFrame != null)
-                    this._sourceFrame.Dispose();
-
-                this._sourceFrame = value;
+                this._sourceFrame?.Dispose();
+                this._sourceFrame = value.Clone();
                 this._sourceFrameLock.ReleaseMutex();
             }
         }
@@ -303,6 +306,8 @@ namespace KPUGeneralMacro
             var stopWatch = new Stopwatch();
             stopWatch.Start();
 
+            //frame = Cv2.ImRead("Screenshot_221107_234754.jpg");
+
             this.Frame = frame;
             this.Bitmap = frame.ToBitmap();
             this._elapsedStopwatch.Stop();
@@ -323,9 +328,6 @@ namespace KPUGeneralMacro
             {
                 this.Run();
             }
-
-            this.OnPropertyChanged(nameof(this.RunningStateText));
-            this.OnPropertyChanged(nameof(this.RunButtonText));
         }
 
         public void Run()
@@ -338,7 +340,6 @@ namespace KPUGeneralMacro
                 this.LoadPythonModules(this.OptionViewModel.Model.PythonDirectory);
                 this.LoadResources(this.OptionViewModel.Model.ResourceFile);
                 this._elapsedStopwatch.Restart();
-                this._idleStopwatch.Reset();
                 if (this.target != null)
                     target.Frame -= this.App_Frame;
 
@@ -346,13 +347,7 @@ namespace KPUGeneralMacro
                 target.Frame += this.App_Frame;
                 target.Start();
                 this.IsRunning = true;
-
                 this.ExceptionText = string.Empty;
-
-                Task.Run(() => 
-                {
-                    this.ExecPython("scripts/do.py");
-                });
             }
             catch (Exception e)
             {
@@ -369,6 +364,9 @@ namespace KPUGeneralMacro
 
                 this.ExceptionText = e.Message;
             }
+
+            this.OnPropertyChanged(nameof(this.RunningStateText));
+            this.OnPropertyChanged(nameof(this.RunButtonText));
         }
 
         public void Stop()
@@ -384,13 +382,19 @@ namespace KPUGeneralMacro
             }
             this.ElapsedTime = new TimeSpan();
             this._elapsedStopwatch.Reset();
-            this._idleStopwatch.Reset();
-            this._lastStatusName = string.Empty;
             this.IsRunning = false;
             this.ReleasePythonModule();
 
+            if (this.IsRunning == false)
+            { 
+
+            }
+
             //if (this._spriteWindow != null)
             //    this._spriteWindow.Close();
+
+            this.OnPropertyChanged(nameof(this.RunningStateText));
+            this.OnPropertyChanged(nameof(this.RunButtonText));
         }
 
         private void OnBrowsePythonDirectory(object obj)
@@ -485,14 +489,58 @@ namespace KPUGeneralMacro
             paths.Add(Path.Combine(path, @"lib\site-packages"));
             paths.Add(Path.Combine(Directory.GetCurrentDirectory(), "scripts"));
             engine.SetSearchPaths(paths);
+
+            ExecPython("scripts/init.py");
         }
 
         private void ReleasePythonModule()
         {
-            if(this._pythonRuntime != null)
-                this._pythonRuntime.Shutdown();
-
+            this._pythonRuntime?.Shutdown();
             this._pythonRuntime = null;
+        }
+
+        public void DumpCache(string filename, IronPython.Runtime.PythonDictionary cache)
+        {
+            using (var writer = new BinaryWriter(File.Open(filename, FileMode.CreateNew)))
+            {
+                writer.Write(cache.Count);
+                foreach (var pair in cache)
+                {
+                    try
+                    {
+                        var id = pair.Key as string;
+                        writer.Write(id);
+
+                        var percent = (double)pair.Value;
+                        writer.Write(percent);
+                    }
+                    catch (Exception e)
+                    {
+                        Logs.Add(e.Message);
+                    }
+                }
+            }
+        }
+
+        public IronPython.Runtime.PythonDictionary LoadCache(string filename)
+        {
+            var cache = new IronPython.Runtime.PythonDictionary();
+            if (File.Exists(filename))
+            {
+                using (var reader = new BinaryReader(File.Open(filename, FileMode.Open)))
+                {
+                    var count = reader.ReadInt32();
+                    for (int i = 0; i < count; i++)
+                    {
+                        var id = reader.ReadString();
+                        var percent = reader.ReadDouble();
+
+                        cache.Add(id, percent);
+                    }
+                }
+            }
+
+            return cache;
         }
 
         private void LoadResources(string resourceFileName)
@@ -517,39 +565,94 @@ namespace KPUGeneralMacro
             //this.Detector = null;
         }
 
-        private object ExecPython(string path)
+        private Task<object> ExecPython(string path)
         {
-            try
-            {
-                if (this._pythonRuntime == null)
-                    return null;
-
-                dynamic scope = this._pythonRuntime.UseFile(path);
-                var ret = scope.callback(this);
-                if (ret != null)
-                    this.Logs.Add($"{path} return : {ret}");
-
-                return ret;
-            }
-            catch (System.IO.FileNotFoundException)
-            {
-                this.Logs.Add($"{path} does not exists");
+            if (IsExecutePython)
                 return null;
-            }
-            catch (Exception e)
-            {
-                this.Logs.Add($"{path} return : {e.Message}");
+
+            if (this._pythonRuntime == null)
                 return null;
-            }
-            finally
+
+            var tcs = new TaskCompletionSource<object>();
+            Task.Run(() => 
             {
-            }
+                try
+                {
+                    dynamic scope = this._pythonRuntime.UseFile(path);
+                    IsExecutePython = true;
+                    var ret = scope.callback(this);
+
+                    if (ret is IronPython.Runtime.PythonGenerator generator)
+                    {
+                        foreach (var value in generator)
+                        {
+                            if (ret != null)
+                                this.Logs.Add($"{path} return : {value}");
+                        }
+
+                        tcs.SetResult(generator);
+                    }
+                    else
+                    {
+                        if (ret != null)
+                            this.Logs.Add($"{path} return : {ret}");
+
+                        tcs.SetResult(ret);
+                    }
+                }
+                catch (System.IO.FileNotFoundException e)
+                {
+                    this.Logs.Add($"{path} does not exists");
+                    tcs.SetException(e);
+                }
+                catch (Exception e)
+                {
+                    this.Logs.Add($"{path} return : {e.Message}");
+                    this.Logs.Add(e.StackTrace);
+                    tcs.SetException(e);
+                }
+                finally
+                {
+                    IsExecutePython = false;
+                }
+            });
+
+            return tcs.Task;
         }
 
         public void Dispose()
         {
             this.OptionViewModel.Save();
             this.Stop();
+        }
+
+        public void OnXButton2Down()
+        {
+            if ((GetAsyncKeyState(System.Windows.Forms.Keys.LControlKey) & 0x8000) == 0x8000)
+            {
+                this.Run();
+            }
+            else
+            {
+                this.ExecPython("scripts/g.py");
+            }
+        }
+
+        public void OnWheelClick()
+        {
+            this.ExecPython("scripts/wheel.py");
+        }
+
+        public void OnXButton1Down()
+        {
+            if ((GetAsyncKeyState(System.Windows.Forms.Keys.LControlKey) & 0x8000) == 0x8000)
+            {
+                this.Stop();
+            }
+            else
+            {
+                this.ExecPython("scripts/dialogue.py");
+            }
         }
 
         public bool DrawRectangles(Mat frame, List<OpenCvSharp.Rect> areas, uint color = 0xffff0000)
@@ -567,7 +670,7 @@ namespace KPUGeneralMacro
             return true;
         }
 
-        public bool DrawRectangles(Mat frame, IronPython.Runtime.List areas, uint color = 0xffff0000)
+        public bool DrawRectangles(Mat frame, IronPython.Runtime.PythonList areas, uint color = 0xffff0000)
         {
             try
             {
@@ -588,6 +691,10 @@ namespace KPUGeneralMacro
 
         private Dictionary<string, Model.Sprite.DetectionResult> Detect(List<string> spriteNames, OpenCvSharp.Rect? area = null)
         {
+            var frame = this.Frame;
+            if (frame == null)
+                return new Dictionary<string, Model.Sprite.DetectionResult>();
+
             return spriteNames.Select(x =>
             {
                 if (this.Sprites.TryGetValue(x, out var sprite) == false)
@@ -596,10 +703,10 @@ namespace KPUGeneralMacro
                 return sprite;
             })
             .Where(x => x != null)
-            .ToDictionary(x => x.Name, x => x.MatchTo(this.Frame, area));
+            .ToDictionary(x => x.Name, x => x.MatchTo(frame, area));
         }
 
-        public PythonDictionary Detect(PythonTuple spriteNames, double minPercentage = 0.0, PythonDictionary area = null)
+        public PythonDictionary Detect(PythonTuple spriteNames, double minPercentage = 0.8, PythonDictionary area = null, bool untilDetect = true)
         {
             while (this.IsRunning)
             {
@@ -611,8 +718,15 @@ namespace KPUGeneralMacro
                 result = result.Where(x => x.Value.Percentage >= minPercentage).ToDictionary(x => x.Key, x => x.Value);
                 if (result.Count == 0)
                 {
-                    Thread.Sleep(100);
-                    continue;
+                    if (untilDetect)
+                    {
+                        Thread.Sleep(100);
+                        continue;
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
 
                 return result.ToDictionary(x => x.Key, x => x.Value.ToPythonDictionary())
@@ -620,6 +734,31 @@ namespace KPUGeneralMacro
             }
 
             return new PythonDictionary();
+        }
+
+        public PythonDictionary Detect(string spriteName, double minPercentage = 0.8, PythonDictionary area = null, bool untilDetect = true)
+        {
+            return Detect(new PythonTuple(new[] { spriteName }), minPercentage, area, untilDetect);
+        }
+
+        public IronPython.Runtime.PythonList DetectAll(string spriteName, float percentage = 0.8f, PythonDictionary area = null)
+        {
+            var frame = this.Frame;
+            var result = new IronPython.Runtime.PythonList();
+            var areaCv = area != null ?
+                    (OpenCvSharp.Rect?)new OpenCvSharp.Rect((int)area["x"], (int)area["y"], (int)area["width"], (int)area["height"]) :
+                    null;
+
+            if (this.Sprites.TryGetValue(spriteName, out var sprite) == false)
+                return result;
+
+            var detectionResults = sprite.MatchToAll(frame, percentage, areaCv).Select(x => x.ToPythonDictionary());
+            foreach (var detectionResult in detectionResults)
+            {
+                result.Add(detectionResult);
+            }
+
+            return result;
         }
 
         public void Sleep(int milliseconds)

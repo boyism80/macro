@@ -29,6 +29,18 @@ namespace KPUGeneralMacro.ViewModel
             }
         }
 
+        private bool _detectColor;
+        public bool DetectColor
+        {
+            get => _detectColor;
+            set
+            {
+                _detectColor = value;
+                this.OnPropertyChanged(this._owner, nameof(Sprite.Bitmap));
+                this.OnPropertyChanged(this._owner, nameof(Sprite.MaskBitmap));
+            }
+        }
+
         private Color _pivot = Color.FromArgb(255, Color.White);
         public Color Pivot
         {
@@ -54,22 +66,22 @@ namespace KPUGeneralMacro.ViewModel
             set
             {
                 _factor = value;
-                this.OnPropertyChanged(nameof(this.FactorPercent));
+                this.OnPropertyChanged(nameof(this.FactorText));
                 this.OnPropertyChanged(this._owner, nameof(Sprite.Bitmap));
                 this.OnPropertyChanged(this._owner, nameof(Sprite.MaskBitmap));
             }
         }
 
         public string Hex => ColorTranslator.ToHtml(Pivot);
-        public string FactorPercent => $"{Factor * 100:0.00}";
+        public string FactorText => $"{Factor * 100:0.00}";
 
         public Model.ExtensionColor Model => new Model.ExtensionColor
         { 
             Activated = Activated,
+            DetectColor = DetectColor,
             Pivot = Pivot,
             Factor = Factor
         };
-
 
         public ExtensionColor(Sprite owner)
         {
@@ -80,6 +92,7 @@ namespace KPUGeneralMacro.ViewModel
         {
             this._owner = owner;
             this._activated = extension.Activated;
+            this._detectColor = extension.DetectColor;
             this._factor = extension.Factor;
             this._pivot = extension.Pivot;
         }
@@ -101,9 +114,21 @@ namespace KPUGeneralMacro.ViewModel
             {
                 if (this.ExtColor.Activated)
                 {
-                    var mat = new Mat();
-                    this.Source.CopyTo(mat, Mask);
-                    return mat;
+                    if (ExtColor.DetectColor)
+                    {
+                        var detectedRect = Mask.GetRotatedRects(Threshold).OrderByDescending(x => x.Size.Width * x.Size.Height).FirstOrDefault();
+                        var points = detectedRect.Points().Select(x => (OpenCvSharp.Point)x).ToList();
+
+                        var result = this.Source.Clone();
+                        Cv2.DrawContours(result, new[] { points }, -1, Scalar.Lime, 2);
+                        return result;
+                    }
+                    else
+                    {
+                        var result = new Mat();
+                        Source.CopyTo(result, Mask);
+                        return result;
+                    }
                 }
                 else
                 {
@@ -117,8 +142,9 @@ namespace KPUGeneralMacro.ViewModel
             {
                 if (this.ExtColor.Activated == false)
                     return this.Source;
-                else
-                    return this.Source.ToMask(this.ExtColor.Pivot, this.ExtColor.Factor);
+                
+                var result = this.Source.ToMask(this.ExtColor.Pivot, this.ExtColor.Factor);
+                return result;
             }
         }
 
@@ -160,6 +186,18 @@ namespace KPUGeneralMacro.ViewModel
             }
         }
 
+        private float _threshold = 0.8f;
+        public float Threshold
+        {
+            get => _threshold;
+            set
+            {
+                _threshold = value;
+                this.OnPropertyChanged(nameof(this.ThresholdText));
+            }
+        }
+        public string ThresholdText => $"{Threshold * 100:0.00}";
+
         private ExtensionColor _extension;
         public ExtensionColor ExtColor
         {
@@ -181,6 +219,7 @@ namespace KPUGeneralMacro.ViewModel
         { 
             Name = Name,
             Mat = Source,
+            Threshold = Threshold,
             ExtensionColor = ExtColor.Model
         };
 
@@ -198,17 +237,13 @@ namespace KPUGeneralMacro.ViewModel
             this._owner = owner;
             this.Name = sprite.Name;
             this.Source = sprite.Mat;
+            this.Threshold = sprite.Threshold;
             this.ExtColor = new ExtensionColor(this, sprite.ExtensionColor);
         }
 
         public Sprite(ViewModel.Sprite sprite) : this(sprite._owner, sprite.Model)
         { 
 
-        }
-
-        public override string ToString()
-        {
-            return this.Name;
         }
     }
 }

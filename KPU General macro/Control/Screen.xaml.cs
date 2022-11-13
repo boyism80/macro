@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KPUGeneralMacro.Extension;
+using System;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -41,7 +42,7 @@ namespace KPUGeneralMacro
         {
             get
             {
-                if (this.Frame == null)
+                if (this.Bitmap == null)
                     return Visibility.Hidden;
 
                 return this._cursorLabelVisibility;
@@ -92,13 +93,13 @@ namespace KPUGeneralMacro
             {
                 try
                 {
-                    if (this.Frame == null)
+                    if (this.Bitmap == null)
                         throw new Exception();
 
                     var actualFrameSize = new Size
                     {
-                        Width = this.Ratio * this.Frame.Width,
-                        Height = this.Ratio * this.Frame.Height
+                        Width = this.Ratio * this.Bitmap.Width,
+                        Height = this.Ratio * this.Bitmap.Height
                     };
 
                     var padding = new Point
@@ -199,20 +200,20 @@ namespace KPUGeneralMacro
         {
             get
             {
-                if (this.Frame.Width > this.Frame.Height)
-                    return (this.ActualWidth / this.Frame.Width);
+                if (this.Bitmap.Width > this.Bitmap.Height)
+                    return (this.ActualWidth / this.Bitmap.Width);
                 else
-                    return (this.ActualHeight / this.Frame.Height);
+                    return (this.ActualHeight / this.Bitmap.Height);
             }
         }
 
-        public static readonly DependencyProperty FrameProperty = DependencyProperty.Register("Frame", typeof(BitmapImage), typeof(Screen));
-        public BitmapImage Frame
+        public static readonly DependencyProperty BitmapProperty = DependencyProperty.Register("Bitmap", typeof(BitmapImage), typeof(Screen));
+        public BitmapImage Bitmap
         {
-            get { return (BitmapImage)GetValue(FrameProperty); }
-            set 
-            { 
-                SetValue(FrameProperty, value);
+            get { return (BitmapImage)GetValue(BitmapProperty); }
+            set
+            {
+                SetValue(BitmapProperty, value);
                 this.OnPropertyChanged(nameof(this.SelectedRect));
                 this.OnPropertyChanged(nameof(this.CursorLabelVisibility));
             }
@@ -243,7 +244,7 @@ namespace KPUGeneralMacro
 
         private void UpdateCursorPoint(Point absolutePoint)
         {
-            if (this.Frame == null)
+            if (this.Bitmap == null)
                 return;
 
             this.PointLabelLocation = absolutePoint;
@@ -257,14 +258,14 @@ namespace KPUGeneralMacro
 
             this.CursorPoint = new Point
             {
-                X = Math.Max(0, Math.Min(this.Frame.Width, mappedPoint.X)),
-                Y = Math.Max(0, Math.Min(this.Frame.Height, mappedPoint.Y)),
+                X = Math.Max(0, Math.Min(this.Bitmap.Width, mappedPoint.X)),
+                Y = Math.Max(0, Math.Min(this.Bitmap.Height, mappedPoint.Y)),
             };
         }
 
         private void Screen_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (this.Frame == null)
+            if (this.Bitmap == null)
                 return;
 
             if (e.ChangedButton != MouseButton.Left)
@@ -281,7 +282,7 @@ namespace KPUGeneralMacro
 
         private void Screen_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            if (this.Frame == null)
+            if (this.Bitmap == null)
                 return;
 
             if (e.ChangedButton != System.Windows.Input.MouseButton.Left)
@@ -304,7 +305,7 @@ namespace KPUGeneralMacro
             var coordination = e.GetPosition(this);
             this.UpdateCursorPoint(coordination);
 
-            if (this.Frame == null)
+            if (this.Bitmap == null)
                 return;
 
             if (this.Dragging == false)

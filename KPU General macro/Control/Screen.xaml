@@ -15,7 +15,7 @@
     <Grid>
         <Canvas>
             <Canvas.Background>
-                <ImageBrush ImageSource="{Binding Frame, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:Screen}}"
+                <ImageBrush ImageSource="{Binding Bitmap, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:Screen}}"
                             Stretch="Uniform"/>
             </Canvas.Background>
 
