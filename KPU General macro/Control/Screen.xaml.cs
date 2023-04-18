@@ -188,6 +188,8 @@ namespace KPUGeneralMacro
         /// 선택영역 표시 여부
         /// </summary>
         public Visibility SelectedRectVisibility { get; private set; } = Visibility.Hidden;
+
+        public MouseButton MouseButton { get; private set; }
         #endregion
 
 
@@ -268,12 +270,10 @@ namespace KPUGeneralMacro
             if (this.Bitmap == null)
                 return;
 
-            if (e.ChangedButton != MouseButton.Left)
-                return;
-
             if (this.Dragging)
                 return;
 
+            this.MouseButton = e.ChangedButton;
             this.Dragging = true;
             this.Begin = e.GetPosition(this);
             this.Size = new Size();
@@ -285,14 +285,11 @@ namespace KPUGeneralMacro
             if (this.Bitmap == null)
                 return;
 
-            if (e.ChangedButton != System.Windows.Input.MouseButton.Left)
-                return;
-
             if (this.Dragging == false)
                 return;
 
             if(this.SelectedFrameRect.Width > 0 && this.SelectedFrameRect.Height > 0)
-                this.SelectRectCommand.Execute(new object[] { this.DataContext, this.SelectedFrameRect });
+                this.SelectRectCommand.Execute(new object[] { this.DataContext, this.SelectedFrameRect, e.ChangedButton });
 
             this.Dragging = false;
             this.Begin = new Point();

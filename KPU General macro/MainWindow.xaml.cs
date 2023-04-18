@@ -163,7 +163,24 @@ namespace KPUGeneralMacro
             }
             catch
             { }
+
+            this.MainWindowViewModel.Started += MainWindowViewModel_Started;
+            this.MainWindowViewModel.Stopped += MainWindowViewModel_Stopped;
+
             this.DataContext = this.MainWindowViewModel;
+        }
+
+        private void MainWindowViewModel_Stopped(object sender, EventArgs e)
+        {
+            
+        }
+
+        private void MainWindowViewModel_Started(object sender, EventArgs e)
+        {
+            if (_hook != IntPtr.Zero)
+                UnhookWindowsHookEx(_hook);
+
+            _hook = SetWindowsHookEx(HookType.WH_MOUSE_LL, _hookProc, _user32dll, 0);
         }
 
         private IntPtr OnWindowsHook(int code, IntPtr wParam, IntPtr lParam)
@@ -197,7 +214,11 @@ namespace KPUGeneralMacro
             this.MainWindowViewModel.Stop();
             this.MainWindowViewModel.Save();
 
-            UnhookWindowsHookEx(_hook);
+            if (_hook != IntPtr.Zero)
+            {
+                UnhookWindowsHookEx(_hook);
+                _hook = IntPtr.Zero;
+            }
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)

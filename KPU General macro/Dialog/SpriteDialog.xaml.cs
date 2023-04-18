@@ -31,8 +31,10 @@ namespace KPUGeneralMacro.Dialog
                 return;
 
             var selected = this.Sprites.SelectedItem as ViewModel.Sprite;
-            ctx.Original = new ViewModel.Sprite(ctx, selected.Model);
-            ctx.Sprite = new ViewModel.Sprite(selected);
+            if (selected == null)
+                return;
+
+            ctx.Sprite = selected;
         }
     }
 }

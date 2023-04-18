@@ -130,6 +130,7 @@ namespace KPUGeneralMacro.Model
 
                 var roi = new Mat(frame, detectionResult.Rect);
                 roi.SetTo(Scalar.Black);
+
                 result.Add(detectionResult);
             }
 

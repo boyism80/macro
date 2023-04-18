@@ -373,7 +373,7 @@ namespace KPUGeneralMacro.Model
 
         public event FrameEventHandler Frame;
 
-        public TimeSpan GCDelay = TimeSpan.FromSeconds(1);
+        public TimeSpan GCDelay = TimeSpan.FromMilliseconds(500);
         public DateTime LastGcCollectDate { get; private set; } = DateTime.Now;
 
         private App(string className)
@@ -390,7 +390,7 @@ namespace KPUGeneralMacro.Model
 
         static App()
         {
-            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+            
         }
 
         private System.Drawing.Rectangle GetArea()
@@ -457,14 +457,13 @@ namespace KPUGeneralMacro.Model
                         continue;
 
                     this.Area = this.GetArea();
-                    this.PyArea = Area.ToTuple();
                     this.Frame?.Invoke(frame);
 
                     frame.Dispose();
 
                     if (DateTime.Now - LastGcCollectDate > GCDelay)
                     {
-                        GC.Collect();
+                        GC.Collect(GC.MaxGeneration, GCCollectionMode.Default, false);
                         LastGcCollectDate = DateTime.Now;
                     }
                 }
@@ -537,7 +536,7 @@ namespace KPUGeneralMacro.Model
                 var inputs = new INPUT[] { action };
                 SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
 
-                this.SetActive(false, 50);
+                // this.SetActive(false, 50);
                 Cursor.Position = beforeLocation;
             }
             else
@@ -594,7 +593,7 @@ namespace KPUGeneralMacro.Model
                 SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
                 Thread.Sleep(250);
 
-                this.SetActive(false, 0);
+                // this.SetActive(false, 0);
                 this.RestoreCursorPosition();
             }
             else
@@ -673,7 +672,7 @@ namespace KPUGeneralMacro.Model
                 SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
                 Thread.Sleep(250);
 
-                this.SetActive(false, 0);
+                // this.SetActive(false, 0);
                 this.RestoreCursorPosition();
             }
             else
@@ -755,7 +754,7 @@ namespace KPUGeneralMacro.Model
                 var inputs = new INPUT[] { down, up };
                 SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
 
-                this.SetActive(false, sleepTime);
+                // this.SetActive(false, sleepTime);
             }
             else
             {
@@ -799,7 +798,7 @@ namespace KPUGeneralMacro.Model
                 var inputs = downList.Concat(upList).ToArray();
                 SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
 
-                this.SetActive(false, 100);
+                // this.SetActive(false, 100);
             }
             else
             {
@@ -848,7 +847,7 @@ namespace KPUGeneralMacro.Model
                 var inputs = new INPUT[] { down };
                 SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
 
-                this.SetActive(false, sleepTime);
+                // this.SetActive(false, sleepTime);
             }
             else
             {
@@ -879,7 +878,7 @@ namespace KPUGeneralMacro.Model
                 SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
 
                 // return mouse 
-                this.SetActive(false, sleepTime);
+                // this.SetActive(false, sleepTime);
             }
             else
             {

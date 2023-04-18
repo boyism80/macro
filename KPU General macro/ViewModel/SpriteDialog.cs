@@ -1,5 +1,6 @@
 ﻿using OpenCvSharp;
 using PropertyChanged;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -21,8 +22,6 @@ namespace KPUGeneralMacro.ViewModel
         public void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
         public SpriteDialogMode Mode { get; private set; }
-
-        public ViewModel.Sprite Original { get; set; }
 
         private ViewModel.Sprite _sprite;
         public ViewModel.Sprite Sprite
@@ -60,20 +59,27 @@ namespace KPUGeneralMacro.ViewModel
         public ICommand CaptureCommand { get; private set; }
         public ICommand CompleteCommand { get; set; }
         public ICommand CancelCommand { get; set; }
+        public ICommand RemoveCommand { get; set; }
 
         public SpriteDialog(IEnumerable<Model.Sprite> sprites)
         {
             this.Mode = SpriteDialogMode.Edit;
-            this.Sprites = new ObservableCollection<Sprite>(sprites.Select(x => new Sprite(this, x)));
+            this.Sprites = new ObservableCollection<Sprite>(sprites.OrderBy(x => x.Name).Select(x => new Sprite(this, x)));
             this.CaptureCommand = new RelayCommand(this.OnCapture);
             this.CompleteCommand = new RelayCommand(this.OnComplete);
             this.CancelCommand = new RelayCommand(this.OnCancel);
+            this.RemoveCommand = new RelayCommand(this.OnRemove);
+        }
+
+        private void OnRemove(object obj)
+        {
+            var sprite = obj as Sprite;
+            Sprites.Remove(sprite);
         }
 
         public SpriteDialog(Mat frame, IEnumerable<Model.Sprite> sprites) : this(sprites)
         {
             this.Mode = SpriteDialogMode.Create;
-            this.Original = null;
             this.Sprite = new Sprite(this, frame);
         }
 

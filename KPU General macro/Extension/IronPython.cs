@@ -61,6 +61,12 @@ namespace KPUGeneralMacro.Extension
                         case "`":
                             return Keys.Oem3;
 
+                        case "SHIFT":
+                            return Keys.LShiftKey;
+
+                        case "ESCAPE":
+                            return Keys.Escape;
+
                         default:
                             if (Enum.TryParse<Keys>(x, out var key) == false)
                                 throw new Exception("invalid key");

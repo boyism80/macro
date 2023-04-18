@@ -53,6 +53,9 @@ namespace KPUGeneralMacro
         [DllImport("user32.dll")]
         static extern short GetAsyncKeyState(System.Windows.Forms.Keys vKey);
 
+        public event EventHandler Started;
+        public event EventHandler Stopped;
+
         public static SolidColorBrush INACTIVE_FRAME_BACKGROUND = new SolidColorBrush(Colors.White);
         public static SolidColorBrush ACTIVE_FRAME_BACKGROUND = new SolidColorBrush(System.Windows.Media.Color.FromRgb(222, 222, 222));
         public const int MAXIMUM_IDLE_TIME = 1000 * 2;
@@ -198,21 +201,36 @@ namespace KPUGeneralMacro
             var parameters = obj as object[];
             var selectedRect = (System.Windows.Rect)parameters[1];
             var selectedFrame = new Mat(this.Frame, new OpenCvSharp.Rect { X = (int)selectedRect.X, Y = (int)selectedRect.Y, Width = (int)selectedRect.Width, Height = (int)selectedRect.Height });
+            var mouseButton = (MouseButton)parameters[2];
 
-            if (this._spriteDialog != null)
-                return;
-
-            this._spriteDialog = new Dialog.SpriteDialog
+            switch (mouseButton)
             {
-                DataContext = new ViewModel.SpriteDialog(selectedFrame, this.Sprites.Values)
-                { 
-                    CompleteCommand = new RelayCommand(this.OnSpriteCreated),
-                    CancelCommand = new RelayCommand(this.OnCancelSprite)
-                }
-            };
+                case MouseButton.Left:
+                    {
+                        if (this._spriteDialog != null)
+                            return;
 
-            this._spriteDialog.Show();
-            this._spriteDialog.Closed += this._spriteDialog_Closed;
+                        this._spriteDialog = new Dialog.SpriteDialog
+                        {
+                            DataContext = new ViewModel.SpriteDialog(selectedFrame, this.Sprites.Values)
+                            {
+                                CompleteCommand = new RelayCommand(this.OnSpriteCreated),
+                                CancelCommand = new RelayCommand(this.OnCancelSprite)
+                            }
+                        };
+
+                        this._spriteDialog.Show();
+                        this._spriteDialog.Closed += this._spriteDialog_Closed;
+                    }
+                    break;
+
+                case MouseButton.Right:
+                    {
+                        Clipboard.SetText($"{{\"x\": {(int)selectedRect.X}, \"y\": {(int)selectedRect.Y}, \"width\": {(int)selectedRect.Width}, \"height\": {(int)selectedRect.Height}}}");
+                        MessageBox.Show("클립보드에 영역이 저장되었습니다.");
+                    }
+                    break;
+            }
         }
 
         private void _spriteDialog_Closed(object sender, EventArgs e)
@@ -253,18 +271,7 @@ namespace KPUGeneralMacro
                     return;
 
                 var vm = this._spriteDialog.DataContext as ViewModel.SpriteDialog;
-                var nameChanged = (vm.Original.Name != vm.Sprite.Name);
-                if (nameChanged)
-                {
-                    if (string.IsNullOrEmpty(vm.Sprite.Name))
-                        throw new Exception("스프라이트 이름을 입력해야 합니다.");
-
-                    if (this.Sprites.ContainsKey(vm.Sprite.Name))
-                        throw new Exception($"{vm.Sprite.Name} : 존재하는 스프라이트 이름입니다.");
-                }
-
-                this.Sprites.Remove(vm.Original.Name);
-                this.Sprites.Add(vm.Sprite.Name, vm.Sprite.Model);
+                this.Sprites = vm.Sprites.ToDictionary(x => x.Name, x => x.Model);
                 this.Save("sprites.dat");
                 this._spriteDialog.Close();
             }
@@ -306,7 +313,7 @@ namespace KPUGeneralMacro
             var stopWatch = new Stopwatch();
             stopWatch.Start();
 
-            //frame = Cv2.ImRead("Screenshot_221107_234754.jpg");
+            //frame = Cv2.ImRead("Screenshot_230220_235629.jpg");
 
             this.Frame = frame;
             this.Bitmap = frame.ToBitmap();
@@ -338,7 +345,6 @@ namespace KPUGeneralMacro
                     return;
 
                 this.LoadPythonModules(this.OptionViewModel.Model.PythonDirectory);
-                this.LoadResources(this.OptionViewModel.Model.ResourceFile);
                 this._elapsedStopwatch.Restart();
                 if (this.target != null)
                     target.Frame -= this.App_Frame;
@@ -348,6 +354,8 @@ namespace KPUGeneralMacro
                 target.Start();
                 this.IsRunning = true;
                 this.ExceptionText = string.Empty;
+
+                Started?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception e)
             {
@@ -395,6 +403,8 @@ namespace KPUGeneralMacro
 
             this.OnPropertyChanged(nameof(this.RunningStateText));
             this.OnPropertyChanged(nameof(this.RunButtonText));
+
+            Stopped?.Invoke(this, EventArgs.Empty);
         }
 
         private void OnBrowsePythonDirectory(object obj)
@@ -543,15 +553,6 @@ namespace KPUGeneralMacro
             return cache;
         }
 
-        private void LoadResources(string resourceFileName)
-        {
-            //this.Resource.Load(resourceFileName);
-
-            //this.Sprite = this.Resource.Sprites.ToDict();
-            //this.Status = this.Resource.Statuses.ToDict();
-            //this.Detector = new Detector(this.Resource.Sprites, this.Resource.Statuses);
-        }
-
         private void ReleaseResources()
         {
             //this.Resource.Clear();
@@ -600,15 +601,18 @@ namespace KPUGeneralMacro
                         tcs.SetResult(ret);
                     }
                 }
-                catch (System.IO.FileNotFoundException e)
+                catch (FileNotFoundException e)
                 {
                     this.Logs.Add($"{path} does not exists");
                     tcs.SetException(e);
                 }
                 catch (Exception e)
                 {
-                    this.Logs.Add($"{path} return : {e.Message}");
-                    this.Logs.Add(e.StackTrace);
+                    if (this.IsRunning)
+                    {
+                        this.Logs.Add($"{path} return : {e.Message}");
+                        this.Logs.Add(e.StackTrace);
+                    }
                     tcs.SetException(e);
                 }
                 finally

@@ -154,27 +154,22 @@ namespace KPUGeneralMacro.ViewModel
             get => _name;
             set
             {
-                _name = value;
                 try
                 {
-                    if (string.IsNullOrEmpty(this.Name))
+                    if (string.IsNullOrEmpty(value))
                         throw new System.Exception("Sprite name cannot be empty");
 
                     if (this._owner.Mode == SpriteDialogMode.Create)
                     {
-                        var nameDuplicated = (this._owner.Sprites.FirstOrDefault(x => x.Name == this.Name) != null);
-                        if (nameDuplicated)
+                        var names = this._owner.Sprites.Select(x => x.Name).ToList();
+                        if (names.Contains(value))
                             throw new System.Exception($"{this.Name} already exists");
                     }
                     else
                     {
-                        if (this._owner.Original != null)
-                        {
-                            var nameChanged = (this._owner.Original.Name != this.Name);
-                            var nameDuplicated = (nameChanged && this._owner.Sprites.FirstOrDefault(x => x.Name == this.Name) != null);
-                            if (nameDuplicated)
-                                throw new System.Exception($"{this.Name} already exists");
-                        }
+                        var names = this._owner.Sprites.Except(new[] { this }).Select(x => x.Name).ToList();
+                        if (names.Contains(value))
+                            throw new System.Exception($"{value} already exists");
                     }
 
                     this._owner.NameException = string.Empty;
@@ -182,6 +177,10 @@ namespace KPUGeneralMacro.ViewModel
                 catch (System.Exception e)
                 {
                     this._owner.NameException = e.Message;
+                }
+                finally
+                {
+                    this._name = value;
                 }
             }
         }
