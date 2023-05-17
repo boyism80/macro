@@ -17,6 +17,7 @@ namespace KPUGeneralMacro.ViewModel
         public int DetectFPS { get; set; } = 30;
         public OperationType Operation { get; set; }
         public ExceptableText<string> ResourceFile { get; set; } = new ExceptableText<string>();
+        public ExceptableText<string> ScriptPath { get; set; } = new ExceptableText<string>();
         public ExceptableText<string> PythonDirectory { get; set; } = new ExceptableText<string>();
         public ExceptableText<string> InitializeScriptName { get; set; } = new ExceptableText<string>();
         public ExceptableText<string> FrameScriptName { get; set; } = new ExceptableText<string>();
@@ -61,6 +62,11 @@ namespace KPUGeneralMacro.ViewModel
             this.ResourceFile.Complete += this.ResourcesDirectory_Complete;
             this._exceptableTextList.Add(this.ResourceFile);
 
+            this.ScriptPath.Content = this.Model.ScriptPath;
+            this.ScriptPath.Assert += this.Directory_Assert;
+            this.ScriptPath.Complete += this.ScriptPath_Complete;
+            this._exceptableTextList.Add(this.ScriptPath);
+
             this.PythonDirectory.Content = this.Model.PythonDirectory;
             this.PythonDirectory.Assert += this.Directory_Assert;
             this.PythonDirectory.Complete += this.PythonDirectory_Complete;
@@ -85,6 +91,12 @@ namespace KPUGeneralMacro.ViewModel
             this.DisposeScriptName.Assert += this.DisposeScriptName_Assert;
             this.DisposeScriptName.Complete += this.DisposeScriptName_Complete;
             this._exceptableTextList.Add(this.DisposeScriptName);
+        }
+
+        private void ScriptPath_Complete(object sender, EventArgs e)
+        {
+            this.OnPropertyChanged(nameof(this.ScriptPath));
+            this.OnPropertyChanged(nameof(this.Completable));
         }
 
         private void RenderScriptName_Complete(object sender, EventArgs e)
@@ -173,7 +185,8 @@ namespace KPUGeneralMacro.ViewModel
                 //App.Ist.OperationType = this.Operation;
                 this.Model.RenderFPS = this.RenderFPS;
                 this.Model.DetectFPS = this.DetectFPS;
-                this.Model.ResourceFile = Path.GetFullPath(this.ResourceFile.Content);
+                this.Model.ResourceFile = this.ResourceFile.Content;
+                this.Model.ScriptPath = this.ScriptPath.Content;
                 this.Model.PythonDirectory = Path.GetFullPath(this.PythonDirectory.Content);
                 this.Model.InitializeScriptName = this.InitializeScriptName.Content;
                 this.Model.FrameScriptName = this.FrameScriptName.Content;
@@ -194,6 +207,7 @@ namespace KPUGeneralMacro.ViewModel
             this.RenderFPS = this.Model.RenderFPS;
             this.DetectFPS = this.Model.DetectFPS;
             this.ResourceFile.Content = this.Model.ResourceFile;
+            this.ScriptPath.Content = this.Model.ScriptPath;
             this.PythonDirectory.Content = this.Model.PythonDirectory;
             this.InitializeScriptName.Content = this.Model.InitializeScriptName;
             this.FrameScriptName.Content = this.Model.FrameScriptName;

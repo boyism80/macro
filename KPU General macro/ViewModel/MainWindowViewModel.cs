@@ -5,6 +5,7 @@ using KPUGeneralMacro.Dialog;
 using KPUGeneralMacro.Extension;
 using KPUGeneralMacro.ViewModel;
 using Microsoft.Scripting.Hosting;
+using Microsoft.Win32;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using OpenCvSharp;
 using System;
@@ -138,6 +139,8 @@ namespace KPUGeneralMacro
             }
         }
 
+        public Mat StaticFrame { get; private set; }
+
         public ObservableCollection<LogViewModel> Logs { get; private set; } = new ObservableCollection<LogViewModel>();
 
         public Visibility DarkBackgroundVisibility { get; private set; } = Visibility.Hidden;
@@ -147,10 +150,13 @@ namespace KPUGeneralMacro
         public ICommand CloseCommand { get; private set; }
         public ICommand OptionCommand { get; private set; }
         public ICommand EditSpriteCommand { get; private set; }
+        public ICommand SetPictureCommand { get; private set; }
+        public ICommand ResetScreenCommand { get; private set; }
         public ICommand RunCommand { get; private set; }
         public ICommand CompleteCommand { get; private set; }
         public ICommand CancelCommand { get; private set; }
         public ICommand SelectResourceFileCommand { get; private set; }
+        public ICommand SelectScriptPathCommand { get; private set; }
         public ICommand BrowsePythonDirectoryCommand { get; private set; }
         public ICommand SelectedRectCommand { get; private set; }
         public ICommand CreateSpriteCommand { get; private set; }
@@ -168,14 +174,45 @@ namespace KPUGeneralMacro
             this.CloseCommand = new RelayCommand(this.OnClose);
             this.OptionCommand = new RelayCommand(this.OnOption);
             this.EditSpriteCommand = new RelayCommand(this.OnEditSprite);
+            this.SetPictureCommand = new RelayCommand(this.OnSetPicture);
+            this.ResetScreenCommand = new RelayCommand(this.OnResetScreen);
             this.RunCommand = new RelayCommand(this.OnRun);
 
             this.CompleteCommand = new RelayCommand(this.OnComplete);
             this.CancelCommand = new RelayCommand(this.OnCancel);
             this.SelectResourceFileCommand = new RelayCommand(this.OnSelectSpriteCommand);
+            this.SelectScriptPathCommand = new RelayCommand(this.OnSelectScriptPathCommand);
             this.BrowsePythonDirectoryCommand = new RelayCommand(this.OnBrowsePythonDirectory);
             this.SelectedRectCommand = new RelayCommand(this.OnSelectedRect);
             this.CancelSpriteCommand = new RelayCommand(this.OnCancelSprite);
+        }
+
+        private void OnSelectScriptPathCommand(object obj)
+        {
+            var dialog = new CommonOpenFileDialog();
+            dialog.InitialDirectory = this.OptionViewModel.ResourceFile.Content;
+            dialog.IsFolderPicker = true;
+            if (dialog.ShowDialog() != CommonFileDialogResult.Ok)
+                return;
+
+            this.OptionViewModel.ScriptPath.Content = dialog.FileName;
+        }
+
+        private void OnResetScreen(object obj)
+        {
+            this.StaticFrame = null;
+        }
+
+        private void OnSetPicture(object obj)
+        {
+            var dialog = new OpenFileDialog();
+            dialog.DefaultExt = ".jpg";
+            dialog.Filter = "( *.bmp; *.jpg; *.png; *.jpeg) | *.BMP; *.JPG; *.PNG; *.JPEG";
+
+            if (dialog.ShowDialog() == false)
+                return;
+
+            this.StaticFrame = Cv2.ImRead(dialog.FileName);
         }
 
         private void OnEditSprite(object obj)
@@ -254,7 +291,7 @@ namespace KPUGeneralMacro
                     throw new Exception($"{sprite.Name} : 존재하는 스프라이트 이름입니다.");
 
                 this.Sprites[sprite.Name] = sprite;
-                this.Save("sprites.dat");
+                this.Save(this.OptionViewModel.ResourceFile.Content);
                 this._spriteDialog.Close();
             }
             catch (Exception e)
@@ -272,7 +309,7 @@ namespace KPUGeneralMacro
 
                 var vm = this._spriteDialog.DataContext as ViewModel.SpriteDialog;
                 this.Sprites = vm.Sprites.ToDictionary(x => x.Name, x => x.Model);
-                this.Save("sprites.dat");
+                this.Save(this.OptionViewModel.ResourceFile.Content);
                 this._spriteDialog.Close();
             }
             catch (Exception e)
@@ -281,7 +318,7 @@ namespace KPUGeneralMacro
             }
         }
 
-        public void Save(string filename = "sprites.dat")
+        public void Save(string filename )
         {
             using (var writer = new BinaryWriter(File.Open(filename, FileMode.OpenOrCreate)))
             {
@@ -289,7 +326,7 @@ namespace KPUGeneralMacro
             }
         }
 
-        public void Load(string filename = "sprites.dat")
+        public void Load(string filename)
         {
             if (File.Exists(filename) == false)
                 throw new Exception($"{filename} 파일을 찾을 수 없습니다.");
@@ -313,8 +350,9 @@ namespace KPUGeneralMacro
             var stopWatch = new Stopwatch();
             stopWatch.Start();
 
-            //frame = Cv2.ImRead("Screenshot_230220_235629.jpg");
-
+            if (this.StaticFrame != null)
+                frame = this.StaticFrame;
+            
             this.Frame = frame;
             this.Bitmap = frame.ToBitmap();
             this._elapsedStopwatch.Stop();
@@ -497,10 +535,10 @@ namespace KPUGeneralMacro
             paths.Add(Path.Combine(path, @"DLLs"));
             paths.Add(Path.Combine(path, @"lib"));
             paths.Add(Path.Combine(path, @"lib\site-packages"));
-            paths.Add(Path.Combine(Directory.GetCurrentDirectory(), "scripts"));
+            paths.Add(Path.Combine(OptionViewModel.ScriptPath.Content));
             engine.SetSearchPaths(paths);
 
-            ExecPython("scripts/init.py");
+            ExecPython("init.py");
         }
 
         private void ReleasePythonModule()
@@ -579,7 +617,7 @@ namespace KPUGeneralMacro
             {
                 try
                 {
-                    dynamic scope = this._pythonRuntime.UseFile(path);
+                    dynamic scope = this._pythonRuntime.UseFile(Path.Combine(OptionViewModel.ScriptPath.Content, path));
                     IsExecutePython = true;
                     var ret = scope.callback(this);
 
@@ -638,13 +676,13 @@ namespace KPUGeneralMacro
             }
             else
             {
-                this.ExecPython("scripts/g.py");
+                this.ExecPython("g.py");
             }
         }
 
         public void OnWheelClick()
         {
-            this.ExecPython("scripts/wheel.py");
+            this.ExecPython("wheel.py");
         }
 
         public void OnXButton1Down()
@@ -655,7 +693,7 @@ namespace KPUGeneralMacro
             }
             else
             {
-                this.ExecPython("scripts/dialogue.py");
+                this.ExecPython("dialogue.py");
             }
         }
 
@@ -710,8 +748,9 @@ namespace KPUGeneralMacro
             .ToDictionary(x => x.Name, x => x.MatchTo(frame, area));
         }
 
-        public PythonDictionary Detect(PythonTuple spriteNames, double minPercentage = 0.8, PythonDictionary area = null, bool untilDetect = true)
+        public PythonDictionary Detect(PythonTuple spriteNames, double minPercentage = 0.8, PythonDictionary area = null, int timeout = -1)
         {
+            var begin = DateTime.Now;
             while (this.IsRunning)
             {
                 var areaCv = area != null ? 
@@ -722,14 +761,11 @@ namespace KPUGeneralMacro
                 result = result.Where(x => x.Value.Percentage >= minPercentage).ToDictionary(x => x.Key, x => x.Value);
                 if (result.Count == 0)
                 {
-                    if (untilDetect)
+                    var elapsed = DateTime.Now - begin;
+                    if (elapsed.TotalMilliseconds < (uint)timeout)
                     {
                         Thread.Sleep(100);
                         continue;
-                    }
-                    else
-                    {
-                        break;
                     }
                 }
 
@@ -740,9 +776,9 @@ namespace KPUGeneralMacro
             return new PythonDictionary();
         }
 
-        public PythonDictionary Detect(string spriteName, double minPercentage = 0.8, PythonDictionary area = null, bool untilDetect = true)
+        public PythonDictionary Detect(string spriteName, double minPercentage = 0.8, PythonDictionary area = null, int timeout = -1)
         {
-            return Detect(new PythonTuple(new[] { spriteName }), minPercentage, area, untilDetect);
+            return Detect(new PythonTuple(new[] { spriteName }), minPercentage, area, timeout);
         }
 
         public IronPython.Runtime.PythonList DetectAll(string spriteName, float percentage = 0.8f, PythonDictionary area = null)

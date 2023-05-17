@@ -159,7 +159,7 @@ namespace KPUGeneralMacro
             this.MainWindowViewModel = new MainWindowViewModel(this);
             try
             {
-                this.MainWindowViewModel.Load();
+                this.MainWindowViewModel.Load(this.MainWindowViewModel.OptionViewModel.ResourceFile.Content);
             }
             catch
             { }
@@ -212,7 +212,7 @@ namespace KPUGeneralMacro
         {
             this.MainWindowViewModel.Dispose();
             this.MainWindowViewModel.Stop();
-            this.MainWindowViewModel.Save();
+            this.MainWindowViewModel.Save(this.MainWindowViewModel.OptionViewModel.ResourceFile.Content);
 
             if (_hook != IntPtr.Zero)
             {

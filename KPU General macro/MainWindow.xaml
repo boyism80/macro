@@ -97,6 +97,10 @@
                                             <MenuItem Header="편집">
                                                 <MenuItem Header="스프라이트" Command="{Binding EditSpriteCommand}"/>
                                             </MenuItem>
+                                            <MenuItem Header="화면">
+                                                <MenuItem Header="이미지" Command="{Binding SetPictureCommand}"/>
+                                                <MenuItem Header="초기화" Command="{Binding ResetScreenCommand}"/>
+                                            </MenuItem>
                                         </Menu>
                                     </Grid>
 

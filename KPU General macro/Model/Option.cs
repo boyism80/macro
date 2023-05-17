@@ -12,6 +12,7 @@ namespace KPUGeneralMacro.ViewModel
         public int DetectFPS { get; set; }
 
         public string ResourceFile { get; set; } = Path.Combine(Directory.GetCurrentDirectory(), "templates", "resource.kpu");
+        public string ScriptPath { get; set; } = Path.Combine(Directory.GetCurrentDirectory(), "scripts");
         public string PythonDirectory { get; set; } = Path.Combine("D:\\", "Program Files (x86)", "Python", "Python27");
 
 
@@ -29,6 +30,7 @@ namespace KPUGeneralMacro.ViewModel
             config["detect fps"] = new JSONData(this.DetectFPS);
 
             config["sprites"] = this.ResourceFile;
+            config["script path"] = this.ScriptPath;
             config["python directory"] = this.PythonDirectory;
 
             config["initialize script"] = this.InitializeScriptName;
@@ -60,6 +62,7 @@ namespace KPUGeneralMacro.ViewModel
                     this.DetectFPS = 30;
 
                 this.ResourceFile = config["sprites"].Value;
+                this.ScriptPath = config["script path"].Value;
                 this.PythonDirectory = config["python directory"].Value;
 
                 this.InitializeScriptName = config["initialize script"].Value;
