@@ -1,0 +1,68 @@
+﻿<Window x:Class="macro.Dialog.EditResourceDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:macro.Dialog"
+        xmlns:uc="clr-namespace:macro.Control"
+        mc:Ignorable="d"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Style="{StaticResource DefaultWindowStyle}"
+        Title="리소스" Height="768" Width="960">
+    <WindowChrome.WindowChrome>
+        <WindowChrome 
+            ResizeBorderThickness="10"
+            CaptionHeight="30"
+            CornerRadius="0"
+            GlassFrameThickness="0"/>
+    </WindowChrome.WindowChrome>
+
+    <Grid Style="{StaticResource WindowDialog}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="0.4*" />
+            <ColumnDefinition Width="0.6*" />
+        </Grid.ColumnDefinitions>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Grid.Column="0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Border Grid.Row="0" Margin="0 14 0 0">
+                    <TextBox Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}" />
+                </Border>
+                <ListView Grid.Row="1" Background="Transparent" ItemsSource="{Binding SearchedList}" SelectedItem="{Binding Selected}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Name}" Foreground="{StaticResource MainTextBrush}" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListView>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="0" Grid.Column="1">
+            <uc:EditResourceControl DataContext="{Binding Selected}" />
+        </Border>
+
+        <Border Grid.Row="1" Grid.Column="0" Padding="10 15">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="삭제" Command="{Binding DeleteCommand}"/>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" Grid.Column="1" Padding="10 15">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="확인" Command="{Binding CompleteCommand}"/>
+                <Button Content="취소" Command="{Binding CancelCommand}"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

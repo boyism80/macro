@@ -1,0 +1,216 @@
+﻿<Window x:Class="macro.Dialog.OptionDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:macro.Dialog"
+        xmlns:uc="clr-namespace:macro.Control"
+        mc:Ignorable="d"
+        Style="{StaticResource DefaultWindowStyle}"
+        Title="옵션" Height="500" Width="480">
+    <WindowChrome.WindowChrome>
+        <WindowChrome 
+            ResizeBorderThickness="10"
+            CaptionHeight="30"
+            CornerRadius="0"
+            GlassFrameThickness="0" />
+    </WindowChrome.WindowChrome>
+
+    <Grid Style="{StaticResource WindowDialog}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TabControl Grid.Row="0">
+            <TabItem Header="기본 설정">
+                <Border >
+                    <StackPanel Orientation="Vertical">
+                        <StackPanel Orientation="Vertical">
+                            <TextBlock Text="클래스" />
+                            <TextBox Text="{Binding Class, UpdateSourceTrigger=PropertyChanged}"/>
+                            <TextBlock 
+                                Text="{Binding ClassNameException}"
+                                Style="{StaticResource Exception}"
+                                Visibility="{Binding IsClassNameValid, FallbackValue=Hidden}"/>
+                            <TextBlock 
+                                Text="작동방식" />
+                            <StackPanel 
+                                Orientation="Horizontal"
+                                Margin="0 0 0 24">
+                                <RadioButton GroupName="OperationMode" Content="Software" IsChecked="{Binding SoftwareMode}" />
+                                <RadioButton GroupName="OperationMode" Content="Hardware" IsChecked="{Binding HardwareMode}" />
+                            </StackPanel>
+                            <TextBlock Text="렌더링 프레임" />
+                            <Grid Margin="0 0 0 16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="9*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <Slider Grid.Row="0" 
+                                        Grid.Column="0"
+                                        Minimum="1"
+                                        Maximum="60"
+                                        Value="{Binding RenderFrame}"/>
+                                <TextBlock
+                                    Grid.Row="0"
+                                    Grid.Column="1"
+                                    HorizontalAlignment="Right"
+                                    Text="{Binding RenderFrame, StringFormat={}{0} fps}" />
+                            </Grid>
+                            <TextBlock Text="디텍팅 프레임" />
+                            <Grid Margin="0 0 0 16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="9*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <Slider 
+                                    Grid.Row="0" 
+                                    Grid.Column="0"
+                                    Minimum="1"
+                                    Maximum="60"
+                                    Value="{Binding DetectFrame}"/>
+                                <TextBlock
+                                    Grid.Row="0"
+                                    Grid.Column="1"
+                                    HorizontalAlignment="Right"
+                                    Text="{Binding DetectFrame, StringFormat={}{0} fps}" />
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </TabItem>
+
+            <TabItem Header="경로 설정">
+                <Border>
+                    <StackPanel Orientation="Vertical">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock 
+                                Grid.Row="0" 
+                                Text="리소스 경로" />
+                            <TextBox 
+                                Grid.Row="1"
+                                Grid.Column="0"
+                                Text="{Binding ResourceFilePath, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Button 
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                Command="{Binding SelectResourceFileCommand}"
+                                Content="찾기" />
+                            <TextBlock 
+                                Grid.Row="2"
+                                Grid.ColumnSpan="2"
+                                Text="{Binding ResourceFilePathException}"
+                                Visibility="{Binding IsResourceFilePathValid, FallbackValue=Hidden}"
+                                Style="{StaticResource Exception}" />
+
+                            <TextBlock 
+                                Grid.Row="3" 
+                                Text="스크립트 경로" />
+                            <TextBox 
+                                Grid.Row="4"
+                                Grid.Column="0"
+                                Text="{Binding ScriptDirectoryPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Button 
+                                Grid.Row="4"
+                                Grid.Column="1"
+                                Command="{Binding SelectScriptPathCommand}"
+                                Content="찾기" />
+                            <TextBlock 
+                                Grid.Row="5"
+                                Grid.ColumnSpan="2"
+                                Text="{Binding ScriptDirectoryPathException}"
+                                Visibility="{Binding IsScriptDirectoryPathValid, FallbackValue=Hidden}"
+                                Style="{StaticResource Exception}" />
+
+                            <TextBlock 
+                                Grid.Row="6" 
+                                Text="파이썬 경로" />
+                            <TextBox 
+                                Grid.Row="7"
+                                Grid.Column="0"
+                                Text="{Binding PythonDirectoryPath, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Button 
+                                Grid.Row="7"
+                                Grid.Column="1"
+                                Command="{Binding BrowsePythonDirectoryCommand}"
+                                Content="찾기" />
+                            <TextBlock 
+                                Grid.Row="8"
+                                Grid.ColumnSpan="2"
+                                Text="{Binding PythonDirectoryPathException}"
+                                Visibility="{Binding IsPythonDirectoryPathValid, FallbackValue=Hidden}"
+                                Style="{StaticResource Exception}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </TabItem>
+
+            <TabItem Header="스크립트">
+                <Border>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Orientation="Vertical" Margin="0 0 20 0">
+                            <TextBlock Text="초기화" />
+                            <TextBox Text="{Binding InitializeScriptName, UpdateSourceTrigger=PropertyChanged}"/>
+                            <TextBlock 
+                                Text="{Binding InitializeScriptNameException}"
+                                Visibility="{Binding InitializeScriptNameValid, FallbackValue=Hidden}"
+                                Style="{StaticResource Exception}"/>
+                            <TextBlock Text="프레임" />
+                            <TextBox Text="{Binding FrameScriptName, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock 
+                                Text="{Binding FrameScriptNameException}"
+                                Visibility="{Binding FrameScriptNameValid, FallbackValue=Hidden}"
+                                Style="{StaticResource Exception}"/>
+                            <TextBlock Text="렌더링" />
+                            <TextBox Text="{Binding RenderScriptName, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock 
+                                Text="{Binding RenderScriptNameException}"
+                                Visibility="{Binding RenderScriptNameValid, FallbackValue=Hidden}"
+                                Style="{StaticResource Exception}"/>
+                            <TextBlock Text="디스포즈" />
+                            <TextBox Text="{Binding DisposeScriptName, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock 
+                                Text="{Binding DisposeScriptNameException}"
+                                Visibility="{Binding DisposeScriptNameValid, FallbackValue=Hidden}"
+                                Style="{StaticResource Exception}"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Border>
+            </TabItem>
+        </TabControl>
+
+        <Border Grid.Row="1"
+                Padding="0 10 0 0">
+            <StackPanel 
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Margin="0 0 10 10">
+                <Button Content="확인"
+                        IsEnabled="{Binding IsCompletable}"
+                        Click="OnComplete"
+                        VerticalAlignment="Bottom" />
+                <Button Content="취소"
+                        Click="OnCancel"
+                        VerticalAlignment="Bottom" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
