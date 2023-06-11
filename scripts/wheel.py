@@ -73,7 +73,7 @@ def fishing(app):
 
 		found = app.Detect(('fish-catch', 'fish-fail'), timeout=1000*30)
 		if 'fish-catch' in found:
-			yield (found['fish-catch']['percent'], found['fish-catch']['position'])
+			yield (f"{found['fish-catch']['percent']:.2f}", found['fish-catch']['position'])
 			
 			app.target.KeyPress('W')
 			app.Sleep(6000)

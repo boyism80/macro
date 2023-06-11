@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
@@ -39,6 +40,8 @@ namespace macro.ViewModel
             }
         }
 
+        public ICommand LoadCommand { get; private set; }
+        public ICommand SaveCommand { get; private set; }
         public ICommand DeleteCommand { get; private set; }
         public ICommand CompleteCommand { get; set; }
         public ICommand CancelCommand { get; set; }
@@ -47,7 +50,41 @@ namespace macro.ViewModel
         {
             Sprites = new ObservableCollection<Sprite>(sprites.Select(x => new ViewModel.Sprite(x)));
 
+            LoadCommand = new RelayCommand(OnLoad);
+            SaveCommand = new RelayCommand(OnSave);
             DeleteCommand = new RelayCommand(OnDelete);
+        }
+
+        private void OnSave(object obj)
+        {
+            var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+                InitialDirectory = Directory.GetCurrentDirectory(),
+                DefaultExt = ".dat",
+                Filter = "Resource (.dat)|*.dat"
+            };
+            if (dialog.ShowDialog() == false)
+                return;
+
+            Model.Sprite.Save(dialog.FileName, Sprites.Select(x => x.Model));
+        }
+
+        private void OnLoad(object obj)
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                InitialDirectory = Directory.GetCurrentDirectory(),
+                DefaultExt = ".dat",
+                Filter = "Resource (.dat)|*.dat"
+            };
+            if (dialog.ShowDialog() == false)
+                return;
+
+            foreach (var sprite in Model.Sprite.Load(dialog.FileName).ConvertAll(sprite => new ViewModel.Sprite(sprite)))
+            {
+                Sprites.Add(sprite);
+            }
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SearchedList)));
         }
 
         private void OnDelete(object obj)

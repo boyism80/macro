@@ -4,6 +4,7 @@ using OpenCvSharp;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 
 namespace macro.Model
@@ -135,6 +136,62 @@ namespace macro.Model
             }
 
             return result;
+        }
+
+        public static List<Model.Sprite> Load(string path)
+        {
+            if (File.Exists(path) == false)
+                throw new Exception($"{path} 파일을 찾을 수 없습니다.");
+
+            var result = new List<Model.Sprite>();
+            using var reader = new BinaryReader(File.Open(path, FileMode.Open));
+            var count = reader.ReadInt32();
+            for (int i = 0; i < count; i++)
+            {
+                var name = reader.ReadString();
+                var size = reader.ReadInt32();
+                var bytes = reader.ReadBytes(size);
+                var threshold = reader.ReadSingle();
+                var isActiveExt = reader.ReadBoolean();
+                var detectColor = reader.ReadBoolean();
+                var pivot = Color.FromArgb(reader.ReadInt32());
+                var factor = reader.ReadSingle();
+                var sprite = new Model.Sprite
+                {
+                    Name = name,
+                    Source = Cv2.ImDecode(bytes, ImreadModes.AnyColor),
+                    Threshold = threshold,
+                    Extension = new Model.SpriteExtension
+                    {
+                        Activated = isActiveExt,
+                        DetectColor = detectColor,
+                        Pivot = pivot,
+                        Factor = factor
+                    }
+                };
+                result.Add(sprite);
+            }
+
+            return result;
+        }
+
+        public static void Save(string path, IEnumerable<Model.Sprite> sprites)
+        {
+            using var writer = new BinaryWriter(File.Open(path, FileMode.OpenOrCreate));
+            writer.Write(sprites.Count());
+            foreach (var sprite in sprites)
+            {
+                var bytes = sprite.Source.ToBytes();
+
+                writer.Write(sprite.Name);
+                writer.Write(bytes.Length);
+                writer.Write(bytes);
+                writer.Write(sprite.Threshold);
+                writer.Write(sprite.Extension.Activated);
+                writer.Write(sprite.Extension.DetectColor);
+                writer.Write(sprite.Extension.Pivot.ToArgb());
+                writer.Write(sprite.Extension.Factor);
+            }
         }
     }
 }

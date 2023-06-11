@@ -46,58 +46,15 @@ namespace macro.Model
 
         public void LoadSpriteList()
         {
-            var path = Option.ResourceFilePath;
-            if (File.Exists(path) == false)
-                throw new Exception($"{path} 파일을 찾을 수 없습니다.");
-
-            using var reader = new BinaryReader(File.Open(path, FileMode.Open));
-            var count = reader.ReadInt32();
-            for (int i = 0; i < count; i++)
+            foreach (var sprite in Model.Sprite.Load(Option.ResourceFilePath))
             {
-                var name = reader.ReadString();
-                var size = reader.ReadInt32();
-                var bytes = reader.ReadBytes(size);
-                var threshold = reader.ReadSingle();
-                var isActiveExt = reader.ReadBoolean();
-                var detectColor = reader.ReadBoolean();
-                var pivot = Color.FromArgb(reader.ReadInt32());
-                var factor = reader.ReadSingle();
-                var sprite = new Model.Sprite
-                {
-                    Name = name,
-                    Source = Cv2.ImDecode(bytes, ImreadModes.AnyColor),
-                    Threshold = threshold,
-                    Extension = new Model.SpriteExtension
-                    {
-                        Activated = isActiveExt,
-                        DetectColor = detectColor,
-                        Pivot = pivot,
-                        Factor = factor
-                    }
-                };
-
-                Sprites.Add(name, sprite);
+                Sprites.Add(sprite.Name, sprite);
             }
         }
 
         public void SaveSpriteList()
         {
-            var path = Option.ResourceFilePath;
-            using var writer = new BinaryWriter(File.Open(path, FileMode.OpenOrCreate));
-            writer.Write(Sprites.Count);
-            foreach (var sprite in Sprites.Values)
-            {
-                var bytes = sprite.Source.ToBytes();
-
-                writer.Write(sprite.Name);
-                writer.Write(bytes.Length);
-                writer.Write(bytes);
-                writer.Write(sprite.Threshold);
-                writer.Write(sprite.Extension.Activated);
-                writer.Write(sprite.Extension.DetectColor);
-                writer.Write(sprite.Extension.Pivot.ToArgb());
-                writer.Write(sprite.Extension.Factor);
-            }
+            Model.Sprite.Save(Option.ResourceFilePath, Sprites.Values);
         }
     }
 }

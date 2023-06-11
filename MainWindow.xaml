@@ -61,15 +61,13 @@
                 </Grid>
             </Border>
             <Menu DockPanel.Dock="Top" Style="{StaticResource MetroMenuStyle}" Background="{StaticResource SystemBrush}" Foreground="{StaticResource MainTextBrush}" Padding="10 10">
-                <MenuItem Header="설정">
-                    <MenuItem Header="옵션" Command="{Binding OptionCommand}"/>
+                <MenuItem Header="Edit">
+                    <MenuItem Header="Option" Command="{Binding OptionCommand}"/>
+                    <MenuItem Header="Sprite" Command="{Binding EditSpriteCommand}"/>
                 </MenuItem>
-                <MenuItem Header="편집">
-                    <MenuItem Header="스프라이트" Command="{Binding EditSpriteCommand}"/>
-                </MenuItem>
-                <MenuItem Header="화면">
-                    <MenuItem Header="이미지" Command="{Binding SetPictureCommand}"/>
-                    <MenuItem Header="초기화" Command="{Binding ResetScreenCommand}"/>
+                <MenuItem Header="View">
+                    <MenuItem Header="Fix screen" Command="{Binding SetPictureCommand}"/>
+                    <MenuItem Header="Reset screen" Command="{Binding ResetScreenCommand}"/>
                 </MenuItem>
             </Menu>
             <Grid>
