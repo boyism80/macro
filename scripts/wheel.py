@@ -39,10 +39,7 @@ def fishing(app):
 			found = app.Detect('repair-all')
 			app.target.Click(found['repair-all']['position'])
 
-			found = app.Detect('confirm-repair')
-			app.target.Click(found['confirm-repair']['position'])
-
-			app.Sleep(2000)
+			app.target.Enter()
 			app.target.Escape()
 			app.target.Escape()
 
@@ -71,7 +68,7 @@ def fishing(app):
 			app.target.Escape()
 			continue
 
-		found = app.Detect(('fish-catch', 'fish-fail'), timeout=1000*30)
+		found = app.Detect(('fish-catch', 'fish-fail'), area={"x": 864, "y": 425, "width": 197, "height": 170}, timeout=1000*30)
 		if 'fish-catch' in found:
 			yield (f"{found['fish-catch']['percent']:.2f}", found['fish-catch']['position'])
 			
@@ -97,5 +94,5 @@ def stone_simulate(app, slot, engraving_name=None, counts=(5,6), with_pheon=True
 
 def callback(app):
 	return fishing(app)
-	# for i in range(10):
-	#	stone_simulate(app, 1, engraving_name='adrenaline', with_pheon=True)
+	# for i in range(1):
+	# 	stone_simulate(app, 2, engraving_name='adrenaline', with_pheon=False, counts=(4, ))

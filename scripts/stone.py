@@ -188,10 +188,10 @@ def buy_stone(app, slot, count):
     app.target.Click(found['auction']['position'])
     app.target.Click((1575, 240))
 
-    slot_y = 260 + 46*(slot-1)
+    slot_y = 280 + 46*(slot-1)
     app.target.Click((1350, slot_y))
     app.target.Click((900, 570))
-    app.target.Click((1000, 890))
+    app.target.Click((1000, 910))
 
     app.Sleep(1000)
     while buy_count < count:
