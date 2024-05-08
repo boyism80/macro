@@ -66,6 +66,9 @@ namespace macro.ViewModel
                     {
                         foreach (var value in generator)
                         {
+                            if (Running == false)
+                                break;
+
                             if (ret != null)
                                 Logs.Add($"{path} return : {value}");
                         }

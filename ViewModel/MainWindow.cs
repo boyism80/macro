@@ -382,12 +382,21 @@ namespace macro.ViewModel
 
         private void OnSetPicture(object obj)
         {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                //InitialDirectory = Directory.GetCurrentDirectory(),
+                DefaultExt = ".jpg",
+                Filter = "Image (.jpg)|*.jpg"
+            };
+            if (dialog.ShowDialog() == false)
+                return;
 
+            StaticFrame = Cv2.ImRead(dialog.FileName);
         }
         
         private void OnResetScreen(object obj)
         {
-
+            StaticFrame = null;
         }
     }
 }
