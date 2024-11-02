@@ -55,6 +55,9 @@ def fishing(app, mini_game=True):
 
 		found = app.Detect('not-enough-energy', timeout=1000*3)
 		if 'not-enough-energy' in found:
+			return
+
+
 			app.target.Click((1033, 927))
 
 			potions = ('life-energy-potion(large)', 'life-energy-potion(normal)', 'life-energy-potion(small)')
@@ -69,8 +72,7 @@ def fishing(app, mini_game=True):
 			elif 'life-energy-potion(large)' in found:
 				app.target.Click((1074, 713))
 
-			found = app.Detect('use_enegy_potion')
-			app.target.Click(found['use_enegy_potion']['position'])
+			app.target.Click((950, 770))
 			app.target.Escape()
 			continue
 
@@ -106,7 +108,6 @@ def stone_simulate(app, slot, engraving_name=None, counts=(5,6), with_pheon=True
 
 def callback(app):
 	return fishing(app, mini_game=False)
-
 
 	# for i in range(1):
 	# 	stone_simulate(app, 2, engraving_name='adrenaline', with_pheon=False, counts=(4, ))
