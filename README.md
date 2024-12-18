@@ -1,32 +1,42 @@
-# KPU General macro
+# macro
 
-범용 매크로를 만들고 싶어서 만들었습니다.
-파이썬을 사용할 줄 아는 사용자라면 쉽게 사용할 수 있도록 제작했습니다.
-WPF로 만들었습니다. IronPython 라이브러리를 사용하여 매크로 작동에 필요한 파이썬 스크립트를 호출합니다.
-즉 뼈대는 C#으로 만들었고 실제 작동시킬 기능들은 파이썬으로 작성됩니다.
+General purpose macro that works screen capture based. Write python script to detect and do something to target process simply. You can manage screen capture, edit resource in this program.
 
-PostMessage 방식으로 작동하는 Software모드와 SendInput 방식으로 작동하는 Hardware모드로 나뉩니다.
-(Hardware는 키보드와 마우스 액션이 실제로 이루어지며, PostMessage는 타겟 프로세스가 Windows API 기반일때만 작동함)
+## How to works?
+Update latest frame of target process and execute python script. Here is sample code.
+```python
+def callback(app):
+	app.target.KeyPress(('ALT', 'U'))
 
-스크립트에서 타이머를 설치할 수 있으며 필요한 리소스를 추가하여 템플릿매칭을 시킬 수 있습니다.
+	found = app.Detect(('guild-donation', 'attendance-reward-info', 'guild-create'), 0.9)
+	if 'guild-create' in found:
+		app.target.Escape()
+		return
 
-## 틀린그림찾기 매크로
-opencv를 이용하여 틀린그림찾기 매크로를 만들 수 있습니다.
-절대차를 구한 뒤 생기는 잡음들을 제거하고, 5개의 레이블을 얻을 때까지 임계값을 조절하는 방식으로 구현하였습니다.
-IronPython 라이브러리가 파이썬 스크립트에서 직접 opencv 사용을 지원하지 않기 때문에 opencv에 관련된 내용은 C#에서 구현한 후 파이썬에서 호출하는 방식으로 구현했습니다.
+	if 'attendance-reward-info' in found:
+		app.target.Escape()
+		app.Sleep(500)
 
-[시연영상](https://youtu.be/8LgthrlfDYw)
+	app.target.Click(found['guild-donation']['position'])
 
-## 스도쿠 매크로
-굉장히 간단해보이지만 상당히 복잡한 알고리즘이 많은 게임입니다.
-모바일게임을 Nox 플레이어로 구동한 뒤에 매크로를 적용시켰습니다.
+	found = app.Detect(('donation', 'donation-disabled'), 0.7, {'x': 600, 'y': 550, 'width': 180, 'height': 50})
+	if 'donation' in found:
+		app.target.Click(found['donation']['position'])
+		app.Sleep(500)
+		app.target.Escape()
+		app.Sleep(500)
 
-[참고자료](https://m.cafe.daum.net/sudoku4u/Fo9V/77?q=D_nkDM8IgstNA0&)
-[시연영상](https://youtu.be/HhToEqJBmVU)
+	app.target.Escape()
+```
 
-## 로스트아크 낚시 매크로
-낚시를 던지는 상태, 기다리는 상태, 물고기가 미끼를 물었을때의 상태, 끌어당기는 상태, 낚시 결과의 상태를 구분하여 반복된 작업을 진행합니다.
-해당 상태에 대한 템플릿들을 미리 구성하여 상태를 캡처합니다.
+You can detect using ```app.Detect``` method. the last parameter is factor value of image resource. The higher this value, the more accurate it is, but resources may not be detected. Default is 0.8.
+When this method call, this thread(not main thread) is blocked while detect resource and return detected information then you can do anything with the result. Also you can set timeout and speficied area.
 
-[개발설명](https://blog.naver.com/boyism/221421048934)
-[시연영상](https://youtu.be/Q3rxFIN1Uxs)
+## Sample
+
+[Find difference between 2 pictures](https://youtu.be/8LgthrlfDYw)
+
+[SUDOKU mobile](https://youtu.be/HhToEqJBmVU)
+
+[Lost Ark auto fishing](https://youtu.be/Q3rxFIN1Uxs) 
+ ([docs](https://blog.naver.com/boyism/221421048934))
