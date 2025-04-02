@@ -14,7 +14,7 @@ namespace macro.Model
 
         [JsonIgnore] public Dictionary<string, Model.Sprite> Sprites { get; set; } = new Dictionary<string, Sprite>();
 
-        [JsonIgnore] public BitmapImage Bitmap { get; set; }
+        [JsonIgnore] public WriteableBitmap Bitmap { get; set; }
 
         [JsonIgnore] public Model.App App { get; private set; }
 

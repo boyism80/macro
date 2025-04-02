@@ -10,7 +10,7 @@ using System.Linq;
 namespace macro.Model
 {
     public class SpriteExtension
-    { 
+    {
         public bool Activated { get; set; }
         public float Factor { get; set; }
         public bool DetectColor { get; set; }
@@ -52,13 +52,15 @@ namespace macro.Model
             if (frame == null)
                 throw new Exception("frame cannot be null");
 
+            var isClone = false;
             if (area != null)
-                frame = new Mat(frame, area.Value).Clone();
+            {
+                isClone = true;
+                frame = new Mat(frame, area.Value);
+            }
 
-            var from = Extension.Activated ?
-                frame.ToMask(Extension.Pivot, Extension.Factor) : frame.Clone();
-            var to = Extension.Activated ?
-                Source.ToMask(Extension.Pivot, Extension.Factor) : Source.Clone();
+            using var from = Extension.Activated ? frame.ToMask(Extension.Pivot, Extension.Factor) : frame.Clone();
+            using var to = Extension.Activated ? Source.ToMask(Extension.Pivot, Extension.Factor) : Source.Clone();
 
             try
             {
@@ -78,7 +80,7 @@ namespace macro.Model
                 }
                 else
                 {
-                    var matched = from.MatchTemplate(to, TemplateMatchModes.CCoeffNormed);
+                    using var matched = from.MatchTemplate(to, TemplateMatchModes.CCoeffNormed);
                     matched.MinMaxLoc(out var minval, out var maxval, out var minloc, out var maxloc);
 
                     var percentage = maxval;
@@ -90,8 +92,6 @@ namespace macro.Model
                         Position = center,
                         Percentage = percentage
                     };
-
-                    matched.Dispose();
                 }
 
 
@@ -106,16 +106,14 @@ namespace macro.Model
                     };
                 }
 
+                if (isClone)
+                    frame.Dispose();
+
                 return result;
             }
             catch (Exception)
             {
                 return new DetectionResult();
-            }
-            finally
-            {
-                from.Dispose();
-                to.Dispose();
             }
         }
 

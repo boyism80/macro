@@ -82,13 +82,12 @@ namespace macro.ViewModel
 
         private Dictionary<string, Model.Sprite.DetectionResult> Detect(List<string> spriteNames, Rect? area = null)
         {
-            var frame = Frame;
-            if (frame == null)
+            if (Frame == null)
                 return new Dictionary<string, Model.Sprite.DetectionResult>();
 
             return spriteNames.Select(x => Sprites.FirstOrDefault(x2 => x2.Name == x))
             .Where(x => x != null)
-            .ToDictionary(x => x.Name, x => x.Model.MatchTo(frame, area));
+            .ToDictionary(x => x.Name, x => x.Model.MatchTo(Frame, area));
         }
 
         public PythonDictionary Detect(PythonTuple spriteNames, double minPercentage = 0.8, PythonDictionary area = null, int timeout = -1)
@@ -126,7 +125,6 @@ namespace macro.ViewModel
 
         public PythonList DetectAll(string spriteName, float percentage = 0.8f, PythonDictionary area = null)
         {
-            var frame = Frame;
             var result = new PythonList();
             var areaCv = area != null ?
                     (Rect?)new Rect((int)area["x"], (int)area["y"], (int)area["width"], (int)area["height"]) :
@@ -136,7 +134,7 @@ namespace macro.ViewModel
             if (sprite == null)
                 return result;
 
-            var detectionResults = sprite.Model.MatchToAll(frame, percentage, areaCv).Select(x => x.ToPythonDictionary());
+            var detectionResults = sprite.Model.MatchToAll(Frame, percentage, areaCv).Select(x => x.ToPythonDictionary());
             foreach (var detectionResult in detectionResults)
             {
                 result.Add(detectionResult);

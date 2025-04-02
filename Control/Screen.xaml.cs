@@ -208,10 +208,10 @@ namespace macro.Control
             }
         }
 
-        public static readonly DependencyProperty BitmapProperty = DependencyProperty.Register("Bitmap", typeof(BitmapImage), typeof(Screen));
-        public BitmapImage Bitmap
+        public static readonly DependencyProperty BitmapProperty = DependencyProperty.Register("Bitmap", typeof(WriteableBitmap), typeof(Screen));
+        public WriteableBitmap Bitmap
         {
-            get { return (BitmapImage)GetValue(BitmapProperty); }
+            get { return (WriteableBitmap)GetValue(BitmapProperty); }
             set
             {
                 SetValue(BitmapProperty, value);

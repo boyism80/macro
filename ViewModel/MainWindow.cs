@@ -1,6 +1,6 @@
 ﻿using macro.Command;
 using macro.Dialog;
-using macro.Extension;
+using Microsoft.Extensions.ObjectPool;
 using Newtonsoft.Json;
 using OpenCvSharp;
 using System;
@@ -83,55 +83,11 @@ namespace macro.ViewModel
         public string Title => "macro";
         public string StatusName => string.Empty;
         public Visibility DarkBackgroundVisibility { get; private set; } = Visibility.Hidden;
-        
+
         private readonly Stopwatch _elapsedStopwatch = new Stopwatch();
-        private Mutex _sourceFrameLock = new Mutex();
-        private Mat _sourceFrame = null;
-        public Mat Frame
-        {
-            get
-            {
-                try
-                {
-                    _sourceFrameLock.WaitOne();
-                    if (_sourceFrame == null)
-                        return null;
-
-                    return _sourceFrame.Clone();
-                }
-                catch (Exception)
-                {
-                    return null;
-                }
-                finally
-                {
-                    _sourceFrameLock.ReleaseMutex();
-                }
-            }
-            set
-            {
-                _sourceFrameLock.WaitOne();
-                _sourceFrame?.Dispose();
-                _sourceFrame = value.Clone();
-                _sourceFrameLock.ReleaseMutex();
-            }
-        }
+        public Mat Frame { get; private set; }
         public Mat StaticFrame { get; private set; }
-        public BitmapImage Bitmap
-        {
-            get
-            {
-                if (Running == false)
-                    return null;
-
-                return Model.Bitmap;
-            }
-            set
-            {
-                Model.Bitmap = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(FrameBackgroundBrush)));
-            }
-        }
+        public WriteableBitmap Bitmap { get; private set; }
 
 
         public ObservableCollection<ViewModel.Sprite> Sprites
@@ -197,7 +153,7 @@ namespace macro.ViewModel
                                 Pivot = System.Drawing.Color.White
                             }
                         });
-                        var source = Sprites.Concat(new[] { newSprite });
+                        var source = Sprites.Concat([newSprite]);
 
                         ShowEditSpriteDialog(source, newSprite);
                     }
@@ -223,7 +179,7 @@ namespace macro.ViewModel
                 {
                     target.Frame -= App_Frame;
                 }
-                
+
                 LoadPythonModules(Option.PythonDirectoryPath);
                 target = macro.Model.App.Find(Option.Class);
                 if (target == null)
@@ -261,6 +217,21 @@ namespace macro.ViewModel
             Stopped?.Invoke(this, EventArgs.Empty);
         }
 
+        private void UpdateBitmap(Mat frame)
+        {
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                if (Bitmap == null || Bitmap.Width != frame.Width || Bitmap.Height != frame.Height)
+                    Bitmap = new WriteableBitmap(frame.Width, frame.Height, 96, 96, PixelFormats.Bgr24, null);
+
+                Bitmap.Lock();
+                frame.CopyTo(new Mat(frame.Rows, frame.Cols, MatType.CV_8UC3, Bitmap.BackBuffer));
+                Bitmap.AddDirtyRect(new Int32Rect(0, 0, frame.Cols, frame.Rows));
+                Bitmap.Unlock();
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Bitmap)));
+            });
+        }
+
         private void App_Frame(OpenCvSharp.Mat frame)
         {
             var stopWatch = new Stopwatch();
@@ -270,7 +241,7 @@ namespace macro.ViewModel
                 frame = StaticFrame;
 
             Frame = frame;
-            Bitmap = frame.ToBitmap();
+            UpdateBitmap(frame);
             _elapsedStopwatch.Stop();
             _elapsedStopwatch.Restart();
 
@@ -310,7 +281,7 @@ namespace macro.ViewModel
                 DataContext = new ViewModel.Option(cloned)
             };
             _optionDialog.Show();
-            _optionDialog.Closed += (sender, e) => 
+            _optionDialog.Closed += (sender, e) =>
             {
                 Option = new Option(cloned);
                 if (Option.ResourceFilePath != oldResourcePath)
@@ -325,18 +296,22 @@ namespace macro.ViewModel
             if (EditResourceDialog != null)
                 return;
 
-            var cloned = source.Select(sprite => new Model.Sprite
+            var pool = new DefaultObjectPool<Model.Sprite>(new DefaultPooledObjectPolicy<Model.Sprite>(), source.Count());
+            var cloned = source.Select(sprite =>
             {
-                Name = sprite.Name,
-                Source = sprite.Source,
-                Threshold = sprite.Threshold,
-                Extension = sprite.Extension == null ? null : new Model.SpriteExtension
+                var entity = pool.Get();
+                entity.Name = sprite.Name;
+                entity.Source = sprite.Source;
+                entity.Threshold = sprite.Threshold;
+                entity.Extension = sprite.Extension == null ? null : new Model.SpriteExtension
                 {
                     Activated = sprite.Extension.Activated,
                     DetectColor = sprite.Extension.DetectColor,
                     Factor = sprite.Extension.Factor,
                     Pivot = sprite.Extension.Pivot
-                }
+                };
+
+                return entity;
             }).OrderBy(x => x.Name).ToList();
 
             var model = new ViewModel.EditResourceWindow(cloned)
@@ -371,7 +346,15 @@ namespace macro.ViewModel
                 DataContext = model
             };
 
-            EditResourceDialog.Closed += (sender, e) => EditResourceDialog = null;
+            EditResourceDialog.Closed += (sender, e) =>
+            {
+                foreach (var entity in cloned)
+                {
+                    pool.Return(entity);
+                }
+                selection.Source?.Dispose();
+                EditResourceDialog = null;
+            };
             EditResourceDialog.Show();
         }
 
@@ -393,7 +376,7 @@ namespace macro.ViewModel
 
             StaticFrame = Cv2.ImRead(dialog.FileName);
         }
-        
+
         private void OnResetScreen(object obj)
         {
             StaticFrame = null;

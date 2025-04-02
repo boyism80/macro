@@ -41,6 +41,7 @@ namespace macro.ViewModel
 
         private void ReleasePythonModule()
         {
+            _pythonRuntime.GetEngine("IronPython").Execute("import gc; gc.collect()");
             _pythonRuntime?.Shutdown();
             _pythonRuntime = null;
         }
@@ -58,7 +59,7 @@ namespace macro.ViewModel
             {
                 try
                 {
-                    dynamic scope = _pythonRuntime.UseFile(Path.Combine(Option.ScriptDirectoryPath, path));
+                    dynamic scope = _pythonRuntime.UseFile(string.Intern(Path.Combine(Option.ScriptDirectoryPath, path)));
                     IsExecutePython = true;
                     var ret = scope.callback(this);
 
@@ -73,7 +74,7 @@ namespace macro.ViewModel
                                 Logs.Add($"{path} return : {value}");
                         }
 
-                        tcs.SetResult(generator);
+                        tcs.SetResult(null);
                     }
                     else
                     {

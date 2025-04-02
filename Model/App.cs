@@ -1,11 +1,11 @@
-﻿using macro.Extension;
-using IronPython.Runtime;
+﻿using IronPython.Runtime;
+using macro.Extension;
 using OpenCvSharp;
+using OpenCvSharp.Extensions;
 using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
-using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -332,6 +332,8 @@ namespace macro.Model
 
         private System.Drawing.Point _prevCursorPosition;
         private string _className;
+        private System.Drawing.Bitmap _bitmap;
+        private Mat _frame;
 
         public IntPtr Hwnd { get; private set; }
 
@@ -373,9 +375,6 @@ namespace macro.Model
 
         public event FrameEventHandler Frame;
 
-        public TimeSpan GCDelay = TimeSpan.FromMilliseconds(500);
-        public DateTime LastGcCollectDate { get; private set; } = DateTime.Now;
-
         private App(string className)
         {
             Hwnd = FindAppHandle(className);
@@ -412,26 +411,42 @@ namespace macro.Model
             try
             {
                 var appClientRect = GetArea();
+                if (_bitmap == null || _bitmap.Width != appClientRect.Width || _bitmap.Height != appClientRect.Height)
+                {
+                    _bitmap?.Dispose();
+                    _bitmap = new System.Drawing.Bitmap(appClientRect.Width, appClientRect.Height);
+                }
+
+                if (_frame == null || _frame.Width != appClientRect.Width || _frame.Height != appClientRect.Height)
+                {
+                    _frame?.Dispose();
+                    _frame = new Mat(appClientRect.Height, appClientRect.Width, MatType.CV_8UC3);
+                }
+
                 var appClientDC = GetDC(Hwnd);
                 var compatibleDC = CreateCompatibleDC(appClientDC);
                 var compatibleBitmap = CreateCompatibleBitmap(appClientDC, appClientRect.Width, appClientRect.Height);
                 var oldBitmap = SelectObject(compatibleDC, compatibleBitmap);
                 BitBlt(compatibleDC, 0, 0, appClientRect.Width, appClientRect.Height, appClientDC, 0, 0, TernaryRasterOperations.SRCCOPY | TernaryRasterOperations.CAPTUREBLT);
 
-                var bitmap = Image.FromHbitmap(compatibleBitmap);
-                var frame = OpenCvSharp.Extensions.BitmapConverter.ToMat(bitmap);
-                bitmap.Dispose();
+                using (var tempBitmap = System.Drawing.Image.FromHbitmap(compatibleBitmap))
+                {
+                    using var g = Graphics.FromImage(_bitmap);
+                    g.DrawImage(tempBitmap, 0, 0);
+                }
+
+                BitmapConverter.ToMat(_bitmap, _frame);
 
                 SelectObject(compatibleDC, oldBitmap);
                 DeleteObject(compatibleBitmap);
                 DeleteDC(compatibleDC);
                 ReleaseDC(Hwnd, appClientDC);
-                bitmap.Dispose();
 
-                return frame;
+                return _frame;
             }
             catch (Exception)
             {
+                _frame = null;
                 return null;
             }
         }
@@ -458,19 +473,23 @@ namespace macro.Model
 
                     Area = GetArea();
                     Frame?.Invoke(frame);
-
-                    frame.Dispose();
-
-                    if (DateTime.Now - LastGcCollectDate > GCDelay)
-                    {
-                        GC.Collect(GC.MaxGeneration, GCCollectionMode.Default, false);
-                        LastGcCollectDate = DateTime.Now;
-                    }
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine(e.Message);
                 }
+            }
+
+            if (_bitmap != null)
+            {
+                _bitmap.Dispose();
+                _bitmap = null;
+            }
+
+            if (_frame != null)
+            {
+                _frame.Dispose();
+                _frame = null;
             }
         }
 
