@@ -12,6 +12,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -33,6 +34,9 @@ namespace macro.ViewModel
         private DateTime _startDateTime;
         private OptionDialog _optionDialog;
         public EditResourceDialog EditResourceDialog { get; set; }
+        
+        // Performance: Channel consumption for frame processing
+        private CancellationTokenSource _frameConsumerCancellation;
 
         private Model.MainWindow _model;
         public Model.MainWindow Model
@@ -205,7 +209,7 @@ namespace macro.ViewModel
 
                 if (target != null)
                 {
-                    target.Frame -= App_Frame;
+                    _frameConsumerCancellation?.Cancel();
                 }
 
                 LoadPythonModules(Option.PythonDirectoryPath);
@@ -215,7 +219,11 @@ namespace macro.ViewModel
 
                 // Performance: Set target FPS for frame capture
                 target.TargetFps = Option.RenderFrame;
-                target.Frame += App_Frame;
+                
+                // Performance: Start frame consumer task
+                _frameConsumerCancellation = new CancellationTokenSource();
+                Task.Run(() => ConsumeFramesAsync(_frameConsumerCancellation.Token));
+                
                 target.Start();
                 _startDateTime = DateTime.Now;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ElapsedTime)));
@@ -236,9 +244,12 @@ namespace macro.ViewModel
             if (target != null)
             {
                 target.Stop();
-                target.Frame -= App_Frame;
                 target = null;
             }
+            
+            // Performance: Cancel frame consumer task
+            _frameConsumerCancellation?.Cancel();
+            _frameConsumerCancellation = null;
 
             ReleasePythonModule();
             Bitmap = null;
@@ -270,33 +281,6 @@ namespace macro.ViewModel
                 Bitmap.Unlock();
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Bitmap)));
             });
-        }
-
-        /// <summary>
-        /// Frame processing with optimized memory management
-        /// Performance: Processes frames from Channel, returns Mat to pool after use
-        /// </summary>
-        private void App_Frame(OpenCvSharp.Mat frame)
-        {
-            try
-            {
-                if (StaticFrame != null)
-                    frame = StaticFrame;
-
-                Frame = frame;
-                UpdateBitmap(frame);
-                _elapsedStopwatch.Stop();
-                _elapsedStopwatch.Restart();
-            }
-            finally
-            {
-                // Performance: Return frame to MatPool after processing
-                // Only return if it's not the StaticFrame
-                if (StaticFrame == null)
-                {
-                    MatPool.Return(frame);
-                }
-            }
         }
 
         private void OnStart(object obj)
@@ -422,6 +406,56 @@ namespace macro.ViewModel
         private void OnResetScreen(object obj)
         {
             StaticFrame = null;
+        }
+
+        /// <summary>
+        /// Consume frames from App's Channel and process them
+        /// Performance: Direct channel consumption for better decoupling
+        /// </summary>
+        private async Task ConsumeFramesAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                await foreach (var frame in target.FrameReader.ReadAllAsync(cancellationToken))
+                {
+                    try
+                    {
+                        // Process frame on UI thread
+                        await Application.Current.Dispatcher.InvokeAsync(() =>
+                        {
+                            ProcessFrame(frame);
+                        });
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine($"Frame processing error: {e.Message}");
+                    }
+                    finally
+                    {
+                        // Performance: Return frame to MatPool after processing
+                        MatPool.Return(frame);
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected when cancellation is requested
+            }
+        }
+
+        /// <summary>
+        /// Process individual frame with optimized memory management
+        /// Performance: Processes frames with StaticFrame override support
+        /// </summary>
+        private void ProcessFrame(Mat frame)
+        {
+            if (StaticFrame != null)
+                frame = StaticFrame;
+
+            Frame = frame;
+            UpdateBitmap(frame);
+            _elapsedStopwatch.Stop();
+            _elapsedStopwatch.Restart();
         }
     }
 }

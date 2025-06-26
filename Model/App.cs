@@ -329,8 +329,6 @@ namespace macro.Model
         #endregion
 
 
-        public delegate void FrameEventHandler(Mat frame);
-
         private System.Drawing.Point _prevCursorPosition;
         private string _className;
         private System.Drawing.Bitmap _bitmap;
@@ -391,7 +389,11 @@ namespace macro.Model
             set => _targetFps = Math.Max(1, Math.Min(120, value)); // Clamp between 1-120 FPS
         }
 
-        public event FrameEventHandler Frame;
+        /// <summary>
+        /// Channel reader for consuming frames from external components
+        /// Performance: Direct channel access for better decoupling
+        /// </summary>
+        public ChannelReader<Mat> FrameReader => _frameReader;
 
         private App(string className)
         {
@@ -544,35 +546,6 @@ namespace macro.Model
             }
         }
 
-        /// <summary>
-        /// Frame processing loop that consumes frames from channel
-        /// Performance: Decoupled from capture loop for better performance
-        /// </summary>
-        private async Task ProcessFramesAsync(CancellationToken cancellationToken)
-        {
-            try
-            {
-                await foreach (var frame in _frameReader.ReadAllAsync(cancellationToken))
-                {
-                    try
-                    {
-                        Frame?.Invoke(frame);
-                        // Frame is returned to pool by the consumer (ViewModel)
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine($"Frame processing error: {e.Message}");
-                        // Return frame to pool if processing failed
-                        MatPool.Return(frame);
-                    }
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // Expected when cancellation is requested
-            }
-        }
-
         public bool Start()
         {
             if (IsRunning)
@@ -581,9 +554,8 @@ namespace macro.Model
             IsRunning = true;
             _cancellationTokenSource = new CancellationTokenSource();
             
-            // Performance: Start both capture and processing tasks
+            // Performance: Start frame capture task
             Task.Run(() => CaptureFramesAsync(_cancellationTokenSource.Token));
-            Task.Run(() => ProcessFramesAsync(_cancellationTokenSource.Token));
             
             return true;
         }
