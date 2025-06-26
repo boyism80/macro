@@ -64,7 +64,7 @@ namespace macro.Model
                 if (area != null)
                 {
                     // Performance: Use MatPool for ROI operation instead of new Mat(frame, area)
-                    workingFrame = MatPool.GetRoi(frame, area.Value);
+                    workingFrame = new Mat(frame, area.Value);
                     shouldDisposeFrame = true;
                 }
                 else
@@ -155,8 +155,7 @@ namespace macro.Model
             {
                 if (shouldDisposeFrame && workingFrame != null)
                 {
-                    // Performance: Return ROI Mat to pool instead of disposing
-                    MatPool.Return(workingFrame);
+                    workingFrame.Dispose();
                 }
             }
         }

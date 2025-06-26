@@ -89,9 +89,9 @@ namespace macro.ViewModel
         private readonly Stopwatch _elapsedStopwatch = new Stopwatch();
         private readonly ReaderWriterLockSlim _frameLock = new ReaderWriterLockSlim(); // Reader-Writer lock for Frame access
         private Mat _frame;
-        public Mat Frame 
-        { 
-            get 
+        public Mat Frame
+        {
+            get
             {
                 _frameLock.EnterReadLock();
                 try
@@ -103,7 +103,7 @@ namespace macro.ViewModel
                     _frameLock.ExitReadLock();
                 }
             }
-            private set 
+            private set
             {
                 _frameLock.EnterWriteLock();
                 try
@@ -197,13 +197,12 @@ namespace macro.ViewModel
 
                         if (Frame == null)
                             return;
-                            
-                        var selectedFrame = MatPool.GetRoi(Frame, rect);
 
+                        var selectedFrame = new Mat(Frame, rect);
                         var newSprite = new Sprite(new Model.Sprite
                         {
                             Name = "New Sprite",
-                            Source = selectedFrame, // MatPool object can be passed to external components
+                            Source = selectedFrame,
                             Threshold = 0.8f,
                             Extension = new Model.SpriteExtension
                             {

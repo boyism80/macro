@@ -225,6 +225,7 @@ namespace macro.ViewModel
 
         public void Dispose()
         {
+            Source.Dispose();
             Extension.PropertyChanged -= Extension_PropertyChanged;
         }
     }

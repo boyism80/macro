@@ -105,22 +105,7 @@ namespace macro.Extension
             return result;
         }
 
-        /// <summary>
-        /// Get ROI Mat from pool (replaces new Mat(source, roi))
-        /// Performance: Avoids allocation for region-of-interest operations
-        /// </summary>
-        public static Mat GetRoi(Mat source, Rect roi)
-        {
-            if (source == null || source.IsDisposed)
-                return null;
 
-            var result = Get(roi.Height, roi.Width, source.Type());
-            using (var roiMat = new Mat(source, roi))
-            {
-                roiMat.CopyTo(result);
-            }
-            return result;
-        }
 
         /// <summary>
         /// Clear all pools on application shutdown
