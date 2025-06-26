@@ -16,10 +16,10 @@ namespace macro.Extension
         {
             var e = 255 * factor;
             var colors = new int[] { pivot.B, pivot.G, pivot.R };
-            
+
             var channels = mat.Split();
             var results = new Mat[3];
-            
+
             try
             {
                 for (int i = 0; i < 3; i++)
@@ -28,7 +28,7 @@ namespace macro.Extension
                     var inv = MatPool.Get(channels[i].Rows, channels[i].Cols, channels[i].Type());
                     var over = MatPool.Get(channels[i].Rows, channels[i].Cols, channels[i].Type());
                     var under = MatPool.Get(channels[i].Rows, channels[i].Cols, channels[i].Type());
-                    
+
                     try
                     {
                         Cv2.BitwiseNot(channels[i], inv);
@@ -50,12 +50,12 @@ namespace macro.Extension
                 // Performance: Use pooled Mat objects for final operations
                 var result1 = MatPool.Get(results[0].Rows, results[0].Cols, results[0].Type());
                 var result2 = MatPool.Get(results[0].Rows, results[0].Cols, results[0].Type());
-                
+
                 try
                 {
                     Cv2.BitwiseAnd(results[0], results[1], result1);
                     Cv2.BitwiseAnd(result1, results[2], result2);
-                    
+
                     // Performance: Clone result using pool to avoid direct Mat allocation
                     return MatPool.GetClone(result2);
                 }
@@ -72,7 +72,7 @@ namespace macro.Extension
                 {
                     channels[i]?.Dispose();
                 }
-                
+
                 for (int i = 0; i < results.Length; i++)
                 {
                     MatPool.Return(results[i]);
@@ -87,14 +87,14 @@ namespace macro.Extension
         public static IEnumerable<RotatedRect> GetRotatedRects(this Mat mat, float threshold)
         {
             // Performance: Get working Mat objects from pool for morphological operations
-            var workingMat = mat.Type() != MatType.CV_8UC1 ? 
-                MatPool.Get(mat.Rows, mat.Cols, MatType.CV_8UC1) : 
+            var workingMat = mat.Type() != MatType.CV_8UC1 ?
+                MatPool.Get(mat.Rows, mat.Cols, MatType.CV_8UC1) :
                 MatPool.GetClone(mat);
-            
+
             var morphed = MatPool.Get(mat.Rows, mat.Cols, MatType.CV_8UC1);
             var eroded = MatPool.Get(mat.Rows, mat.Cols, MatType.CV_8UC1);
             var element = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(3, 3));
-            
+
             try
             {
                 if (mat.Type() != MatType.CV_8UC1)

@@ -1,11 +1,9 @@
 ﻿using macro.Command;
 using macro.Dialog;
 using macro.Extension;
-using Microsoft.Extensions.ObjectPool;
 using Newtonsoft.Json;
 using OpenCvSharp;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -34,7 +32,7 @@ namespace macro.ViewModel
         private DateTime _startDateTime;
         private OptionDialog _optionDialog;
         public EditResourceDialog EditResourceDialog { get; set; }
-        
+
         // Performance: Channel consumption for frame processing
         private CancellationTokenSource _frameConsumerCancellation;
 
@@ -61,13 +59,11 @@ namespace macro.ViewModel
             set
             {
                 _option = value;
-                if (value == null)
+                Model.Option = value?.Model;
+
+                if (value != null && target != null)
                 {
-                    Model.Option = null;
-                }
-                else
-                {
-                    Model.Option = value.Model;
+                    target.Fps = value.RenderFrame;
                 }
             }
         }
@@ -117,7 +113,7 @@ namespace macro.ViewModel
         public MainWindow(Model.MainWindow model)
         {
             Model = model;
-            Sprites = new ObservableCollection<Sprite>(Model.Sprites.Values.Select(x => new ViewModel.Sprite(x)));
+            Sprites = [.. Model.Sprites.Values.Select(x => new ViewModel.Sprite(x))];
 
             RunCommand = new RelayCommand(OnStart);
             OptionCommand = new RelayCommand(OnOption);
@@ -132,12 +128,12 @@ namespace macro.ViewModel
             };
             timer.Tick += OnTimer;
             timer.Start();
-            
+
             // Performance: Force frame rendering every frame to prevent WPF rendering optimization
             // that causes frame drops when mouse is not moving (fixes stuttering in Release mode)
             CompositionTarget.Rendering += CompositionTarget_Rendering;
         }
-        
+
         /// <summary>
         /// Force WPF rendering every frame to maintain consistent frame rate
         /// Performance: Prevents WPF from optimizing rendering when mouse is idle
@@ -163,15 +159,16 @@ namespace macro.ViewModel
                 case MouseButton.Left:
                     {
                         // Performance: Use MatPool for ROI operation instead of new Mat allocation
-                        var rect = new OpenCvSharp.Rect { 
-                            X = (int)selectedRect.X, 
-                            Y = (int)selectedRect.Y, 
-                            Width = (int)selectedRect.Width, 
-                            Height = (int)selectedRect.Height 
+                        var rect = new OpenCvSharp.Rect
+                        {
+                            X = (int)selectedRect.X,
+                            Y = (int)selectedRect.Y,
+                            Width = (int)selectedRect.Width,
+                            Height = (int)selectedRect.Height
                         };
-                        
+
                         var selectedFrame = MatPool.GetRoi(Frame, rect);
-                        
+
                         var newSprite = new Sprite(new Model.Sprite
                         {
                             Name = "New Sprite",
@@ -218,12 +215,12 @@ namespace macro.ViewModel
                     throw new Exception($"cannot find {Option.Class}");
 
                 // Performance: Set target FPS for frame capture
-                target.TargetFps = Option.RenderFrame;
-                
+                target.Fps = Option.RenderFrame;
+
                 // Performance: Start frame consumer task
                 _frameConsumerCancellation = new CancellationTokenSource();
                 Task.Run(() => ConsumeFramesAsync(_frameConsumerCancellation.Token));
-                
+
                 target.Start();
                 _startDateTime = DateTime.Now;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ElapsedTime)));
@@ -246,7 +243,7 @@ namespace macro.ViewModel
                 target.Stop();
                 target = null;
             }
-            
+
             // Performance: Cancel frame consumer task
             _frameConsumerCancellation?.Cancel();
             _frameConsumerCancellation = null;

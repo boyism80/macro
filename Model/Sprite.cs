@@ -58,7 +58,7 @@ namespace macro.Model
 
             Mat workingFrame = null;
             var shouldDisposeFrame = false;
-            
+
             try
             {
                 if (area != null)
@@ -73,7 +73,7 @@ namespace macro.Model
                 }
 
                 var result = new DetectionResult();
-                
+
                 if (Extension.Activated && Extension.DetectColor)
                 {
                     using var frameMask = workingFrame.ToMask(Extension.Pivot, Extension.Factor);
@@ -92,19 +92,19 @@ namespace macro.Model
                 {
                     Mat fromMat = null;
                     Mat toMat = null;
-                    
+
                     try
                     {
                         // Performance: Use pooled Mat objects for template matching operations
                         fromMat = Extension.Activated ? workingFrame.ToMask(Extension.Pivot, Extension.Factor) : workingFrame;
                         toMat = Extension.Activated ? Source.ToMask(Extension.Pivot, Extension.Factor) : Source;
                         var matched = MatPool.Get(fromMat.Rows - toMat.Rows + 1, fromMat.Cols - toMat.Cols + 1, MatType.CV_32FC1);
-                        
+
                         try
                         {
                             var templateSource = Extension.Activated ? toMat : Source;
                             var matchSource = Extension.Activated ? fromMat : workingFrame;
-                            
+
                             Cv2.MatchTemplate(matchSource, templateSource, matched, TemplateMatchModes.CCoeffNormed);
                             matched.MinMaxLoc(out var minval, out var maxval, out var minloc, out var maxloc);
 
@@ -168,10 +168,10 @@ namespace macro.Model
         public List<DetectionResult> MatchToAll(Mat frame, float percent, OpenCvSharp.Rect? area = null)
         {
             var result = new List<DetectionResult>();
-            
+
             // Performance: Use MatPool for cloning operation instead of frame.Clone()
             var workingFrame = MatPool.GetClone(frame);
-            
+
             try
             {
                 while (true)
@@ -188,7 +188,7 @@ namespace macro.Model
 
                     result.Add(detectionResult);
                 }
-                
+
                 return result;
             }
             finally

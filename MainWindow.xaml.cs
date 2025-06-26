@@ -234,7 +234,7 @@ namespace macro
             {
                 Model.Save(CONFIG_PATH);
                 Model.SaveSpriteList();
-                
+
                 // Performance: Clear all object pools on application shutdown
                 MatPool.Clear();
             }

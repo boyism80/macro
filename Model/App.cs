@@ -333,7 +333,7 @@ namespace macro.Model
         private string _className;
         private System.Drawing.Bitmap _bitmap;
         private Mat _frame;
-        
+
         // Performance: Channel-based frame processing for better decoupling
         private readonly Channel<Mat> _frameChannel;
         private readonly ChannelWriter<Mat> _frameWriter;
@@ -383,7 +383,7 @@ namespace macro.Model
         /// Target FPS for frame capture
         /// Performance: Controls capture rate to prevent excessive CPU usage
         /// </summary>
-        public int TargetFps
+        public int Fps
         {
             get => _targetFps;
             set => _targetFps = Math.Max(1, Math.Min(120, value)); // Clamp between 1-120 FPS
@@ -405,7 +405,7 @@ namespace macro.Model
             }
 
             ClassName = className;
-            
+
             // Performance: Create bounded channel to prevent memory bloat
             // Capacity of 3 allows for some buffering while preventing excessive memory usage
             var options = new BoundedChannelOptions(3)
@@ -414,7 +414,7 @@ namespace macro.Model
                 SingleReader = true,
                 SingleWriter = true
             };
-            
+
             _frameChannel = Channel.CreateBounded<Mat>(options);
             _frameWriter = _frameChannel.Writer;
             _frameReader = _frameChannel.Reader;
@@ -501,9 +501,8 @@ namespace macro.Model
         /// </summary>
         private async Task CaptureFramesAsync(CancellationToken cancellationToken)
         {
-            var frameInterval = TimeSpan.FromMilliseconds(1000.0 / TargetFps);
             var stopwatch = Stopwatch.StartNew();
-            
+
             try
             {
                 while (!cancellationToken.IsCancellationRequested)
@@ -515,23 +514,24 @@ namespace macro.Model
                             continue;
 
                         Area = GetArea();
-                        
+
                         // Performance: Try to write frame to channel, drop if full
                         if (_frameWriter.TryWrite(MatPool.GetClone(frame)))
                         {
                             // Frame successfully queued
                         }
                         // If channel is full, frame is automatically dropped (DropOldest mode)
-                        
+
                         // Performance: FPS limiting with high precision timing
+                        var frameInterval = TimeSpan.FromMilliseconds(1000.0 / Fps);
                         var elapsed = stopwatch.Elapsed;
                         var sleepTime = frameInterval - elapsed;
-                        
+
                         if (sleepTime > TimeSpan.Zero)
                         {
                             await Task.Delay(sleepTime, cancellationToken);
                         }
-                        
+
                         stopwatch.Restart();
                     }
                     catch (Exception e)
@@ -553,10 +553,10 @@ namespace macro.Model
 
             IsRunning = true;
             _cancellationTokenSource = new CancellationTokenSource();
-            
+
             // Performance: Start frame capture task
             Task.Run(() => CaptureFramesAsync(_cancellationTokenSource.Token));
-            
+
             return true;
         }
 
@@ -564,10 +564,10 @@ namespace macro.Model
         {
             if (!IsRunning)
                 return;
-                
+
             IsRunning = false;
             _cancellationTokenSource?.Cancel();
-            
+
             // Performance: Proper cleanup of resources
             if (_bitmap != null)
             {
