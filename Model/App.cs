@@ -8,6 +8,7 @@ using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -334,6 +335,13 @@ namespace macro.Model
         private string _className;
         private System.Drawing.Bitmap _bitmap;
         private Mat _frame;
+        
+        // Performance: Channel-based frame processing for better decoupling
+        private readonly Channel<Mat> _frameChannel;
+        private readonly ChannelWriter<Mat> _frameWriter;
+        private readonly ChannelReader<Mat> _frameReader;
+        private CancellationTokenSource _cancellationTokenSource;
+        private int _targetFps = 60; // Default FPS
 
         public IntPtr Hwnd { get; private set; }
 
@@ -373,6 +381,16 @@ namespace macro.Model
             }
         }
 
+        /// <summary>
+        /// Target FPS for frame capture
+        /// Performance: Controls capture rate to prevent excessive CPU usage
+        /// </summary>
+        public int TargetFps
+        {
+            get => _targetFps;
+            set => _targetFps = Math.Max(1, Math.Min(120, value)); // Clamp between 1-120 FPS
+        }
+
         public event FrameEventHandler Frame;
 
         private App(string className)
@@ -385,6 +403,19 @@ namespace macro.Model
             }
 
             ClassName = className;
+            
+            // Performance: Create bounded channel to prevent memory bloat
+            // Capacity of 3 allows for some buffering while preventing excessive memory usage
+            var options = new BoundedChannelOptions(3)
+            {
+                FullMode = BoundedChannelFullMode.DropOldest, // Drop old frames if channel is full
+                SingleReader = true,
+                SingleWriter = true
+            };
+            
+            _frameChannel = Channel.CreateBounded<Mat>(options);
+            _frameWriter = _frameChannel.Writer;
+            _frameReader = _frameChannel.Reader;
         }
 
         static App()
@@ -463,28 +494,108 @@ namespace macro.Model
         }
 
         /// <summary>
-        /// Main frame capture loop with proper resource cleanup
-        /// Performance: Uses MatPool for Mat management
+        /// Frame capture loop with FPS control and channel-based publishing
+        /// Performance: Uses Channel for decoupled frame processing and FPS limiting
         /// </summary>
-        private void OnFrame()
+        private async Task CaptureFramesAsync(CancellationToken cancellationToken)
         {
-            while (IsRunning)
+            var frameInterval = TimeSpan.FromMilliseconds(1000.0 / TargetFps);
+            var stopwatch = Stopwatch.StartNew();
+            
+            try
             {
-                try
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    var frame = Capture();
-                    if (frame == null)
-                        continue;
+                    try
+                    {
+                        var frame = Capture();
+                        if (frame == null)
+                            continue;
 
-                    Area = GetArea();
-                    Frame?.Invoke(frame);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message);
+                        Area = GetArea();
+                        
+                        // Performance: Try to write frame to channel, drop if full
+                        if (_frameWriter.TryWrite(MatPool.GetClone(frame)))
+                        {
+                            // Frame successfully queued
+                        }
+                        // If channel is full, frame is automatically dropped (DropOldest mode)
+                        
+                        // Performance: FPS limiting with high precision timing
+                        var elapsed = stopwatch.Elapsed;
+                        var sleepTime = frameInterval - elapsed;
+                        
+                        if (sleepTime > TimeSpan.Zero)
+                        {
+                            await Task.Delay(sleepTime, cancellationToken);
+                        }
+                        
+                        stopwatch.Restart();
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine($"Frame capture error: {e.Message}");
+                    }
                 }
             }
+            finally
+            {
+                _frameWriter.Complete();
+            }
+        }
 
+        /// <summary>
+        /// Frame processing loop that consumes frames from channel
+        /// Performance: Decoupled from capture loop for better performance
+        /// </summary>
+        private async Task ProcessFramesAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                await foreach (var frame in _frameReader.ReadAllAsync(cancellationToken))
+                {
+                    try
+                    {
+                        Frame?.Invoke(frame);
+                        // Frame is returned to pool by the consumer (ViewModel)
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine($"Frame processing error: {e.Message}");
+                        // Return frame to pool if processing failed
+                        MatPool.Return(frame);
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected when cancellation is requested
+            }
+        }
+
+        public bool Start()
+        {
+            if (IsRunning)
+                return false;
+
+            IsRunning = true;
+            _cancellationTokenSource = new CancellationTokenSource();
+            
+            // Performance: Start both capture and processing tasks
+            Task.Run(() => CaptureFramesAsync(_cancellationTokenSource.Token));
+            Task.Run(() => ProcessFramesAsync(_cancellationTokenSource.Token));
+            
+            return true;
+        }
+
+        public void Stop()
+        {
+            if (!IsRunning)
+                return;
+                
+            IsRunning = false;
+            _cancellationTokenSource?.Cancel();
+            
             // Performance: Proper cleanup of resources
             if (_bitmap != null)
             {
@@ -498,21 +609,6 @@ namespace macro.Model
                 MatPool.Return(_frame);
                 _frame = null;
             }
-        }
-
-        public bool Start()
-        {
-            if (IsRunning)
-                return false;
-
-            IsRunning = true;
-            Task.Run(OnFrame);
-            return true;
-        }
-
-        public void Stop()
-        {
-            IsRunning = false;
         }
 
         private IntPtr FindAppHandle(string className)

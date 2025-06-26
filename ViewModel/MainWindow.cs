@@ -34,9 +34,6 @@ namespace macro.ViewModel
         private OptionDialog _optionDialog;
         public EditResourceDialog EditResourceDialog { get; set; }
 
-        // Object pools for GC optimization
-        private readonly ObjectPool<Stopwatch> _stopwatchPool;
-        
         private Model.MainWindow _model;
         public Model.MainWindow Model
         {
@@ -94,7 +91,6 @@ namespace macro.ViewModel
         public Mat StaticFrame { get; private set; }
         public WriteableBitmap Bitmap { get; private set; }
 
-
         public ObservableCollection<ViewModel.Sprite> Sprites
         {
             get => [.. Model.Sprites.Values.Select(x => new Sprite(x))];
@@ -118,10 +114,6 @@ namespace macro.ViewModel
         {
             Model = model;
             Sprites = new ObservableCollection<Sprite>(Model.Sprites.Values.Select(x => new ViewModel.Sprite(x)));
-
-            // Initialize object pools
-            var stopwatchPolicy = new DefaultPooledObjectPolicy<Stopwatch>();
-            _stopwatchPool = new DefaultObjectPool<Stopwatch>(stopwatchPolicy, 10);
 
             RunCommand = new RelayCommand(OnStart);
             OptionCommand = new RelayCommand(OnOption);
@@ -221,6 +213,8 @@ namespace macro.ViewModel
                 if (target == null)
                     throw new Exception($"cannot find {Option.Class}");
 
+                // Performance: Set target FPS for frame capture
+                target.TargetFps = Option.RenderFrame;
                 target.Frame += App_Frame;
                 target.Start();
                 _startDateTime = DateTime.Now;
@@ -279,17 +273,13 @@ namespace macro.ViewModel
         }
 
         /// <summary>
-        /// Frame processing with Stopwatch object pooling optimization
-        /// Performance: Uses pooled Stopwatch objects to reduce GC pressure
+        /// Frame processing with optimized memory management
+        /// Performance: Processes frames from Channel, returns Mat to pool after use
         /// </summary>
         private void App_Frame(OpenCvSharp.Mat frame)
         {
-            // Performance: Get Stopwatch from object pool instead of creating new one
-            var stopWatch = _stopwatchPool.Get();
             try
             {
-                stopWatch.Restart();
-
                 if (StaticFrame != null)
                     frame = StaticFrame;
 
@@ -297,15 +287,15 @@ namespace macro.ViewModel
                 UpdateBitmap(frame);
                 _elapsedStopwatch.Stop();
                 _elapsedStopwatch.Restart();
-
-                stopWatch.Stop();
-                Thread.Sleep(Math.Max(0, 1000 / Option.RenderFrame - (int)stopWatch.ElapsedMilliseconds));
             }
             finally
             {
-                // Performance: Reset and return Stopwatch to pool for reuse
-                stopWatch.Reset();
-                _stopwatchPool.Return(stopWatch);
+                // Performance: Return frame to MatPool after processing
+                // Only return if it's not the StaticFrame
+                if (StaticFrame == null)
+                {
+                    MatPool.Return(frame);
+                }
             }
         }
 
@@ -356,22 +346,18 @@ namespace macro.ViewModel
             if (EditResourceDialog != null)
                 return;
 
-            var pool = new DefaultObjectPool<Model.Sprite>(new DefaultPooledObjectPolicy<Model.Sprite>(), source.Count());
-            var cloned = source.Select(sprite =>
+            var cloned = source.Select(sprite => new Model.Sprite
             {
-                var entity = pool.Get();
-                entity.Name = sprite.Name;
-                entity.Source = sprite.Source;
-                entity.Threshold = sprite.Threshold;
-                entity.Extension = sprite.Extension == null ? null : new Model.SpriteExtension
+                Name = sprite.Name,
+                Source = sprite.Source,
+                Threshold = sprite.Threshold,
+                Extension = sprite.Extension == null ? null : new Model.SpriteExtension
                 {
                     Activated = sprite.Extension.Activated,
                     DetectColor = sprite.Extension.DetectColor,
                     Factor = sprite.Extension.Factor,
                     Pivot = sprite.Extension.Pivot
-                };
-
-                return entity;
+                }
             }).OrderBy(x => x.Name).ToList();
 
             var model = new ViewModel.EditResourceWindow(cloned)
@@ -408,10 +394,6 @@ namespace macro.ViewModel
 
             EditResourceDialog.Closed += (sender, e) =>
             {
-                foreach (var entity in cloned)
-                {
-                    pool.Return(entity);
-                }
                 selection?.Dispose();
                 EditResourceDialog = null;
             };
