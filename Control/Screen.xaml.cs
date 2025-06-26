@@ -20,10 +20,7 @@ namespace macro.Control
             PropertyChanged(this, new PropertyChangedEventArgs(name));
         }
 
-        #region Curosr
-        /// <summary>
-        /// 커서 위치
-        /// </summary>
+        #region Cursor
         private Point _cursorPoint = new Point();
         public Point CursorPoint
         {
@@ -35,9 +32,6 @@ namespace macro.Control
             }
         }
 
-        /// <summary>
-        /// 커서 레이블 표시 여부
-        /// </summary>
         private Visibility _cursorLabelVisibility = Visibility.Hidden;
         public Visibility CursorLabelVisibility
         {
@@ -54,9 +48,6 @@ namespace macro.Control
             }
         }
 
-        /// <summary>
-        /// 커서 위치 텍스트
-        /// </summary>
         public string CursorPointText
         {
             get
@@ -67,26 +58,13 @@ namespace macro.Control
         public Point PointLabelLocation { get; private set; } = new Point();
         #endregion
 
-
-
         #region Selection
-        /// <summary>
-        /// 드래그 상태
-        /// </summary>
         private bool Dragging { get; set; } = false;
-
-        /// <summary>
-        /// 드래그 영역 사이즈
-        /// </summary>
         private Size Size { get; set; } = new Size();
-
-        /// <summary>
-        /// 드래그 시작점
-        /// </summary>
         private Point Begin { get; set; } = new Point();
 
         /// <summary>
-        /// 선택영역을 지정할 수 있는 영역
+        /// Calculates the valid area for selection based on bitmap dimensions and control size
         /// </summary>
         private Rect ValidRect
         {
@@ -119,7 +97,7 @@ namespace macro.Control
         }
 
         /// <summary>
-        /// 선택된 영역
+        /// Gets the selected rectangle with boundary constraints
         /// </summary>
         public Rect SelectedRect
         {
@@ -163,7 +141,7 @@ namespace macro.Control
         }
 
         /// <summary>
-        /// 현재 보여지는 프레임 기준의 선택된 영역
+        /// Converts screen coordinates to bitmap coordinates
         /// </summary>
         private Rect SelectedFrameRect
         {
@@ -185,19 +163,13 @@ namespace macro.Control
             }
         }
 
-        /// <summary>
-        /// 선택영역 표시 여부
-        /// </summary>
         public Visibility SelectedRectVisibility { get; private set; } = Visibility.Hidden;
 
         public MouseButton MouseButton { get; private set; }
         #endregion
 
-
-
-
         /// <summary>
-        /// 프레임과 컨트롤 크기 비율
+        /// Maintains aspect ratio while scaling the bitmap to fit the control
         /// </summary>
         private double Ratio
         {

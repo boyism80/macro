@@ -19,7 +19,7 @@ using System.Windows.Threading;
 
 namespace macro.ViewModel
 {
-    public partial class MainWindow : INotifyPropertyChanged
+    public partial class MainWindow : INotifyPropertyChanged, IDisposable
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -80,14 +80,42 @@ namespace macro.ViewModel
             }
         }
         public string RunButtonText => Running ? "Stop" : "Run";
-        public string RunStateText => Running ? "진행중" : "대기중";
+        public string RunStateText => Running ? "Running" : "Waiting";
         public string ExceptionText { get; set; } = string.Empty;
         public string Title => "macro";
         public string StatusName => string.Empty;
         public Visibility DarkBackgroundVisibility { get; private set; } = Visibility.Hidden;
 
         private readonly Stopwatch _elapsedStopwatch = new Stopwatch();
-        public Mat Frame { get; private set; }
+        private readonly ReaderWriterLockSlim _frameLock = new ReaderWriterLockSlim(); // Reader-Writer lock for Frame access
+        private Mat _frame;
+        public Mat Frame 
+        { 
+            get 
+            {
+                _frameLock.EnterReadLock();
+                try
+                {
+                    return _frame;
+                }
+                finally
+                {
+                    _frameLock.ExitReadLock();
+                }
+            }
+            private set 
+            {
+                _frameLock.EnterWriteLock();
+                try
+                {
+                    _frame = value;
+                }
+                finally
+                {
+                    _frameLock.ExitWriteLock();
+                }
+            }
+        }
         public Mat StaticFrame { get; private set; }
         public WriteableBitmap Bitmap { get; private set; }
 
@@ -167,6 +195,9 @@ namespace macro.ViewModel
                             Height = (int)selectedRect.Height
                         };
 
+                        if (Frame == null)
+                            return;
+                            
                         var selectedFrame = MatPool.GetRoi(Frame, rect);
 
                         var newSprite = new Sprite(new Model.Sprite
@@ -250,6 +281,9 @@ namespace macro.ViewModel
 
             ReleasePythonModule();
             Bitmap = null;
+
+            // Set Frame to null (thread-safe with ReaderWriterLockSlim)
+            Frame = null;
 
             // Performance: Clear all Mat pools on application shutdown
             MatPool.Clear();
@@ -449,10 +483,36 @@ namespace macro.ViewModel
             if (StaticFrame != null)
                 frame = StaticFrame;
 
-            Frame = frame;
+            Frame = frame; // Thread safety guaranteed by ReaderWriterLockSlim
             UpdateBitmap(frame);
             _elapsedStopwatch.Stop();
             _elapsedStopwatch.Restart();
         }
+
+        #region IDisposable 구현
+
+        private bool _disposed = false;
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    // Release managed resources
+                    Stop(); // Clean up running tasks
+                    _frameLock?.Dispose();
+                }
+                _disposed = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        #endregion
     }
 }
