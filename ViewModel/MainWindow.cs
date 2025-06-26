@@ -1,9 +1,11 @@
 ﻿using macro.Command;
 using macro.Dialog;
+using macro.Extension;
 using Microsoft.Extensions.ObjectPool;
 using Newtonsoft.Json;
 using OpenCvSharp;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -32,6 +34,9 @@ namespace macro.ViewModel
         private OptionDialog _optionDialog;
         public EditResourceDialog EditResourceDialog { get; set; }
 
+        // Object pools for GC optimization
+        private readonly ObjectPool<Stopwatch> _stopwatchPool;
+        
         private Model.MainWindow _model;
         public Model.MainWindow Model
         {
@@ -92,7 +97,7 @@ namespace macro.ViewModel
 
         public ObservableCollection<ViewModel.Sprite> Sprites
         {
-            get => new ObservableCollection<ViewModel.Sprite>(Model.Sprites.Values.Select(x => new Sprite(x)));
+            get => [.. Model.Sprites.Values.Select(x => new Sprite(x))];
             set => Model.Sprites = value.ToDictionary(x => x.Name, x => x.Model);
         }
         public ObservableCollection<Log> Logs { get; private set; } = new ObservableCollection<Log>();
@@ -114,6 +119,10 @@ namespace macro.ViewModel
             Model = model;
             Sprites = new ObservableCollection<Sprite>(Model.Sprites.Values.Select(x => new ViewModel.Sprite(x)));
 
+            // Initialize object pools
+            var stopwatchPolicy = new DefaultPooledObjectPolicy<Stopwatch>();
+            _stopwatchPool = new DefaultObjectPool<Stopwatch>(stopwatchPolicy, 10);
+
             RunCommand = new RelayCommand(OnStart);
             OptionCommand = new RelayCommand(OnOption);
             EditSpriteCommand = new RelayCommand(OnEditSprite);
@@ -127,23 +136,50 @@ namespace macro.ViewModel
             };
             timer.Tick += OnTimer;
             timer.Start();
+            
+            // Performance: Force frame rendering every frame to prevent WPF rendering optimization
+            // that causes frame drops when mouse is not moving (fixes stuttering in Release mode)
+            CompositionTarget.Rendering += CompositionTarget_Rendering;
+        }
+        
+        /// <summary>
+        /// Force WPF rendering every frame to maintain consistent frame rate
+        /// Performance: Prevents WPF from optimizing rendering when mouse is idle
+        /// </summary>
+        private void CompositionTarget_Rendering(object sender, EventArgs e)
+        {
+            if (Running && Bitmap != null)
+            {
+                // Force screen update every frame
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Bitmap)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(FrameBackgroundBrush)));
+            }
         }
 
         private void OnSelectedRect(object obj)
         {
             var parameters = obj as object[];
             var selectedRect = (System.Windows.Rect)parameters[1];
-            var selectedFrame = new Mat(Frame, new OpenCvSharp.Rect { X = (int)selectedRect.X, Y = (int)selectedRect.Y, Width = (int)selectedRect.Width, Height = (int)selectedRect.Height });
             var mouseButton = (MouseButton)parameters[2];
 
             switch (mouseButton)
             {
                 case MouseButton.Left:
                     {
+                        // Performance: Use MatPool for ROI operation instead of new Mat allocation
+                        var rect = new OpenCvSharp.Rect { 
+                            X = (int)selectedRect.X, 
+                            Y = (int)selectedRect.Y, 
+                            Width = (int)selectedRect.Width, 
+                            Height = (int)selectedRect.Height 
+                        };
+                        
+                        var selectedFrame = MatPool.GetRoi(Frame, rect);
+                        
                         var newSprite = new Sprite(new Model.Sprite
                         {
                             Name = "New Sprite",
-                            Source = selectedFrame,
+                            Source = selectedFrame, // MatPool object can be passed to external components
                             Threshold = 0.8f,
                             Extension = new Model.SpriteExtension
                             {
@@ -162,7 +198,7 @@ namespace macro.ViewModel
                 case MouseButton.Right:
                     {
                         Clipboard.SetText($"{{\"x\": {(int)selectedRect.X}, \"y\": {(int)selectedRect.Y}, \"width\": {(int)selectedRect.Width}, \"height\": {(int)selectedRect.Height}}}");
-                        MessageBox.Show("클립보드에 영역이 저장되었습니다.");
+                        MessageBox.Show("Area saved to clipboard.");
                     }
                     break;
             }
@@ -212,19 +248,29 @@ namespace macro.ViewModel
 
             ReleasePythonModule();
             Bitmap = null;
+
+            // Performance: Clear all Mat pools on application shutdown
+            MatPool.Clear();
+
             Running = false;
 
             Stopped?.Invoke(this, EventArgs.Empty);
         }
 
+        /// <summary>
+        /// Update WPF bitmap from OpenCV Mat with memory optimization
+        /// Performance: Reuses existing WriteableBitmap when possible to avoid allocations
+        /// </summary>
         private void UpdateBitmap(Mat frame)
         {
             Application.Current?.Dispatcher.Invoke(() =>
             {
+                // Performance: Only create new WriteableBitmap if size changed
                 if (Bitmap == null || Bitmap.Width != frame.Width || Bitmap.Height != frame.Height)
                     Bitmap = new WriteableBitmap(frame.Width, frame.Height, 96, 96, PixelFormats.Bgr24, null);
 
                 Bitmap.Lock();
+                // Direct memory copy from Mat to WriteableBitmap buffer
                 frame.CopyTo(new Mat(frame.Rows, frame.Cols, MatType.CV_8UC3, Bitmap.BackBuffer));
                 Bitmap.AddDirtyRect(new Int32Rect(0, 0, frame.Cols, frame.Rows));
                 Bitmap.Unlock();
@@ -232,21 +278,35 @@ namespace macro.ViewModel
             });
         }
 
+        /// <summary>
+        /// Frame processing with Stopwatch object pooling optimization
+        /// Performance: Uses pooled Stopwatch objects to reduce GC pressure
+        /// </summary>
         private void App_Frame(OpenCvSharp.Mat frame)
         {
-            var stopWatch = new Stopwatch();
-            stopWatch.Start();
+            // Performance: Get Stopwatch from object pool instead of creating new one
+            var stopWatch = _stopwatchPool.Get();
+            try
+            {
+                stopWatch.Restart();
 
-            if (StaticFrame != null)
-                frame = StaticFrame;
+                if (StaticFrame != null)
+                    frame = StaticFrame;
 
-            Frame = frame;
-            UpdateBitmap(frame);
-            _elapsedStopwatch.Stop();
-            _elapsedStopwatch.Restart();
+                Frame = frame;
+                UpdateBitmap(frame);
+                _elapsedStopwatch.Stop();
+                _elapsedStopwatch.Restart();
 
-            stopWatch.Stop();
-            Thread.Sleep(Math.Max(0, 1000 / Option.RenderFrame - (int)stopWatch.ElapsedMilliseconds));
+                stopWatch.Stop();
+                Thread.Sleep(Math.Max(0, 1000 / Option.RenderFrame - (int)stopWatch.ElapsedMilliseconds));
+            }
+            finally
+            {
+                // Performance: Reset and return Stopwatch to pool for reuse
+                stopWatch.Reset();
+                _stopwatchPool.Return(stopWatch);
+            }
         }
 
         private void OnStart(object obj)
@@ -323,7 +383,7 @@ namespace macro.ViewModel
                         var dataContext = EditResourceDialog.DataContext as ViewModel.EditResourceWindow;
                         var duplicatedNameList = dataContext.Sprites.GroupBy(x => x.Name).Where(x => x.Count() > 1).Select(x => x.Key).ToList();
                         if (duplicatedNameList.Count > 0)
-                            throw new Exception($"이름 중복 : {string.Join(", ", duplicatedNameList)}");
+                            throw new Exception($"Duplicate names: {string.Join(", ", duplicatedNameList)}");
 
                         Sprites = dataContext.Sprites;
                         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Sprites)));
@@ -352,7 +412,7 @@ namespace macro.ViewModel
                 {
                     pool.Return(entity);
                 }
-                selection.Source?.Dispose();
+                selection?.Dispose();
                 EditResourceDialog = null;
             };
             EditResourceDialog.Show();

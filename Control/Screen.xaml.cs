@@ -3,7 +3,9 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace macro.Control
 {
@@ -217,6 +219,16 @@ namespace macro.Control
                 SetValue(BitmapProperty, value);
                 OnPropertyChanged(nameof(SelectedRect));
                 OnPropertyChanged(nameof(CursorLabelVisibility));
+
+                // Force immediate visual update to prevent WPF render optimization delays
+                if (value != null)
+                {
+                    Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(() =>
+                    {
+                        InvalidateVisual();
+                        UpdateLayout();
+                    }));
+                }
             }
         }
 
@@ -227,9 +239,50 @@ namespace macro.Control
             set { SetValue(SelectRectCommandProperty, value); }
         }
 
+        private bool _isRenderingConnected = false;
+
         public Screen()
         {
             InitializeComponent();
+
+            // Optimize rendering settings for better performance
+            RenderOptions.SetBitmapScalingMode(this, BitmapScalingMode.Linear);
+            RenderOptions.SetEdgeMode(this, EdgeMode.Aliased);
+
+            // Use hardware acceleration if available
+            CacheMode = new BitmapCache();
+
+            // Connect to WPF's rendering pipeline to force continuous rendering
+            this.Loaded += Screen_Loaded;
+            this.Unloaded += Screen_Unloaded;
+        }
+
+        private void Screen_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (!_isRenderingConnected)
+            {
+                CompositionTarget.Rendering += CompositionTarget_Rendering;
+                _isRenderingConnected = true;
+            }
+        }
+
+        private void Screen_Unloaded(object sender, RoutedEventArgs e)
+        {
+            if (_isRenderingConnected)
+            {
+                CompositionTarget.Rendering -= CompositionTarget_Rendering;
+                _isRenderingConnected = false;
+            }
+        }
+
+        private void CompositionTarget_Rendering(object sender, EventArgs e)
+        {
+            // Force continuous rendering by invalidating visual on every frame
+            // This prevents WPF from optimizing away rendering when there's no input
+            if (IsVisible && Bitmap != null)
+            {
+                InvalidateVisual();
+            }
         }
 
         private void UserControl_MouseEnter(object sender, MouseEventArgs e)
@@ -333,7 +386,15 @@ namespace macro.Control
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            // Clean up rendering connection
+            if (_isRenderingConnected)
+            {
+                CompositionTarget.Rendering -= CompositionTarget_Rendering;
+                _isRenderingConnected = false;
+            }
+
+            this.Loaded -= Screen_Loaded;
+            this.Unloaded -= Screen_Unloaded;
         }
     }
 }

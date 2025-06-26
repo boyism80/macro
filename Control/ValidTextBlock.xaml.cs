@@ -4,7 +4,7 @@ using System.Windows.Controls;
 namespace macro.Control
 {
     public enum ValidTextType
-    { 
+    {
         Default,
         File,
         Directory

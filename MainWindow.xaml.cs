@@ -1,4 +1,5 @@
 ﻿using macro.Command;
+using macro.Extension;
 using System;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -233,6 +234,9 @@ namespace macro
             {
                 Model.Save(CONFIG_PATH);
                 Model.SaveSpriteList();
+                
+                // Performance: Clear all object pools on application shutdown
+                MatPool.Clear();
             }
             catch (Exception exc)
             {

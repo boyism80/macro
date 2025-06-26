@@ -29,7 +29,7 @@ namespace macro.ViewModel
             {
                 if (Model == null)
                     return;
-                
+
                 Model.Factor = value;
             }
         }
@@ -76,7 +76,7 @@ namespace macro.ViewModel
         }
 
         public string FactorText => $"{Factor * 100:0.00}";
-        
+
         public string Hex
         {
             get => ColorTranslator.ToHtml(Pivot);
@@ -89,7 +89,7 @@ namespace macro.ViewModel
         }
     }
 
-    public class Sprite : INotifyPropertyChanged
+    public class Sprite : INotifyPropertyChanged, IDisposable
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -124,6 +124,10 @@ namespace macro.ViewModel
 
         public SpriteExtension Extension { get; private set; }
 
+        /// <summary>
+        /// Get mask Mat with object pooling optimization
+        /// Performance: Uses MatPool when ToMask is called to avoid allocations
+        /// </summary>
         public Mat Mask
         {
             get
@@ -131,11 +135,14 @@ namespace macro.ViewModel
                 if (Extension.Activated == false)
                     return Source;
 
-                var result = Source.ToMask(Extension.Pivot, Extension.Factor);
-                return result;
+                return Source.ToMask(Extension.Pivot, Extension.Factor);
             }
         }
 
+        /// <summary>
+        /// Get destination Mat with object pooling optimization  
+        /// Performance: Uses MatPool for cloning and Mat creation operations
+        /// </summary>
         public Mat Dest
         {
             get
@@ -144,16 +151,17 @@ namespace macro.ViewModel
                 {
                     if (Extension.DetectColor)
                     {
-                        var detectedRect = Mask.GetRotatedRects(Threshold).OrderByDescending(x => x.Size.Width * x.Size.Height).FirstOrDefault();
+                        var mask = Mask;
+                        var detectedRect = mask.GetRotatedRects(Threshold).OrderByDescending(x => x.Size.Width * x.Size.Height).FirstOrDefault();
                         var points = detectedRect.Points().Select(x => (OpenCvSharp.Point)x).ToList();
 
-                        var result = Source.Clone();
+                        var result = MatPool.GetClone(Source);
                         Cv2.DrawContours(result, new[] { points }, -1, Scalar.Lime, 2);
                         return result;
                     }
                     else
                     {
-                        var result = new Mat();
+                        var result = MatPool.Get(Source.Rows, Source.Cols, Source.Type());
                         Source.CopyTo(result, Mask);
                         return result;
                     }
@@ -214,5 +222,10 @@ namespace macro.ViewModel
         }
 
         public override string ToString() => Name;
+
+        public void Dispose()
+        {
+            Extension.PropertyChanged -= Extension_PropertyChanged;
+        }
     }
 }

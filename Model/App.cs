@@ -406,28 +406,38 @@ namespace macro.Model
             return new System.Drawing.Rectangle(adjustedLocation, appPlayerRect.Size);
         }
 
+        /// <summary>
+        /// Capture screen with optimized memory management
+        /// Performance: Reuses Bitmap and uses MatPool for Mat allocation
+        /// </summary>
         private Mat Capture()
         {
             try
             {
                 var appClientRect = GetArea();
+
+                // Performance: Reuse existing Bitmap if size matches to avoid allocations
                 if (_bitmap == null || _bitmap.Width != appClientRect.Width || _bitmap.Height != appClientRect.Height)
                 {
                     _bitmap?.Dispose();
                     _bitmap = new System.Drawing.Bitmap(appClientRect.Width, appClientRect.Height);
                 }
 
+                // Performance: Use MatPool for Mat allocation instead of new Mat()
                 if (_frame == null || _frame.Width != appClientRect.Width || _frame.Height != appClientRect.Height)
                 {
-                    _frame?.Dispose();
-                    _frame = new Mat(appClientRect.Height, appClientRect.Width, MatType.CV_8UC3);
+                    MatPool.Return(_frame);
+                    _frame = MatPool.Get(appClientRect.Height, appClientRect.Width, MatType.CV_8UC3);
                 }
 
                 var appClientDC = GetDC(Hwnd);
                 var compatibleDC = CreateCompatibleDC(appClientDC);
                 var compatibleBitmap = CreateCompatibleBitmap(appClientDC, appClientRect.Width, appClientRect.Height);
                 var oldBitmap = SelectObject(compatibleDC, compatibleBitmap);
-                BitBlt(compatibleDC, 0, 0, appClientRect.Width, appClientRect.Height, appClientDC, 0, 0, TernaryRasterOperations.SRCCOPY | TernaryRasterOperations.CAPTUREBLT);
+
+                // Performance: Remove CAPTUREBLT flag to exclude mouse cursor from capture
+                // This prevents cursor flickering issues while maintaining capture performance
+                BitBlt(compatibleDC, 0, 0, appClientRect.Width, appClientRect.Height, appClientDC, 0, 0, TernaryRasterOperations.SRCCOPY);
 
                 using (var tempBitmap = System.Drawing.Image.FromHbitmap(compatibleBitmap))
                 {
@@ -435,6 +445,7 @@ namespace macro.Model
                     g.DrawImage(tempBitmap, 0, 0);
                 }
 
+                // Convert System.Drawing.Bitmap to OpenCV Mat
                 BitmapConverter.ToMat(_bitmap, _frame);
 
                 SelectObject(compatibleDC, oldBitmap);
@@ -446,21 +457,15 @@ namespace macro.Model
             }
             catch (Exception)
             {
-                _frame = null;
+                MatPool.Return(_frame);
                 return null;
             }
         }
 
-        public bool Start()
-        {
-            if (IsRunning)
-                return false;
-
-            IsRunning = true;
-            Task.Run(OnFrame);
-            return true;
-        }
-
+        /// <summary>
+        /// Main frame capture loop with proper resource cleanup
+        /// Performance: Uses MatPool for Mat management
+        /// </summary>
         private void OnFrame()
         {
             while (IsRunning)
@@ -480,6 +485,7 @@ namespace macro.Model
                 }
             }
 
+            // Performance: Proper cleanup of resources
             if (_bitmap != null)
             {
                 _bitmap.Dispose();
@@ -488,9 +494,20 @@ namespace macro.Model
 
             if (_frame != null)
             {
-                _frame.Dispose();
+                // Performance: Return Mat to pool instead of disposing
+                MatPool.Return(_frame);
                 _frame = null;
             }
+        }
+
+        public bool Start()
+        {
+            if (IsRunning)
+                return false;
+
+            IsRunning = true;
+            Task.Run(OnFrame);
+            return true;
         }
 
         public void Stop()

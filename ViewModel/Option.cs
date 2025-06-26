@@ -52,7 +52,7 @@ namespace macro.ViewModel
         }
         public Visibility IsResourceFilePathValid => string.IsNullOrEmpty(ResourceFilePathException) ? Visibility.Hidden : Visibility.Visible;
 
-        
+
         public string ScriptDirectoryPath
         {
             get => Model.ScriptDirectoryPath;
@@ -91,13 +91,13 @@ namespace macro.ViewModel
         public string InitializeScriptName
         {
             get => Model.InitializeScriptName;
-            set => Model.InitializeScriptName = value; 
+            set => Model.InitializeScriptName = value;
         }
         public string InitializeScriptNameException
         {
             get
             {
-                if(string.IsNullOrEmpty(InitializeScriptName))
+                if (string.IsNullOrEmpty(InitializeScriptName))
                     return $"InitializeScriptName cannot be empty";
 
                 return string.Empty;
@@ -105,17 +105,17 @@ namespace macro.ViewModel
         }
         public Visibility InitializeScriptNameValid => string.IsNullOrEmpty(InitializeScriptNameException) ? Visibility.Hidden : Visibility.Visible;
 
-        
+
         public string FrameScriptName
         {
             get => Model.FrameScriptName;
-            set => Model.FrameScriptName = value; 
+            set => Model.FrameScriptName = value;
         }
         public string FrameScriptNameException
         {
             get
             {
-                if(string.IsNullOrEmpty(FrameScriptName))
+                if (string.IsNullOrEmpty(FrameScriptName))
                     return $"FrameScriptName cannot be empty";
 
                 return string.Empty;
@@ -123,17 +123,17 @@ namespace macro.ViewModel
         }
         public Visibility FrameScriptNameValid => string.IsNullOrEmpty(FrameScriptNameException) ? Visibility.Hidden : Visibility.Visible;
 
-        
+
         public string RenderScriptName
         {
             get => Model.RenderScriptName;
-            set => Model.RenderScriptName = value; 
+            set => Model.RenderScriptName = value;
         }
         public string RenderScriptNameException
         {
             get
             {
-                if(string.IsNullOrEmpty(RenderScriptName))
+                if (string.IsNullOrEmpty(RenderScriptName))
                     return $"RenderScriptName cannot be empty";
 
                 return string.Empty;
@@ -141,17 +141,17 @@ namespace macro.ViewModel
         }
         public Visibility RenderScriptNameValid => string.IsNullOrEmpty(RenderScriptNameException) ? Visibility.Hidden : Visibility.Visible;
 
-        
+
         public string DisposeScriptName
         {
             get => Model.DisposeScriptName;
-            set => Model.DisposeScriptName = value; 
+            set => Model.DisposeScriptName = value;
         }
         public string DisposeScriptNameException
         {
             get
             {
-                if(string.IsNullOrEmpty(DisposeScriptName))
+                if (string.IsNullOrEmpty(DisposeScriptName))
                     return $"DisposeScriptName cannot be empty";
 
                 return string.Empty;
@@ -159,7 +159,7 @@ namespace macro.ViewModel
         }
         public Visibility DisposeScriptNameValid => string.IsNullOrEmpty(DisposeScriptNameException) ? Visibility.Hidden : Visibility.Visible;
 
-        
+
         public bool SoftwareMode
         {
             get => Model.OperationType == macro.Model.OperationType.Software;
@@ -188,7 +188,7 @@ namespace macro.ViewModel
         {
             get
             {
-                return new [] 
+                return new[]
                 {
                     ClassNameException,
                     ResourceFilePathException,
@@ -217,13 +217,13 @@ namespace macro.ViewModel
 
         private void Option_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            
+
         }
 
         private void OnSelectResourceFile(object obj)
         {
             var dialog = new Microsoft.Win32.OpenFileDialog
-            { 
+            {
                 InitialDirectory = Directory.GetCurrentDirectory(),
                 DefaultExt = ".dat",
                 Filter = "Resource (.dat)|*.dat"
