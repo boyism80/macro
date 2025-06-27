@@ -104,6 +104,12 @@ namespace macro.ViewModel
             }
         }
 
+        /// <summary>
+        /// Indicates whether the Source Mat was obtained from MatPool
+        /// Used to determine proper disposal method
+        /// </summary>
+        public bool IsSourceFromMatPool { get; set; } = false;
+
         public Mat Source
         {
             get => Model.Source;
@@ -156,7 +162,7 @@ namespace macro.ViewModel
                         var points = detectedRect.Points().Select(x => (OpenCvSharp.Point)x).ToList();
 
                         var result = MatPool.GetClone(Source);
-                        Cv2.DrawContours(result, new[] { points }, -1, Scalar.Lime, 2);
+                        Cv2.DrawContours(result, [points], -1, Scalar.Lime, 2);
                         return result;
                     }
                     else
@@ -225,7 +231,20 @@ namespace macro.ViewModel
 
         public void Dispose()
         {
-            Source.Dispose();
+            if (Source != null)
+            {
+                if (IsSourceFromMatPool)
+                {
+                    // Return Mat to pool if it came from MatPool
+                    MatPool.Return(Source);
+                }
+                else
+                {
+                    // Dispose normally if it's a regular Mat
+                    Source.Dispose();
+                }
+            }
+
             Extension.PropertyChanged -= Extension_PropertyChanged;
         }
     }

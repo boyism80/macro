@@ -61,6 +61,26 @@ namespace macro.ViewModel
             return true;
         }
 
+        /// <summary>
+        /// Thread-safe version of DrawRectangles using current frame
+        /// Creates a clone of the current frame to avoid thread safety issues
+        /// </summary>
+        public bool DrawRectangles(List<Rect> areas, uint color = 0xffff0000)
+        {
+            var frameClone = GetFrameClone();
+            if (frameClone == null)
+                return false;
+
+            try
+            {
+                return DrawRectangles(frameClone, areas, color);
+            }
+            finally
+            {
+                MatPool.Return(frameClone);
+            }
+        }
+
         public bool DrawRectangles(Mat frame, PythonList areas, uint color = 0xffff0000)
         {
             try
@@ -80,14 +100,66 @@ namespace macro.ViewModel
             }
         }
 
+        /// <summary>
+        /// Thread-safe version of DrawRectangles for Python usage
+        /// Creates a clone of the current frame to avoid thread safety issues
+        /// </summary>
+        public bool DrawRectangles(PythonList areas, uint color = 0xffff0000)
+        {
+            try
+            {
+                var csAreaList = new List<Rect>();
+                foreach (var area in areas)
+                {
+                    var pythonArea = area as PythonTuple;
+                    csAreaList.Add(new Rect((int)pythonArea[0], (int)pythonArea[1], (int)pythonArea[2], (int)pythonArea[3]));
+                }
+
+                return DrawRectangles(csAreaList, color);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Thread-safe method to get a cloned frame
+        /// This prevents the frame from being returned to MatPool while being processed
+        /// </summary>
+        private Mat GetFrameClone()
+        {
+            _frameLock.EnterReadLock();
+            try
+            {
+                if (_frame == null || _frame.IsDisposed)
+                    return null;
+
+                return MatPool.GetClone(_frame);
+            }
+            finally
+            {
+                _frameLock.ExitReadLock();
+            }
+        }
+
         private Dictionary<string, Model.Sprite.DetectionResult> Detect(List<string> spriteNames, Rect? area = null)
         {
-            if (Frame == null)
+            var frameClone = GetFrameClone();
+            if (frameClone == null)
                 return new Dictionary<string, Model.Sprite.DetectionResult>();
 
-            return spriteNames.Select(x => Sprites.FirstOrDefault(x2 => x2.Name == x))
-            .Where(x => x != null)
-            .ToDictionary(x => x.Name, x => x.Model.MatchTo(Frame, area));
+            try
+            {
+                return spriteNames.Select(x => Sprites.FirstOrDefault(x2 => x2.Name == x))
+                .Where(x => x != null)
+                .ToDictionary(x => x.Name, x => x.Model.MatchTo(frameClone, area));
+            }
+            finally
+            {
+                // Return the cloned frame to pool after processing
+                MatPool.Return(frameClone);
+            }
         }
 
         public PythonDictionary Detect(PythonTuple spriteNames, double minPercentage = 0.8, PythonDictionary area = null, int timeout = -1)
@@ -134,13 +206,25 @@ namespace macro.ViewModel
             if (sprite == null)
                 return result;
 
-            var detectionResults = sprite.Model.MatchToAll(Frame, percentage, areaCv).Select(x => x.ToPythonDictionary());
-            foreach (var detectionResult in detectionResults)
-            {
-                result.Add(detectionResult);
-            }
+            var frameClone = GetFrameClone();
+            if (frameClone == null)
+                return result;
 
-            return result;
+            try
+            {
+                var detectionResults = sprite.Model.MatchToAll(frameClone, percentage, areaCv).Select(x => x.ToPythonDictionary());
+                foreach (var detectionResult in detectionResults)
+                {
+                    result.Add(detectionResult);
+                }
+
+                return result;
+            }
+            finally
+            {
+                // Return the cloned frame to pool after processing
+                MatPool.Return(frameClone);
+            }
         }
 
         public void Sleep(int milliseconds)

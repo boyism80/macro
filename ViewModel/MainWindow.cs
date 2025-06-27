@@ -195,26 +195,41 @@ namespace macro.ViewModel
                             Height = (int)selectedRect.Height
                         };
 
-                        if (Frame == null)
+                        var frameClone = GetFrameClone();
+                        if (frameClone == null)
                             return;
 
-                        var selectedFrame = new Mat(Frame, rect);
-                        var newSprite = new Sprite(new Model.Sprite
+                        Mat selectedFrame = null;
+                        try
                         {
-                            Name = "New Sprite",
-                            Source = selectedFrame,
-                            Threshold = 0.8f,
-                            Extension = new Model.SpriteExtension
+                            // Create ROI and then clone it to make an independent copy
+                            using var roi = new Mat(frameClone, rect);
+                            selectedFrame = MatPool.GetClone(roi);
+                            var newSprite = new Sprite(new Model.Sprite
                             {
-                                Activated = false,
-                                DetectColor = false,
-                                Factor = 1.0f,
-                                Pivot = System.Drawing.Color.White
-                            }
-                        });
-                        var source = Sprites.Concat([newSprite]);
+                                Name = "New Sprite",
+                                Source = selectedFrame,
+                                Threshold = 0.8f,
+                                Extension = new Model.SpriteExtension
+                                {
+                                    Activated = false,
+                                    DetectColor = false,
+                                    Factor = 1.0f,
+                                    Pivot = System.Drawing.Color.White
+                                }
+                            })
+                            {
+                                IsSourceFromMatPool = true // Mark that Source came from MatPool
+                            };
+                            var source = Sprites.Concat([newSprite]);
 
-                        ShowEditSpriteDialog(source, newSprite);
+                            ShowEditSpriteDialog(source, newSprite);
+                        }
+                        finally
+                        {
+                            // Return the cloned frame to pool after processing
+                            MatPool.Return(frameClone);
+                        }
                     }
                     break;
 
