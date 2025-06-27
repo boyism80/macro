@@ -6,16 +6,136 @@ using System.Collections.Generic;
 namespace macro.Extension
 {
     /// <summary>
+    /// Thread-safe Mat queue with idle/busy state separation
+    /// Uses manual locking for true thread safety across all operations
+    /// </summary>
+    public class ConcurrentMatQueue
+    {
+        private readonly Queue<Mat> _idle = new Queue<Mat>();
+        private readonly HashSet<Mat> _busy = new HashSet<Mat>();
+        private readonly string _poolKey;
+        private readonly object _lock = new object();
+        private const int MAX_QUEUE_SIZE = 10;
+
+        public ConcurrentMatQueue(string poolKey)
+        {
+            _poolKey = poolKey;
+        }
+
+        /// <summary>
+        /// Get Mat from idle queue or create new one
+        /// Moves Mat to busy state for tracking - fully thread-safe
+        /// </summary>
+        public Mat Get(int rows, int cols, MatType type)
+        {
+            lock (_lock)
+            {
+                // Try to get from idle queue first
+                while (_idle.Count > 0)
+                {
+                    var mat = _idle.Dequeue();
+
+                    if (!mat.IsDisposed && mat.Rows == rows && mat.Cols == cols && mat.Type() == type)
+                    {
+                        _busy.Add(mat);
+                        return mat;
+                    }
+
+                    // Dispose invalid mat
+                    mat.Dispose();
+                }
+
+                // Create new Mat if none available
+                var newMat = new Mat(rows, cols, type);
+                _busy.Add(newMat);
+                return newMat;
+            }
+        }
+
+        /// <summary>
+        /// Return Mat to idle queue
+        /// Validates that Mat was in busy state - fully thread-safe
+        /// </summary>
+        public void Return(Mat mat)
+        {
+            if (mat == null || mat.IsDisposed)
+                return;
+
+            lock (_lock)
+            {
+                // Validate Mat dimensions match this queue
+                var expectedKey = $"{mat.Rows}_{mat.Cols}_{(int)mat.Type()}";
+                if (expectedKey != _poolKey)
+                {
+                    throw new InvalidOperationException(
+                        $"Mat returned to wrong pool. Expected: {_poolKey}, Actual: {expectedKey}");
+                }
+
+                // Check if Mat is in busy state
+                if (!_busy.Contains(mat))
+                {
+                    throw new InvalidOperationException(
+                        $"Attempting to return Mat that is not in busy state or was not obtained from this pool. Pool: {_poolKey}");
+                }
+
+                // Remove from busy and add to idle (if space available)
+                _busy.Remove(mat);
+
+                if (_idle.Count < MAX_QUEUE_SIZE)
+                {
+                    _idle.Enqueue(mat);
+                }
+                else
+                {
+                    mat.Dispose();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get current queue sizes for debugging - thread-safe
+        /// </summary>
+        public (int Idle, int Busy) GetCounts()
+        {
+            lock (_lock)
+            {
+                return (_idle.Count, _busy.Count);
+            }
+        }
+
+        /// <summary>
+        /// Clear all Mats in this queue - thread-safe
+        /// </summary>
+        public void Clear()
+        {
+            lock (_lock)
+            {
+                while (_idle.Count > 0)
+                {
+                    var mat = _idle.Dequeue();
+                    mat.Dispose();
+                }
+
+                // Dispose all busy Mats as well
+                foreach (var mat in _busy)
+                {
+                    mat.Dispose();
+                }
+
+                _busy.Clear();
+            }
+        }
+    }
+
+    /// <summary>
     /// Global Mat object pool manager for GC optimization
     /// Reduces memory allocation overhead by reusing Mat objects
+    /// Thread-safe with idle/busy state tracking for debugging
     /// </summary>
     public static class MatPool
     {
-        // Size-based Mat pools (rows_cols_type -> Mat pool)
-        private static readonly ConcurrentDictionary<string, ConcurrentQueue<Mat>> _pools = new ConcurrentDictionary<string, ConcurrentQueue<Mat>>();
-
-        // Maximum objects per pool to prevent memory bloat
-        private const int MAX_POOL_SIZE = 10;
+        // Size-based Mat pools (rows_cols_type -> ConcurrentMatQueue)
+        private static readonly ConcurrentDictionary<string, ConcurrentMatQueue> _pools = new ConcurrentDictionary<string, ConcurrentMatQueue>();
 
         // Generate pool key for Mat dimensions and type
         private static string GetKey(int rows, int cols, MatType type)
@@ -26,34 +146,25 @@ namespace macro.Extension
         /// <summary>
         /// Get Mat object from pool or create new one if not available
         /// Performance: Avoids frequent Mat allocation/deallocation
+        /// Thread-safe with busy state tracking
         /// </summary>
         public static Mat Get(int rows, int cols, MatType type)
         {
             var key = GetKey(rows, cols, type);
 
-            if (!_pools.TryGetValue(key, out var pool))
+            if (!_pools.TryGetValue(key, out var queue))
             {
-                pool = new ConcurrentQueue<Mat>();
-                _pools[key] = pool;
+                queue = new ConcurrentMatQueue(key);
+                _pools[key] = queue;
             }
 
-            if (pool.TryDequeue(out var mat))
-            {
-                if (!mat.IsDisposed && mat.Rows == rows && mat.Cols == cols && mat.Type() == type)
-                {
-                    return mat;
-                }
-
-                // Dispose if wrong size or type
-                mat.Dispose();
-            }
-
-            return new Mat(rows, cols, type);
+            return queue.Get(rows, cols, type);
         }
 
         /// <summary>
         /// Return Mat object to pool for reuse
         /// Performance: Enables object reuse instead of GC collection
+        /// Validates Mat state to prevent double-returns
         /// </summary>
         public static void Return(Mat mat)
         {
@@ -62,21 +173,14 @@ namespace macro.Extension
 
             var key = GetKey(mat.Rows, mat.Cols, mat.Type());
 
-            if (!_pools.TryGetValue(key, out var pool))
+            if (!_pools.TryGetValue(key, out var queue))
             {
-                pool = new ConcurrentQueue<Mat>();
-                _pools[key] = pool;
+                // If queue doesn't exist, Mat was likely created outside pool
+                mat.Dispose();
+                return;
             }
 
-            // Limit pool size to prevent memory bloat
-            if (pool.Count < MAX_POOL_SIZE)
-            {
-                pool.Enqueue(mat);
-            }
-            else
-            {
-                mat.Dispose();
-            }
+            queue.Return(mat);
         }
 
         /// <summary>
@@ -113,15 +217,25 @@ namespace macro.Extension
         /// </summary>
         public static void Clear()
         {
-            foreach (var pool in _pools.Values)
+            foreach (var queue in _pools.Values)
             {
-                while (pool.TryDequeue(out var mat))
-                {
-                    mat.Dispose();
-                }
+                queue.Clear();
             }
 
             _pools.Clear();
+        }
+
+        /// <summary>
+        /// Get debug information about all pools
+        /// </summary>
+        public static Dictionary<string, (int Idle, int Busy)> GetPoolStats()
+        {
+            var stats = new Dictionary<string, (int, int)>();
+            foreach (var kvp in _pools)
+            {
+                stats[kvp.Key] = kvp.Value.GetCounts();
+            }
+            return stats;
         }
     }
 }
