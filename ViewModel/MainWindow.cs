@@ -107,8 +107,8 @@ namespace macro.ViewModel
 
         private readonly Stopwatch _elapsedStopwatch = new Stopwatch();
         private readonly ReaderWriterLockSlim _frameLock = new ReaderWriterLockSlim(); // Reader-Writer lock for Frame access
-        private Mat _frame;
-        public Mat Frame
+        private PooledMat _frame;
+        public PooledMat Frame
         {
             get
             {
@@ -127,6 +127,11 @@ namespace macro.ViewModel
                 _frameLock.EnterWriteLock();
                 try
                 {
+                    // Dispose previous frame (auto-returns to pool if from pool)
+                    if (_frame != null && !_frame.IsDisposed)
+                    {
+                        _frame.Dispose();
+                    }
                     _frame = value;
                 }
                 finally
@@ -135,7 +140,7 @@ namespace macro.ViewModel
                 }
             }
         }
-        public Mat StaticFrame { get; private set; }
+        public PooledMat StaticFrame { get; private set; }
         public WriteableBitmap Bitmap { get; private set; }
 
         public ObservableCollection<ViewModel.Sprite> Sprites
@@ -250,27 +255,18 @@ namespace macro.ViewModel
         private void CreateSpriteFromSelection(System.Windows.Rect selectedRect)
         {
             var rect = ConvertToOpenCvRect(selectedRect);
-            var frameClone = GetFrameClone();
+            using var frameClone = GetFrameClone();
 
             if (frameClone == null)
                 return;
 
-            try
-            {
-                // Create ROI and then clone it to make an independent copy
-                using var roi = new Mat(frameClone, rect);
-                var selectedFrame = MatPool.GetClone(roi);
+            // Create ROI and then clone it to make an independent copy
+            using var selectedFrame = MatPool.GetClone(new Mat(frameClone, rect));
 
-                var newSprite = CreateNewSprite(selectedFrame);
-                var source = Sprites.Concat([newSprite]);
+            var newSprite = CreateNewSprite(selectedFrame);
+            var source = Sprites.Concat([newSprite]);
 
-                ShowEditSpriteDialog(source, newSprite);
-            }
-            finally
-            {
-                // Return the cloned frame to pool after processing
-                MatPool.Return(frameClone);
-            }
+            ShowEditSpriteDialog(source, newSprite);
         }
 
         /// <summary>
@@ -278,7 +274,7 @@ namespace macro.ViewModel
         /// </summary>
         /// <param name="sourceFrame">Source frame for the sprite</param>
         /// <returns>New sprite instance</returns>
-        private Sprite CreateNewSprite(Mat sourceFrame)
+        private Sprite CreateNewSprite(PooledMat sourceFrame)
         {
             return new Sprite(new Model.Sprite
             {
@@ -292,10 +288,7 @@ namespace macro.ViewModel
                     Factor = DEFAULT_SPRITE_FACTOR,
                     Pivot = System.Drawing.Color.White
                 }
-            })
-            {
-                IsSourceFromMatPool = true // Mark that Source came from MatPool
-            };
+            });
         }
 
         /// <summary>
@@ -304,8 +297,8 @@ namespace macro.ViewModel
         /// <param name="selectedRect">Selected rectangle area</param>
         private void CopyAreaToClipboard(System.Windows.Rect selectedRect)
         {
-            var json = $"{{\"x\": {(int)selectedRect.X}, \"y\": {(int)selectedRect.Y}, \"width\": {(int)selectedRect.Width}, \"height\": {(int)selectedRect.Height}}}";
-            Clipboard.SetText(json);
+            var area = new { x = (int)selectedRect.X, y = (int)selectedRect.Y, width = (int)selectedRect.Width, height = (int)selectedRect.Height };
+            Clipboard.SetText(JsonConvert.SerializeObject(area));
             MessageBox.Show("Area saved to clipboard.");
         }
 
@@ -391,10 +384,10 @@ namespace macro.ViewModel
         }
 
         /// <summary>
-        /// Update WPF bitmap from OpenCV Mat with memory optimization
+        /// Update WPF bitmap from OpenCV PooledMat with memory optimization
         /// Performance: Reuses existing WriteableBitmap when possible to avoid allocations
         /// </summary>
-        private void UpdateBitmap(Mat frame)
+        private void UpdateBitmap(PooledMat frame)
         {
             Application.Current?.Dispatcher.Invoke(() =>
             {
@@ -403,8 +396,9 @@ namespace macro.ViewModel
                     Bitmap = new WriteableBitmap(frame.Width, frame.Height, 96, 96, PixelFormats.Bgr24, null);
 
                 Bitmap.Lock();
-                // Direct memory copy from Mat to WriteableBitmap buffer
-                frame.CopyTo(new Mat(frame.Rows, frame.Cols, MatType.CV_8UC3, Bitmap.BackBuffer));
+                // Direct memory copy from PooledMat to WriteableBitmap buffer
+                using var bitmapMat = PooledMat.AsReference(new Mat(frame.Rows, frame.Cols, MatType.CV_8UC3, Bitmap.BackBuffer));
+                frame.CopyTo(bitmapMat);
                 Bitmap.AddDirtyRect(new Int32Rect(0, 0, frame.Cols, frame.Rows));
                 Bitmap.Unlock();
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Bitmap)));
@@ -528,7 +522,7 @@ namespace macro.ViewModel
             if (dialog.ShowDialog() == false)
                 return;
 
-            StaticFrame = Cv2.ImRead(dialog.FileName);
+            StaticFrame = MatPool.GetClone(Cv2.ImRead(dialog.FileName));
         }
 
         private void OnResetScreen(object obj)
@@ -546,22 +540,33 @@ namespace macro.ViewModel
             {
                 await foreach (var frame in target.FrameReader.ReadAllAsync(cancellationToken))
                 {
-                    try
+                    using (frame) // Auto-dispose PooledMat when done
                     {
-                        // Process frame on UI thread
-                        await Application.Current.Dispatcher.InvokeAsync(() =>
+                        try
                         {
-                            ProcessFrame(frame);
-                        });
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine($"Frame processing error: {e.Message}");
-                    }
-                    finally
-                    {
-                        // Performance: Return frame to MatPool after processing
-                        MatPool.Return(frame);
+                            // Process frame on UI thread
+                            await Application.Current.Dispatcher.InvokeAsync(() =>
+                            {
+                                if (StaticFrame != null)
+                                {
+                                    Frame = StaticFrame; // StaticFrame is already PooledMat
+                                    UpdateBitmap(StaticFrame);
+                                }
+                                else
+                                {
+                                    // Clone frame before storing to avoid use-after-return issues
+                                    var frameClone = MatPool.GetClone(frame);
+                                    Frame = frameClone; // Thread safety guaranteed by ReaderWriterLockSlim
+                                    UpdateBitmap(frameClone);
+                                }
+                                _elapsedStopwatch.Stop();
+                                _elapsedStopwatch.Restart();
+                            });
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine($"Frame processing error: {e.Message}");
+                        }
                     }
                 }
             }
@@ -569,21 +574,6 @@ namespace macro.ViewModel
             {
                 // Expected when cancellation is requested
             }
-        }
-
-        /// <summary>
-        /// Process individual frame with optimized memory management
-        /// Performance: Processes frames with StaticFrame override support
-        /// </summary>
-        private void ProcessFrame(Mat frame)
-        {
-            if (StaticFrame != null)
-                frame = StaticFrame;
-
-            Frame = frame; // Thread safety guaranteed by ReaderWriterLockSlim
-            UpdateBitmap(frame);
-            _elapsedStopwatch.Stop();
-            _elapsedStopwatch.Restart();
         }
 
         #endregion

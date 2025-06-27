@@ -42,7 +42,7 @@ namespace macro.Model
             }
         }
 
-        public Mat Source { get; set; }
+        public PooledMat Source { get; set; }
         public string Name { get; set; }
         public float Threshold { get; set; }
         public SpriteExtension Extension { get; set; }
@@ -51,20 +51,21 @@ namespace macro.Model
         /// Template matching with object pooling optimization
         /// Performance: Uses MatPool for ROI operations and intermediate Mat objects
         /// </summary>
-        public DetectionResult MatchTo(Mat frame, OpenCvSharp.Rect? area = null)
+        public DetectionResult MatchTo(PooledMat frame, OpenCvSharp.Rect? area = null)
         {
             if (frame == null)
                 throw new Exception("frame cannot be null");
 
-            Mat workingFrame = null;
+            PooledMat workingFrame = null;
             var shouldDisposeFrame = false;
 
             try
             {
                 if (area != null)
                 {
-                    // Performance: Use MatPool for ROI operation instead of new Mat(frame, area)
-                    workingFrame = new Mat(frame, area.Value);
+                    // Performance: Use PooledMat for ROI operation
+                    using var roiMat = PooledMat.AsReference(new Mat(frame, area.Value));
+                    workingFrame = MatPool.GetClone(roiMat);
                     shouldDisposeFrame = true;
                 }
                 else
@@ -90,47 +91,40 @@ namespace macro.Model
                 }
                 else
                 {
-                    Mat fromMat = null;
-                    Mat toMat = null;
+                    PooledMat fromMat = null;
+                    PooledMat toMat = null;
 
                     try
                     {
                         // Performance: Use pooled Mat objects for template matching operations
                         fromMat = Extension.Activated ? workingFrame.ToMask(Extension.Pivot, Extension.Factor) : workingFrame;
                         toMat = Extension.Activated ? Source.ToMask(Extension.Pivot, Extension.Factor) : Source;
-                        var matched = MatPool.Get(fromMat.Rows - toMat.Rows + 1, fromMat.Cols - toMat.Cols + 1, MatType.CV_32FC1);
 
-                        try
+                        using var matched = MatPool.Get(fromMat.Rows - toMat.Rows + 1, fromMat.Cols - toMat.Cols + 1, MatType.CV_32FC1);
+
+                        var templateSource = Extension.Activated ? toMat : Source;
+                        var matchSource = Extension.Activated ? fromMat : workingFrame;
+
+                        Cv2.MatchTemplate(matchSource, templateSource, matched, TemplateMatchModes.CCoeffNormed);
+                        matched.MinMaxLoc(out var minval, out var maxval, out var minloc, out var maxloc);
+
+                        var percentage = maxval;
+                        var center = new OpenCvSharp.Point(maxloc.X + Source.Width / 2, maxloc.Y + Source.Height / 2);
+
+                        result = new DetectionResult
                         {
-                            var templateSource = Extension.Activated ? toMat : Source;
-                            var matchSource = Extension.Activated ? fromMat : workingFrame;
-
-                            Cv2.MatchTemplate(matchSource, templateSource, matched, TemplateMatchModes.CCoeffNormed);
-                            matched.MinMaxLoc(out var minval, out var maxval, out var minloc, out var maxloc);
-
-                            var percentage = maxval;
-                            var center = new OpenCvSharp.Point(maxloc.X + Source.Width / 2, maxloc.Y + Source.Height / 2);
-
-                            result = new DetectionResult
-                            {
-                                Rect = new Rect(maxloc.X, maxloc.Y, Source.Width, Source.Height),
-                                Position = center,
-                                Percentage = percentage
-                            };
-                        }
-                        finally
-                        {
-                            // Performance: Return pooled Mat object after use
-                            MatPool.Return(matched);
-                        }
+                            Rect = new Rect(maxloc.X, maxloc.Y, Source.Width, Source.Height),
+                            Position = center,
+                            Percentage = percentage
+                        };
                     }
                     finally
                     {
-                        // Performance: Return pooled Mat objects only if they were created by ToMask
+                        // Performance: Dispose pooled Mat objects only if they were created by ToMask
                         if (Extension.Activated)
                         {
-                            if (fromMat != workingFrame) MatPool.Return(fromMat);
-                            if (toMat != Source) MatPool.Return(toMat);
+                            if (fromMat != workingFrame) (fromMat as IDisposable)?.Dispose();
+                            if (toMat != Source) (toMat as IDisposable)?.Dispose();
                         }
                     }
                 }
@@ -164,37 +158,29 @@ namespace macro.Model
         /// Multiple template matching with object pooling optimization
         /// Performance: Uses MatPool.GetClone instead of frame.Clone() for working copy
         /// </summary>
-        public List<DetectionResult> MatchToAll(Mat frame, float percent, OpenCvSharp.Rect? area = null)
+        public List<DetectionResult> MatchToAll(PooledMat frame, float percent, OpenCvSharp.Rect? area = null)
         {
             var result = new List<DetectionResult>();
 
             // Performance: Use MatPool for cloning operation instead of frame.Clone()
-            var workingFrame = MatPool.GetClone(frame);
+            using var workingFrame = MatPool.GetClone(frame);
 
-            try
+            while (true)
             {
-                while (true)
+                var detectionResult = MatchTo(workingFrame, area);
+                if (detectionResult.Percentage < percent)
+                    break;
+
+                // Black out detected area to find next occurrence
+                using (var roi = new Mat(workingFrame, detectionResult.Rect))
                 {
-                    var detectionResult = MatchTo(workingFrame, area);
-                    if (detectionResult.Percentage < percent)
-                        break;
-
-                    // Black out detected area to find next occurrence
-                    using (var roi = new Mat(workingFrame, detectionResult.Rect))
-                    {
-                        roi.SetTo(Scalar.Black);
-                    }
-
-                    result.Add(detectionResult);
+                    roi.SetTo(Scalar.Black);
                 }
 
-                return result;
+                result.Add(detectionResult);
             }
-            finally
-            {
-                // Performance: Return cloned Mat to pool
-                MatPool.Return(workingFrame);
-            }
+
+            return result;
         }
 
         public static List<Model.Sprite> Load(string path)
@@ -218,7 +204,7 @@ namespace macro.Model
                 var sprite = new Model.Sprite
                 {
                     Name = name,
-                    Source = Cv2.ImDecode(bytes, ImreadModes.AnyColor),
+                    Source = PooledMat.AsReference(Cv2.ImDecode(bytes, ImreadModes.AnyColor)),
                     Threshold = threshold,
                     Extension = new Model.SpriteExtension
                     {

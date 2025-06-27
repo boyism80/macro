@@ -115,18 +115,11 @@ namespace macro.ViewModel
         /// <returns>True if successful, false otherwise</returns>
         public bool DrawRectangles(List<Rect> areas, uint color = DEFAULT_RECTANGLE_COLOR)
         {
-            var frameClone = GetFrameClone();
+            using var frameClone = GetFrameClone();
             if (frameClone == null)
                 return false;
 
-            try
-            {
-                return DrawRectangles(frameClone, areas, color);
-            }
-            finally
-            {
-                MatPool.Return(frameClone);
-            }
+            return DrawRectangles(frameClone, areas, color);
         }
 
         /// <summary>
@@ -178,7 +171,7 @@ namespace macro.ViewModel
         /// This prevents the frame from being returned to MatPool while being processed
         /// </summary>
         /// <returns>Cloned frame or null if no frame available</returns>
-        private Mat GetFrameClone()
+        private PooledMat GetFrameClone()
         {
             _frameLock.EnterReadLock();
             try
@@ -202,21 +195,13 @@ namespace macro.ViewModel
         /// <returns>Dictionary of detection results</returns>
         private Dictionary<string, Model.Sprite.DetectionResult> DetectInternal(List<string> spriteNames, Rect? area = null)
         {
-            var frameClone = GetFrameClone();
+            using var frameClone = GetFrameClone();
             if (frameClone == null)
                 return new Dictionary<string, Model.Sprite.DetectionResult>();
 
-            try
-            {
-                return spriteNames.Select(x => Sprites.FirstOrDefault(x2 => x2.Name == x))
-                .Where(x => x != null)
-                .ToDictionary(x => x.Name, x => x.Model.MatchTo(frameClone, area));
-            }
-            finally
-            {
-                // Return the cloned frame to pool after processing
-                MatPool.Return(frameClone);
-            }
+            return spriteNames.Select(x => Sprites.FirstOrDefault(x2 => x2.Name == x))
+            .Where(x => x != null)
+            .ToDictionary(x => x.Name, x => x.Model.MatchTo(frameClone, area));
         }
 
         /// <summary>
@@ -281,25 +266,17 @@ namespace macro.ViewModel
             if (sprite == null)
                 return result;
 
-            var frameClone = GetFrameClone();
+            using var frameClone = GetFrameClone();
             if (frameClone == null)
                 return result;
 
-            try
+            var detectionResults = sprite.Model.MatchToAll(frameClone, percentage, searchArea).Select(x => x.ToPythonDictionary());
+            foreach (var detectionResult in detectionResults)
             {
-                var detectionResults = sprite.Model.MatchToAll(frameClone, percentage, searchArea).Select(x => x.ToPythonDictionary());
-                foreach (var detectionResult in detectionResults)
-                {
-                    result.Add(detectionResult);
-                }
+                result.Add(detectionResult);
+            }
 
-                return result;
-            }
-            finally
-            {
-                // Return the cloned frame to pool after processing
-                MatPool.Return(frameClone);
-            }
+            return result;
         }
 
         #endregion

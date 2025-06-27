@@ -332,12 +332,11 @@ namespace macro.Model
         private System.Drawing.Point _prevCursorPosition;
         private string _className;
         private System.Drawing.Bitmap _bitmap;
-        private Mat _frame;
 
         // Performance: Channel-based frame processing for better decoupling
-        private readonly Channel<Mat> _frameChannel;
-        private readonly ChannelWriter<Mat> _frameWriter;
-        private readonly ChannelReader<Mat> _frameReader;
+        private readonly Channel<PooledMat> _frameChannel;
+        private readonly ChannelWriter<PooledMat> _frameWriter;
+        private readonly ChannelReader<PooledMat> _frameReader;
         private CancellationTokenSource _cancellationTokenSource;
         private int _targetFps = 60; // Default FPS
 
@@ -393,7 +392,7 @@ namespace macro.Model
         /// Channel reader for consuming frames from external components
         /// Performance: Direct channel access for better decoupling
         /// </summary>
-        public ChannelReader<Mat> FrameReader => _frameReader;
+        public ChannelReader<PooledMat> FrameReader => _frameReader;
 
         private App(string className)
         {
@@ -415,7 +414,7 @@ namespace macro.Model
                 SingleWriter = true
             };
 
-            _frameChannel = Channel.CreateBounded<Mat>(options);
+            _frameChannel = Channel.CreateBounded<PooledMat>(options);
             _frameWriter = _frameChannel.Writer;
             _frameReader = _frameChannel.Reader;
         }
@@ -443,7 +442,7 @@ namespace macro.Model
         /// Capture screen with optimized memory management
         /// Performance: Reuses Bitmap and uses MatPool for Mat allocation
         /// </summary>
-        private Mat Capture()
+        private PooledMat Capture()
         {
             try
             {
@@ -454,13 +453,6 @@ namespace macro.Model
                 {
                     _bitmap?.Dispose();
                     _bitmap = new System.Drawing.Bitmap(appClientRect.Width, appClientRect.Height);
-                }
-
-                // Performance: Use MatPool for Mat allocation instead of new Mat()
-                if (_frame == null || _frame.Width != appClientRect.Width || _frame.Height != appClientRect.Height)
-                {
-                    MatPool.Return(_frame);
-                    _frame = MatPool.Get(appClientRect.Height, appClientRect.Width, MatType.CV_8UC3);
                 }
 
                 var appClientDC = GetDC(Hwnd);
@@ -478,19 +470,19 @@ namespace macro.Model
                     g.DrawImage(tempBitmap, 0, 0);
                 }
 
-                // Convert System.Drawing.Bitmap to OpenCV Mat
-                BitmapConverter.ToMat(_bitmap, _frame);
+                // Performance: Create new PooledMat from pool for each capture
+                var frame = MatPool.Get(appClientRect.Height, appClientRect.Width, MatType.CV_8UC3);
+                BitmapConverter.ToMat(_bitmap, frame);
 
                 SelectObject(compatibleDC, oldBitmap);
                 DeleteObject(compatibleBitmap);
                 DeleteDC(compatibleDC);
                 ReleaseDC(Hwnd, appClientDC);
 
-                return _frame;
+                return frame;
             }
             catch (Exception)
             {
-                MatPool.Return(_frame);
                 return null;
             }
         }
@@ -516,11 +508,15 @@ namespace macro.Model
                         Area = GetArea();
 
                         // Performance: Try to write frame to channel, drop if full
-                        if (_frameWriter.TryWrite(MatPool.GetClone(frame)))
+                        if (_frameWriter.TryWrite(frame))
                         {
                             // Frame successfully queued
                         }
-                        // If channel is full, frame is automatically dropped (DropOldest mode)
+                        else
+                        {
+                            // If channel is full, dispose frame (auto-returns to pool)
+                            frame.Dispose();
+                        }
 
                         // Performance: FPS limiting with high precision timing
                         var frameInterval = TimeSpan.FromMilliseconds(1000.0 / Fps);
@@ -573,13 +569,6 @@ namespace macro.Model
             {
                 _bitmap.Dispose();
                 _bitmap = null;
-            }
-
-            if (_frame != null)
-            {
-                // Performance: Return Mat to pool instead of disposing
-                MatPool.Return(_frame);
-                _frame = null;
             }
         }
 

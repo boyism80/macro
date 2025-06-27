@@ -104,16 +104,22 @@ namespace macro.ViewModel
             }
         }
 
-        /// <summary>
-        /// Indicates whether the Source Mat was obtained from MatPool
-        /// Used to determine proper disposal method
-        /// </summary>
-        public bool IsSourceFromMatPool { get; set; } = false;
 
-        public Mat Source
+
+        // Cached bitmap images to avoid frequent MatPool operations
+        private BitmapImage _cachedBitmap;
+        private BitmapImage _cachedMaskBitmap;
+        private bool _bitmapCacheValid = false;
+        private bool _maskBitmapCacheValid = false;
+
+        public PooledMat Source
         {
-            get => Model.Source;
-            set => Model.Source = value;
+            get => Model.Source as PooledMat ?? PooledMat.AsReference(Model.Source);
+            set
+            {
+                Model.Source = value;
+                InvalidateBitmapCache();
+            }
         }
 
         public string Name
@@ -125,16 +131,20 @@ namespace macro.ViewModel
         public float Threshold
         {
             get => Model.Threshold;
-            set => Model.Threshold = value;
+            set
+            {
+                Model.Threshold = value;
+                InvalidateBitmapCache();
+            }
         }
 
         public SpriteExtension Extension { get; private set; }
 
         /// <summary>
-        /// Get mask Mat with object pooling optimization
+        /// Get mask PooledMat with object pooling optimization
         /// Performance: Uses MatPool when ToMask is called to avoid allocations
         /// </summary>
-        public Mat Mask
+        public PooledMat Mask
         {
             get
             {
@@ -146,10 +156,11 @@ namespace macro.ViewModel
         }
 
         /// <summary>
-        /// Get destination Mat with object pooling optimization  
+        /// Get destination PooledMat with object pooling optimization  
         /// Performance: Uses MatPool for cloning and Mat creation operations
+        /// WARNING: Caller is responsible for disposing the returned PooledMat when IsDestFromMatPool is true
         /// </summary>
-        public Mat Dest
+        public PooledMat Dest
         {
             get
             {
@@ -157,7 +168,7 @@ namespace macro.ViewModel
                 {
                     if (Extension.DetectColor)
                     {
-                        var mask = Mask;
+                        using var mask = Mask;
                         var detectedRect = mask.GetRotatedRects(Threshold).OrderByDescending(x => x.Size.Width * x.Size.Height).FirstOrDefault();
                         var points = detectedRect.Points().Select(x => (OpenCvSharp.Point)x).ToList();
 
@@ -168,7 +179,8 @@ namespace macro.ViewModel
                     else
                     {
                         var result = MatPool.Get(Source.Rows, Source.Cols, Source.Type());
-                        Source.CopyTo(result, Mask);
+                        using var mask = Mask;
+                        Source.CopyTo(result, mask);
                         return result;
                     }
                 }
@@ -179,10 +191,36 @@ namespace macro.ViewModel
             }
         }
 
+
+
         public string NameException { get; set; }
         public string ThresholdText => $"{Threshold * 100:0.00}";
-        public BitmapImage Bitmap => Dest.ToBitmap();
-        public BitmapImage MaskBitmap => Mask.ToBitmap();
+        public BitmapImage Bitmap
+        {
+            get
+            {
+                if (_bitmapCacheValid && _cachedBitmap != null)
+                    return _cachedBitmap;
+
+                using var dest = Dest;
+                _cachedBitmap = dest.ToBitmap();
+                _bitmapCacheValid = true;
+                return _cachedBitmap;
+            }
+        }
+        public BitmapImage MaskBitmap
+        {
+            get
+            {
+                if (_maskBitmapCacheValid && _cachedMaskBitmap != null)
+                    return _cachedMaskBitmap;
+
+                using var mask = Mask;
+                _cachedMaskBitmap = mask.ToBitmap();
+                _maskBitmapCacheValid = true;
+                return _cachedMaskBitmap;
+            }
+        }
 
         public ICommand CaptureCommand { get; private set; }
 
@@ -221,10 +259,22 @@ namespace macro.ViewModel
                 case nameof(SpriteExtension.Factor):
                 case nameof(SpriteExtension.Activated):
                 case nameof(SpriteExtension.DetectColor):
+                    InvalidateBitmapCache();
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Bitmap)));
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(MaskBitmap)));
                     break;
             }
+        }
+
+        /// <summary>
+        /// Invalidates cached bitmap images when properties change
+        /// </summary>
+        private void InvalidateBitmapCache()
+        {
+            _bitmapCacheValid = false;
+            _maskBitmapCacheValid = false;
+            _cachedBitmap = null;
+            _cachedMaskBitmap = null;
         }
 
         public override string ToString() => Name;
@@ -233,16 +283,8 @@ namespace macro.ViewModel
         {
             if (Source != null)
             {
-                if (IsSourceFromMatPool)
-                {
-                    // Return Mat to pool if it came from MatPool
-                    MatPool.Return(Source);
-                }
-                else
-                {
-                    // Dispose normally if it's a regular Mat
-                    Source.Dispose();
-                }
+                // PooledMat automatically handles disposal and pool return
+                Source.Dispose();
             }
 
             Extension.PropertyChanged -= Extension_PropertyChanged;

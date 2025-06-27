@@ -41,7 +41,7 @@ namespace macro.ViewModel
 
         private void ReleasePythonModule()
         {
-            _pythonRuntime.GetEngine("IronPython").Execute("import gc; gc.collect()");
+            _pythonRuntime?.GetEngine("IronPython").Execute("import gc; gc.collect()");
             _pythonRuntime?.Shutdown();
             _pythonRuntime = null;
         }

@@ -144,11 +144,11 @@ namespace macro.Extension
         }
 
         /// <summary>
-        /// Get Mat object from pool or create new one if not available
+        /// Get PooledMat object from pool or create new one if not available
         /// Performance: Avoids frequent Mat allocation/deallocation
         /// Thread-safe with busy state tracking
         /// </summary>
-        public static Mat Get(int rows, int cols, MatType type)
+        public static PooledMat Get(int rows, int cols, MatType type)
         {
             var key = GetKey(rows, cols, type);
 
@@ -158,36 +158,36 @@ namespace macro.Extension
                 _pools[key] = queue;
             }
 
-            return queue.Get(rows, cols, type);
+            var mat = queue.Get(rows, cols, type);
+            return PooledMat.FromPool(mat);
         }
 
         /// <summary>
-        /// Return Mat object to pool for reuse
-        /// Performance: Enables object reuse instead of GC collection
-        /// Validates Mat state to prevent double-returns
+        /// Internal method for returning Mat to pool without validation
+        /// Used by PooledMat to avoid circular calls
         /// </summary>
-        public static void Return(Mat mat)
+        internal static void Return(Mat mat)
         {
             if (mat == null || mat.IsDisposed)
                 return;
 
             var key = GetKey(mat.Rows, mat.Cols, mat.Type());
 
-            if (!_pools.TryGetValue(key, out var queue))
+            if (_pools.TryGetValue(key, out var queue))
             {
-                // If queue doesn't exist, Mat was likely created outside pool
-                mat.Dispose();
-                return;
+                queue.Return(mat);
             }
-
-            queue.Return(mat);
+            else
+            {
+                mat.Dispose();
+            }
         }
 
         /// <summary>
-        /// Get Mat with same dimensions and type as source
+        /// Get PooledMat with same dimensions and type as source
         /// Performance: Optimized for template matching operations
         /// </summary>
-        public static Mat GetLike(Mat source)
+        public static PooledMat GetLike(Mat source)
         {
             if (source == null || source.IsDisposed)
                 return null;
@@ -196,10 +196,10 @@ namespace macro.Extension
         }
 
         /// <summary>
-        /// Get cloned Mat from pool (replaces Mat.Clone())
+        /// Get cloned PooledMat from pool (replaces Mat.Clone())
         /// Performance: Reuses pooled Mat instead of allocating new one
         /// </summary>
-        public static Mat GetClone(Mat source)
+        public static PooledMat GetClone(Mat source)
         {
             if (source == null || source.IsDisposed)
                 return null;
