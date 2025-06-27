@@ -27,18 +27,6 @@ namespace macro.Extension
         }
 
         /// <summary>
-        /// Private constructor for creating independent PooledMat
-        /// </summary>
-        /// <param name="rows">Number of rows</param>
-        /// <param name="cols">Number of columns</param>
-        /// <param name="type">Mat type</param>
-        private PooledMat(int rows, int cols, MatType type) : base(rows, cols, type)
-        {
-            _underlyingMat = null;
-            _isFromPool = false;
-        }
-
-        /// <summary>
         /// Creates a PooledMat from pool (will be returned to pool on dispose)
         /// </summary>
         /// <param name="mat">Mat from MatPool</param>
@@ -58,45 +46,6 @@ namespace macro.Extension
         public static PooledMat AsReference(Mat mat)
         {
             return new PooledMat(mat, false);
-        }
-
-        /// <summary>
-        /// Alias for AsReference - creates a weak reference PooledMat
-        /// </summary>
-        /// <param name="mat">Existing Mat to reference</param>
-        /// <returns>PooledMat that won't return to pool on dispose</returns>
-        public static PooledMat Weak(Mat mat)
-        {
-            return AsReference(mat);
-        }
-
-        /// <summary>
-        /// Creates an independent PooledMat with specified dimensions
-        /// </summary>
-        /// <param name="rows">Number of rows</param>
-        /// <param name="cols">Number of columns</param>
-        /// <param name="type">Mat type</param>
-        /// <returns>Independent PooledMat</returns>
-        public static new PooledMat Create(int rows, int cols, MatType type)
-        {
-            return new PooledMat(rows, cols, type);
-        }
-
-        /// <summary>
-        /// Marks this Mat as not from pool (won't be returned to pool on dispose)
-        /// </summary>
-        public void MarkAsNonPooled()
-        {
-            _isFromPool = false;
-        }
-
-        /// <summary>
-        /// Creates a clone that will also be returned to pool when disposed
-        /// </summary>
-        /// <returns>Cloned PooledMat</returns>
-        public new PooledMat Clone()
-        {
-            return MatPool.GetClone(this);
         }
 
         protected override void Dispose(bool disposing)
