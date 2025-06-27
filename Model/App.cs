@@ -916,11 +916,6 @@ namespace macro.Model
                 KeyPress((Keys)c, sleepTime);
         }
 
-        public void KeyPress(PythonTuple keys)
-        {
-            KeyPress(keys.ToKeys().ToArray());
-        }
-
         public void KeyDown(int key, int sleepTime = 100)
         {
             KeyDown((Keys)key, sleepTime);
@@ -1015,21 +1010,6 @@ namespace macro.Model
         public void Click(OpenCvSharp.Point point, bool doubleClick = false)
         {
             Click(point.X, point.Y, doubleClick);
-        }
-
-        public void Click(PythonTuple point, bool doubleClick = false)
-        {
-            Click((int)point[0], (int)point[1], doubleClick);
-        }
-
-        public void RClick(PythonTuple point, bool doubleClick = false)
-        {
-            Click(MouseButtons.Right, (int)point[0], (int)point[1], doubleClick);
-        }
-
-        public void RClick(PythonTuple point, PythonTuple keys)
-        {
-            Click(MouseButtons.Right, new System.Drawing.Point((int)point[0], (int)point[1]), keys.ToKeys().ToArray());
         }
 
         public void Escape()

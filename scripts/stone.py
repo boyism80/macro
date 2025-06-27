@@ -66,12 +66,12 @@ def facet_stone(app, engraving_name, count):
     stone_index = 0
     for stone_index in range(count):
         stone_position = (300, 150 + stone_index * 56)
-        app.target.Click(stone_position)
-        app.target.Click((825, 90))
+        app.Click(stone_position)
+        app.Click((825, 90))
         app.Sleep(200)
 
         while True:
-            app.clear_log()
+            app.ClearLines()
             current_state = state(app)
 
             engraving_line = engraving(app, engraving_name) if engraving_name else None
@@ -96,18 +96,18 @@ def facet_stone(app, engraving_name, count):
                 probs.append(ist.fn(current_percent, selection, current_state) * 100.0)
 
             for selection, prob in enumerate(probs):
-                app.add_log(f"{selection + 1} >> {prob:.3f}%")
+                app.WriteLine(f"{selection + 1} >> {prob:.3f}%")
 
             final_prob = max(*probs)
             selection = random.choice([i for i, x in enumerate(probs) if x == final_prob])
 
-            app.add_log(f"next selection : {selection + 1} ({final_prob:.3f}%)")
+            app.WriteLine(f"next selection : {selection + 1} ({final_prob:.3f}%)")
 
             position = button_position[f'{selection}']
-            app.target.Click(position)
+            app.Click(position)
             app.Sleep(500)
 
-    app.target.Escape()
+    app.Escape()
     return False
 
 def enter_pw(app, pw):
@@ -120,61 +120,61 @@ def enter_pw(app, pw):
     found = app.Detect(sprite_names, 0.8)
     for c in str(pw):
         sprite_name = 'num-' + c
-        app.target.Click(found[sprite_name]['position'])
+        app.Click(found[sprite_name]['position'])
 
 def buy_pheon(app):
-    app.target.KeyPress(115) # F4
+    app.KeyPress(115) # F4
     found = app.Detect('convenience')
-    app.target.Click(found['convenience']['position'])
+    app.Click(found['convenience']['position'])
 
     found = app.Detect('pheon')
-    app.target.Click(found['pheon']['position'])
+    app.Click(found['pheon']['position'])
 
     found = app.Detect('buy')
-    app.target.Click(found['buy']['position'])
+    app.Click(found['buy']['position'])
 
     found = app.Detect('buy-step-1')
-    app.target.Click(found['buy-step-1']['position'])
+    app.Click(found['buy-step-1']['position'])
 
     found = app.Detect('buy-step-2')
-    app.target.Click(found['buy-step-2']['position'])
+    app.Click(found['buy-step-2']['position'])
 
     enter_pw(app, 557575)
 
-    app.target.Click((985, 680))
+    app.Click((985, 680))
     found = app.Detect('confirm')
-    app.target.Click(found['confirm']['position'])
+    app.Click(found['confirm']['position'])
 
     found = app.Detect('accept-reward')
-    app.target.Click(found['accept-reward']['position'])
+    app.Click(found['accept-reward']['position'])
 
     found = app.Detect('accept-reward-confirm')
-    app.target.Click(found['accept-reward-confirm']['position'])
+    app.Click(found['accept-reward-confirm']['position'])
 
     found = app.Detect('confirm')
-    app.target.Click(found['confirm']['position'])
+    app.Click(found['confirm']['position'])
 
-    app.target.Escape()
-    app.target.Escape()
-    app.target.KeyPress('I')
+    app.Escape()
+    app.Escape()
+    app.KeyPress('I')
 
     found = app.Detect('pheon-icon')
-    app.target.RClick(found['pheon-icon']['position'], ('ALT',))
-    app.target.Enter()
-    app.target.Escape()
+    app.RClick(found['pheon-icon']['position'], ('ALT',))
+    app.Enter()
+    app.Escape()
 
 def buy_stone(app, slot, count):
     def catch_exception(app, name):
         found = app.Detect((name, 'sold-out', 'buy-failed'), 0.8)
         if 'sold-out' in found:
-            app.target.Click((1510, 240))
+            app.Click((1510, 240))
             app.Sleep(1000)
             return None
 
         if 'buy-failed' in found:
             found = app.Detect('confirm')
-            app.target.Click(found['confirm']['position'])
-            app.target.Click((1510, 240))
+            app.Click(found['confirm']['position'])
+            app.Click((1510, 240))
             app.Sleep(1000)
             return None
 
@@ -183,69 +183,69 @@ def buy_stone(app, slot, count):
     buy_count = 0
 
     app.Detect('loa-talk')
-    app.target.KeyPress(('ALT', 'Y'))
+    app.KeyPress(('ALT', 'Y'))
     found = app.Detect('auction')
-    app.target.Click(found['auction']['position'])
-    app.target.Click((1575, 240))
+    app.Click(found['auction']['position'])
+    app.Click((1575, 240))
 
     slot_y = 280 + 46*(slot-1)
-    app.target.Click((1350, slot_y))
-    app.target.Click((900, 570))
-    app.target.Click((1000, 910))
+    app.Click((1350, slot_y))
+    app.Click((900, 570))
+    app.Click((1000, 910))
 
     app.Sleep(1000)
     while buy_count < count:
-        app.target.Click((575, 333))
-        app.target.Click((1565, 925))
+        app.Click((575, 333))
+        app.Click((1565, 925))
 
         position = catch_exception(app, 'buy-directly')
         if not position:
             continue
         
-        app.target.Click(position)
+        app.Click(position)
 
         position = catch_exception(app, 'confirm')
         if not position:
             continue
 
-        app.target.Click(position)
+        app.Click(position)
 
         position = catch_exception(app, 'buy-success')
         if not position:
             continue
 
-        app.target.Escape()
+        app.Escape()
         buy_count = buy_count + 1
 
-    app.target.Escape()
+    app.Escape()
     app.Sleep(2000)
 
-    app.target.KeyPress(('ALT', '`'))
+    app.KeyPress(('ALT', '`'))
     found = app.Detect('post')
-    app.target.Click(found['post']['position'])
+    app.Click(found['post']['position'])
 
     app.Detect('post-main')
-    app.target.Click((404, 316))
-    app.target.Click((615, 835))
+    app.Click((404, 316))
+    app.Click((615, 835))
     
     for i in range(2):
-        app.target.Escape()
+        app.Escape()
 
 def disassemble_stones(app):
     app.Detect('loa-talk')
-    app.target.KeyPress('I')
+    app.KeyPress('I')
 
     found = app.Detect('disassemble')
-    app.target.Click(found['disassemble']['position'])
+    app.Click(found['disassemble']['position'])
 
     found = app.Detect('disassemble-relic')
-    app.target.Click(found['disassemble-relic']['position'])
+    app.Click(found['disassemble-relic']['position'])
 
     found = app.Detect('disassemble-start')
-    app.target.Click(found['disassemble-start']['position'])
+    app.Click(found['disassemble-start']['position'])
 
     found = app.Detect('confirm')
-    app.target.Click(found['confirm']['position'])
+    app.Click(found['confirm']['position'])
 
     for i in range(2):
-        app.target.Escape()
+        app.Escape()

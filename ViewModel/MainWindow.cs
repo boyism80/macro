@@ -69,7 +69,7 @@ namespace macro.ViewModel
             }
         }
 
-        public Model.App target { get; private set; }
+        private Model.App _target;
 
         private Option _option;
         public Option Option
@@ -80,9 +80,9 @@ namespace macro.ViewModel
                 _option = value;
                 Model.Option = value?.Model;
 
-                if (value != null && target != null)
+                if (value != null && _target != null)
                 {
-                    target.Fps = value.RenderFrame;
+                    _target.Fps = value.RenderFrame;
                 }
             }
         }
@@ -325,24 +325,24 @@ namespace macro.ViewModel
                 if (Running)
                     return;
 
-                if (target != null)
+                if (_target != null)
                 {
                     _frameConsumerCancellation?.Cancel();
                 }
 
                 LoadPythonModules(Option.PythonDirectoryPath);
-                target = macro.Model.App.Find(Option.Class);
-                if (target == null)
+                _target = macro.Model.App.Find(Option.Class);
+                if (_target == null)
                     throw new Exception($"cannot find {Option.Class}");
 
                 // Performance: Set target FPS for frame capture
-                target.Fps = Option.RenderFrame;
+                _target.Fps = Option.RenderFrame;
 
                 // Performance: Start frame consumer task
                 _frameConsumerCancellation = new CancellationTokenSource();
                 Task.Run(() => ConsumeFramesAsync(_frameConsumerCancellation.Token));
 
-                target.Start();
+                _target.Start();
                 _startDateTime = DateTime.Now;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ElapsedTime)));
                 ExceptionText = string.Empty;
@@ -359,10 +359,10 @@ namespace macro.ViewModel
 
         private void Stop()
         {
-            if (target != null)
+            if (_target != null)
             {
-                target.Stop();
-                target = null;
+                _target.Stop();
+                _target = null;
             }
 
             // Performance: Cancel frame consumer task
@@ -538,7 +538,7 @@ namespace macro.ViewModel
         {
             try
             {
-                await foreach (var frame in target.FrameReader.ReadAllAsync(cancellationToken))
+                await foreach (var frame in _target.FrameReader.ReadAllAsync(cancellationToken))
                 {
                     using (frame) // Auto-dispose PooledMat when done
                     {

@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Windows.Forms;
 
 namespace macro.ViewModel
 {
@@ -279,6 +280,45 @@ namespace macro.ViewModel
             return result;
         }
 
+        /// <summary>
+        /// Presses multiple keys simultaneously
+        /// </summary>
+        /// <param name="keys">Python tuple containing key names</param>
+        public void KeyPress(PythonTuple keys)
+        {
+            _target?.KeyPress(keys.ToKeys().ToArray());
+        }
+
+        /// <summary>
+        /// Clicks at the specified point
+        /// </summary>
+        /// <param name="point">Python tuple containing x, y coordinates</param>
+        /// <param name="doubleClick">True to perform double click</param>
+        public void Click(PythonTuple point, bool doubleClick = false)
+        {
+            _target?.Click((int)point[0], (int)point[1], doubleClick);
+        }
+
+        /// <summary>
+        /// Right-clicks at the specified point
+        /// </summary>
+        /// <param name="point">Python tuple containing x, y coordinates</param>
+        /// <param name="doubleClick">True to perform double click</param>
+        public void RClick(PythonTuple point, bool doubleClick = false)
+        {
+            _target?.Click(MouseButtons.Right, (int)point[0], (int)point[1], doubleClick);
+        }
+
+        /// <summary>
+        /// Right-clicks at the specified point with specified keys
+        /// </summary>
+        /// <param name="point">Python tuple containing x, y coordinates</param>
+        /// <param name="keys">Python tuple containing key names</param>
+        public void RClick(PythonTuple point, PythonTuple keys)
+        {
+            _target?.Click(MouseButtons.Right, new System.Drawing.Point((int)point[0], (int)point[1]), keys.ToKeys().ToArray());
+        }
+
         #endregion
 
         #region Utility Methods
@@ -293,18 +333,18 @@ namespace macro.ViewModel
         }
 
         /// <summary>
-        /// Adds a log message to the log collection
+        /// Adds a log line to the log collection
         /// </summary>
         /// <param name="message">Message to log</param>
-        public void add_log(string message)
+        public void WriteLine(string message)
         {
             Logs.Add(message);
         }
 
         /// <summary>
-        /// Clears all log messages
+        /// Clears all log lines
         /// </summary>
-        public void clear_log()
+        public void ClearLines()
         {
             while (Logs.Count > 0)
             {

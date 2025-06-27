@@ -1,7 +1,7 @@
 import loa
 
 def callback(app):
-    app.clear_log()
+    app.ClearLines()
 
     resources = ('97', '97_1st', '97_2nd')
     for name in resources:

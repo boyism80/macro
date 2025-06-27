@@ -6,27 +6,27 @@ General purpose macro that works screen capture based. Write python script to de
 Update latest frame of target process and execute python script. Here is sample code.
 ```python
 def callback(app):
-	app.target.KeyPress(('ALT', 'U'))
+	app.KeyPress(('ALT', 'U'))
 
 	found = app.Detect(('guild-donation', 'attendance-reward-info', 'guild-create'), 0.9)
 	if 'guild-create' in found:
-		app.target.Escape()
+		app.Escape()
 		return
 
 	if 'attendance-reward-info' in found:
-		app.target.Escape()
+		app.Escape()
 		app.Sleep(500)
 
-	app.target.Click(found['guild-donation']['position'])
+	app.Click(found['guild-donation']['position'])
 
 	found = app.Detect(('donation', 'donation-disabled'), 0.7, {'x': 600, 'y': 550, 'width': 180, 'height': 50})
 	if 'donation' in found:
-		app.target.Click(found['donation']['position'])
+		app.Click(found['donation']['position'])
 		app.Sleep(500)
-		app.target.Escape()
+		app.Escape()
 		app.Sleep(500)
 
-	app.target.Escape()
+	app.Escape()
 ```
 
 You can detect using ```app.Detect``` method. the last parameter is factor value of image resource. The higher this value, the more accurate it is, but resources may not be detected. Default is 0.8.
