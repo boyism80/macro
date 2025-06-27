@@ -10,21 +10,42 @@ using System.Windows.Threading;
 namespace macro.Control
 {
     /// <summary>
-    /// Interaction logic for Screen.xaml
+    /// Interactive screen control for displaying and selecting areas on images
     /// </summary>
     public partial class Screen : UserControl, INotifyPropertyChanged, IDisposable
     {
-        public event PropertyChangedEventHandler PropertyChanged;
-        public void OnPropertyChanged(string name)
-        {
-            PropertyChanged(this, new PropertyChangedEventArgs(name));
-        }
+        #region Constants
 
-        #region Cursor
-        private Point _cursorPoint = new Point();
+        private const int SELECTION_BORDER_RADIUS = 3;
+        private const int SELECTION_BORDER_THICKNESS = 1;
+
+        #endregion
+
+        #region Events
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        #endregion
+
+        #region Private Fields
+
+        private Point _cursorPoint = new();
+        private Visibility _cursorLabelVisibility = Visibility.Hidden;
+        private bool _isDragging = false;
+        private Size _selectionSize = new();
+        private Point _selectionBegin = new();
+        private bool _isRenderingConnected = false;
+
+        #endregion
+
+        #region Public Properties
+
+        /// <summary>
+        /// Gets the current cursor position in image coordinates
+        /// </summary>
         public Point CursorPoint
         {
-            get { return _cursorPoint; }
+            get => _cursorPoint;
             private set
             {
                 _cursorPoint = value;
@@ -32,39 +53,54 @@ namespace macro.Control
             }
         }
 
-        private Visibility _cursorLabelVisibility = Visibility.Hidden;
+        /// <summary>
+        /// Gets or sets the visibility of the cursor label
+        /// </summary>
         public Visibility CursorLabelVisibility
         {
-            get
-            {
-                if (Bitmap == null)
-                    return Visibility.Hidden;
-
-                return _cursorLabelVisibility;
-            }
-            set
-            {
-                _cursorLabelVisibility = value;
-            }
+            get => Bitmap == null ? Visibility.Hidden : _cursorLabelVisibility;
+            set => _cursorLabelVisibility = value;
         }
-
-        public string CursorPointText
-        {
-            get
-            {
-                return $"{(int)CursorPoint.X}, {(int)CursorPoint.Y}";
-            }
-        }
-        public Point PointLabelLocation { get; private set; } = new Point();
-        #endregion
-
-        #region Selection
-        private bool Dragging { get; set; } = false;
-        private Size Size { get; set; } = new Size();
-        private Point Begin { get; set; } = new Point();
 
         /// <summary>
-        /// Calculates the valid area for selection based on bitmap dimensions and control size
+        /// Gets the cursor position as formatted text
+        /// </summary>
+        public string CursorPointText => $"{(int)CursorPoint.X}, {(int)CursorPoint.Y}";
+
+        /// <summary>
+        /// Gets the location for the point label
+        /// </summary>
+        public Point PointLabelLocation { get; private set; } = new();
+
+        /// <summary>
+        /// Gets whether the user is currently dragging to select an area
+        /// </summary>
+        public bool IsDragging
+        {
+            get => _isDragging;
+            private set => _isDragging = value;
+        }
+
+        /// <summary>
+        /// Gets the current selection size
+        /// </summary>
+        public Size SelectionSize
+        {
+            get => _selectionSize;
+            private set => _selectionSize = value;
+        }
+
+        /// <summary>
+        /// Gets the selection start point
+        /// </summary>
+        public Point SelectionBegin
+        {
+            get => _selectionBegin;
+            private set => _selectionBegin = value;
+        }
+
+        /// <summary>
+        /// Gets the valid area for selection based on bitmap dimensions and control size
         /// </summary>
         private Rect ValidRect
         {
@@ -73,7 +109,7 @@ namespace macro.Control
                 try
                 {
                     if (Bitmap == null)
-                        throw new Exception();
+                        throw new InvalidOperationException("Bitmap is null");
 
                     var actualFrameSize = new Size
                     {
@@ -104,39 +140,9 @@ namespace macro.Control
             get
             {
                 var validRect = ValidRect;
-                var selectedRect = new Rect(Begin, Size);
+                var selectedRect = new Rect(SelectionBegin, SelectionSize);
 
-                if (selectedRect.Left < validRect.Left)
-                {
-                    selectedRect.X = validRect.Left;
-                    selectedRect.Width = Math.Max(0, Size.Width - (validRect.Left - Begin.X));
-                }
-
-                if (selectedRect.Left > validRect.Right)
-                {
-                    selectedRect.X = validRect.Right;
-                    selectedRect.Width = 0;
-                }
-
-                if (selectedRect.Top < validRect.Top)
-                {
-                    selectedRect.Y = validRect.Top;
-                    selectedRect.Height = Math.Max(0, Size.Height - (validRect.Top - Begin.Y));
-                }
-
-                if (selectedRect.Top > validRect.Bottom)
-                {
-                    selectedRect.Y = validRect.Bottom;
-                    selectedRect.Height = 0;
-                }
-
-                if (selectedRect.Right > validRect.Right)
-                    selectedRect.Width -= (selectedRect.Right - validRect.Right);
-
-                if (selectedRect.Bottom > validRect.Bottom)
-                    selectedRect.Height -= (selectedRect.Bottom - validRect.Bottom);
-
-                return selectedRect;
+                return ConstrainRectToValidArea(selectedRect, validRect);
             }
         }
 
@@ -163,10 +169,15 @@ namespace macro.Control
             }
         }
 
+        /// <summary>
+        /// Gets the visibility of the selection rectangle
+        /// </summary>
         public Visibility SelectedRectVisibility { get; private set; } = Visibility.Hidden;
 
+        /// <summary>
+        /// Gets the mouse button used for selection
+        /// </summary>
         public MouseButton MouseButton { get; private set; }
-        #endregion
 
         /// <summary>
         /// Maintains aspect ratio while scaling the bitmap to fit the control
@@ -175,17 +186,27 @@ namespace macro.Control
         {
             get
             {
-                if (Bitmap.Width > Bitmap.Height)
-                    return (ActualWidth / Bitmap.Width);
-                else
-                    return (ActualHeight / Bitmap.Height);
+                if (Bitmap == null) return 1.0;
+
+                return Bitmap.Width > Bitmap.Height
+                    ? ActualWidth / Bitmap.Width
+                    : ActualHeight / Bitmap.Height;
             }
         }
 
-        public static readonly DependencyProperty BitmapProperty = DependencyProperty.Register("Bitmap", typeof(WriteableBitmap), typeof(Screen));
+        #endregion
+
+        #region Dependency Properties
+
+        public static readonly DependencyProperty BitmapProperty =
+            DependencyProperty.Register(nameof(Bitmap), typeof(WriteableBitmap), typeof(Screen));
+
+        /// <summary>
+        /// Gets or sets the bitmap to display
+        /// </summary>
         public WriteableBitmap Bitmap
         {
-            get { return (WriteableBitmap)GetValue(BitmapProperty); }
+            get => (WriteableBitmap)GetValue(BitmapProperty);
             set
             {
                 SetValue(BitmapProperty, value);
@@ -204,32 +225,79 @@ namespace macro.Control
             }
         }
 
-        public static readonly DependencyProperty SelectRectCommandProperty = DependencyProperty.Register("SelectRectCommand", typeof(ICommand), typeof(Screen));
+        public static readonly DependencyProperty SelectRectCommandProperty =
+            DependencyProperty.Register(nameof(SelectRectCommand), typeof(ICommand), typeof(Screen));
+
+        /// <summary>
+        /// Gets or sets the command to execute when a rectangle is selected
+        /// </summary>
         public ICommand SelectRectCommand
         {
-            get { return (ICommand)GetValue(SelectRectCommandProperty); }
-            set { SetValue(SelectRectCommandProperty, value); }
+            get => (ICommand)GetValue(SelectRectCommandProperty);
+            set => SetValue(SelectRectCommandProperty, value);
         }
 
-        private bool _isRenderingConnected = false;
+        #endregion
+
+        #region Constructor
 
         public Screen()
         {
             InitializeComponent();
-
-            // Optimize rendering settings for better performance
-            RenderOptions.SetBitmapScalingMode(this, BitmapScalingMode.Linear);
-            RenderOptions.SetEdgeMode(this, EdgeMode.Aliased);
-
-            // Use hardware acceleration if available
-            CacheMode = new BitmapCache();
-
-            // Connect to WPF's rendering pipeline to force continuous rendering
-            this.Loaded += Screen_Loaded;
-            this.Unloaded += Screen_Unloaded;
         }
 
-        private void Screen_Loaded(object sender, RoutedEventArgs e)
+        #endregion
+
+        #region Event Handlers
+
+        private void UserControl_MouseEnter(object sender, MouseEventArgs e)
+        {
+            ConnectToRenderingIfNeeded();
+        }
+
+        private void UserControl_MouseLeave(object sender, MouseEventArgs e)
+        {
+            CursorLabelVisibility = Visibility.Hidden;
+            OnPropertyChanged(nameof(CursorLabelVisibility));
+        }
+
+        private void Screen_MouseMove(object sender, MouseEventArgs e)
+        {
+            var currentPosition = e.GetPosition(this);
+            UpdateCursorPoint(currentPosition);
+
+            if (Bitmap == null || !IsDragging)
+                return;
+
+            var movement = CalculateMovement(currentPosition, SelectionBegin);
+            SelectionSize = movement;
+            OnPropertyChanged(nameof(SelectedRect));
+        }
+
+        private void Screen_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (Bitmap == null || IsDragging)
+                return;
+
+            StartSelection(e);
+        }
+
+        private void Screen_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (Bitmap == null || !IsDragging)
+                return;
+
+            CompleteSelection(e);
+        }
+
+        #endregion
+
+        #region Private Methods
+
+        /// <summary>
+        /// Connects to the rendering event if not already connected
+        /// </summary>
+        private void ConnectToRenderingIfNeeded()
         {
             if (!_isRenderingConnected)
             {
@@ -238,135 +306,193 @@ namespace macro.Control
             }
         }
 
-        private void Screen_Unloaded(object sender, RoutedEventArgs e)
-        {
-            if (_isRenderingConnected)
-            {
-                CompositionTarget.Rendering -= CompositionTarget_Rendering;
-                _isRenderingConnected = false;
-            }
-        }
-
+        /// <summary>
+        /// Handles the composition target rendering event
+        /// </summary>
         private void CompositionTarget_Rendering(object sender, EventArgs e)
         {
-            // Force continuous rendering by invalidating visual on every frame
-            // This prevents WPF from optimizing away rendering when there's no input
-            if (IsVisible && Bitmap != null)
+            if (Bitmap != null)
             {
-                InvalidateVisual();
+                OnPropertyChanged(nameof(SelectedRect));
             }
         }
 
-        private void UserControl_MouseEnter(object sender, MouseEventArgs e)
+        /// <summary>
+        /// Updates the cursor point and label position
+        /// </summary>
+        /// <param name="position">Current mouse position</param>
+        private void UpdateCursorPoint(Point position)
         {
-            CursorLabelVisibility = Visibility.Visible;
-            UpdateCursorPoint(e.GetPosition(this));
-        }
-
-        private void UserControl_MouseLeave(object sender, MouseEventArgs e)
-        {
-            CursorLabelVisibility = Visibility.Hidden;
-        }
-
-        private void UpdateCursorPoint(Point absolutePoint)
-        {
-            if (Bitmap == null)
-                return;
-
-            PointLabelLocation = absolutePoint;
-            CursorLabelVisibility = ValidRect.Contains(absolutePoint) ? Visibility.Visible : Visibility.Hidden;
+            PointLabelLocation = position;
+            CursorLabelVisibility = ValidRect.Contains(position) ? Visibility.Visible : Visibility.Hidden;
 
             var mappedPoint = new Point
             {
-                X = (absolutePoint.X - ValidRect.X) / Ratio,
-                Y = (absolutePoint.Y - ValidRect.Y) / Ratio,
+                X = (position.X - ValidRect.X) / Ratio,
+                Y = (position.Y - ValidRect.Y) / Ratio,
             };
 
             CursorPoint = new Point
             {
-                X = Math.Max(0, Math.Min(Bitmap.Width, mappedPoint.X)),
-                Y = Math.Max(0, Math.Min(Bitmap.Height, mappedPoint.Y)),
+                X = Math.Max(0, Math.Min(Bitmap?.Width ?? 0, mappedPoint.X)),
+                Y = Math.Max(0, Math.Min(Bitmap?.Height ?? 0, mappedPoint.Y)),
             };
         }
 
-        private void Screen_MouseDown(object sender, MouseButtonEventArgs e)
+        /// <summary>
+        /// Starts a new selection operation
+        /// </summary>
+        /// <param name="e">Mouse button event args</param>
+        private void StartSelection(MouseButtonEventArgs e)
         {
-            if (Bitmap == null)
-                return;
-
-            if (Dragging)
-                return;
-
             MouseButton = e.ChangedButton;
-            Dragging = true;
-            Begin = e.GetPosition(this);
-            Size = new Size();
+            IsDragging = true;
+            SelectionBegin = e.GetPosition(this);
+            SelectionSize = new Size();
             SelectedRectVisibility = Visibility.Visible;
         }
 
-        private void Screen_MouseUp(object sender, MouseButtonEventArgs e)
+        /// <summary>
+        /// Completes the current selection operation
+        /// </summary>
+        /// <param name="e">Mouse button event args</param>
+        private void CompleteSelection(MouseButtonEventArgs e)
         {
-            if (Bitmap == null)
-                return;
+            if (HasValidSelection())
+            {
+                ExecuteSelectRectCommand(e);
+            }
 
-            if (Dragging == false)
-                return;
+            ResetSelection();
+        }
 
-            if (SelectedFrameRect.Width > 0 && SelectedFrameRect.Height > 0)
-                SelectRectCommand.Execute(new object[] { DataContext, SelectedFrameRect, e.ChangedButton });
+        /// <summary>
+        /// Checks if the current selection is valid (has width and height)
+        /// </summary>
+        /// <returns>True if selection is valid</returns>
+        private bool HasValidSelection()
+        {
+            return SelectedFrameRect.Width > 0 && SelectedFrameRect.Height > 0;
+        }
 
-            Dragging = false;
-            Begin = new Point();
-            Size = new Size();
+        /// <summary>
+        /// Executes the select rectangle command
+        /// </summary>
+        /// <param name="e">Mouse button event args</param>
+        private void ExecuteSelectRectCommand(MouseButtonEventArgs e)
+        {
+            var parameters = new object[] { DataContext, SelectedFrameRect, e.ChangedButton };
+            SelectRectCommand?.Execute(parameters);
+        }
+
+        /// <summary>
+        /// Resets the selection state
+        /// </summary>
+        private void ResetSelection()
+        {
+            IsDragging = false;
+            SelectionBegin = new Point();
+            SelectionSize = new Size();
             SelectedRectVisibility = Visibility.Hidden;
         }
 
-        private void Screen_MouseMove(object sender, MouseEventArgs e)
+        /// <summary>
+        /// Calculates the movement size from begin point to current point
+        /// </summary>
+        /// <param name="currentPoint">Current mouse position</param>
+        /// <param name="beginPoint">Selection start position</param>
+        /// <returns>Movement size</returns>
+        private Size CalculateMovement(Point currentPoint, Point beginPoint)
         {
-            var coordination = e.GetPosition(this);
-            UpdateCursorPoint(coordination);
+            return new Size(
+                Math.Abs(currentPoint.X - beginPoint.X),
+                Math.Abs(currentPoint.Y - beginPoint.Y));
+        }
 
-            if (Bitmap == null)
-                return;
-
-            if (Dragging == false)
-                return;
-
-            var moved = new Size(Math.Abs(coordination.X - Begin.X), Math.Abs(coordination.Y - Begin.Y));
-
-            if (coordination.X <= Begin.X)
+        /// <summary>
+        /// Constrains a rectangle to fit within the valid area
+        /// </summary>
+        /// <param name="rect">Rectangle to constrain</param>
+        /// <param name="validArea">Valid area bounds</param>
+        /// <returns>Constrained rectangle</returns>
+        private Rect ConstrainRectToValidArea(Rect rect, Rect validArea)
+        {
+            // Constrain left edge
+            if (rect.Left < validArea.Left)
             {
-                Begin = new Point(coordination.X, Begin.Y);
-                Size = new Size(Size.Width + moved.Width, Size.Height);
-            }
-            else
-            {
-                Size = new Size(coordination.X - Begin.X, Size.Height);
+                rect.X = validArea.Left;
+                rect.Width = Math.Max(0, rect.Width - (validArea.Left - rect.X));
             }
 
-            if (coordination.Y <= Begin.Y)
+            // Constrain right edge
+            if (rect.Left > validArea.Right)
             {
-                Begin = new Point(Begin.X, coordination.Y);
-                Size = new Size(Size.Width, Size.Height + moved.Height);
+                rect.X = validArea.Right;
+                rect.Width = 0;
             }
-            else
+
+            // Constrain top edge
+            if (rect.Top < validArea.Top)
             {
-                Size = new Size(Size.Width, coordination.Y - Begin.Y);
+                rect.Y = validArea.Top;
+                rect.Height = Math.Max(0, rect.Height - (validArea.Top - rect.Y));
             }
-            InvalidateVisual();
+
+            // Constrain bottom edge
+            if (rect.Top > validArea.Bottom)
+            {
+                rect.Y = validArea.Bottom;
+                rect.Height = 0;
+            }
+
+            // Trim width if extends beyond right edge
+            if (rect.Right > validArea.Right)
+                rect.Width -= rect.Right - validArea.Right;
+
+            // Trim height if extends beyond bottom edge
+            if (rect.Bottom > validArea.Bottom)
+                rect.Height -= rect.Bottom - validArea.Bottom;
+
+            return rect;
+        }
+
+        /// <summary>
+        /// Raises the PropertyChanged event
+        /// </summary>
+        /// <param name="propertyName">Name of the changed property</param>
+        private void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        #endregion
+
+        #region IDisposable Implementation
+
+        private bool _disposed = false;
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    if (_isRenderingConnected)
+                    {
+                        CompositionTarget.Rendering -= CompositionTarget_Rendering;
+                        _isRenderingConnected = false;
+                    }
+                }
+                _disposed = true;
+            }
         }
 
         public void Dispose()
         {
-            // Clean up rendering connection
-            if (_isRenderingConnected)
-            {
-                CompositionTarget.Rendering -= CompositionTarget_Rendering;
-                _isRenderingConnected = false;
-            }
-
-            this.Loaded -= Screen_Loaded;
-            this.Unloaded -= Screen_Unloaded;
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
+
+        #endregion
     }
 }

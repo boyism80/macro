@@ -21,13 +21,32 @@ namespace macro.ViewModel
 {
     public partial class MainWindow : INotifyPropertyChanged, IDisposable
     {
-        public event PropertyChangedEventHandler PropertyChanged;
+        #region Constants
 
-        public static SolidColorBrush INACTIVE_FRAME_BACKGROUND = new SolidColorBrush(Colors.White);
-        public static SolidColorBrush ACTIVE_FRAME_BACKGROUND = new SolidColorBrush(System.Windows.Media.Color.FromRgb(222, 222, 222));
+        private const float DEFAULT_SPRITE_THRESHOLD = 0.8f;
+        private const float DEFAULT_SPRITE_FACTOR = 1.0f;
+        private const int TIMER_INTERVAL_MS = 100;
+        private const int BITMAP_DPI = 96;
+
+        #endregion
+
+        #region Static Resources
+
+        public static readonly SolidColorBrush INACTIVE_FRAME_BACKGROUND = new(Colors.White);
+        public static readonly SolidColorBrush ACTIVE_FRAME_BACKGROUND = new(System.Windows.Media.Color.FromRgb(222, 222, 222));
+
+        #endregion
+
+        #region Events
+
+        public event PropertyChangedEventHandler PropertyChanged;
 
         public event EventHandler Started;
         public event EventHandler Stopped;
+
+        #endregion
+
+        #region Fields
 
         private DateTime _startDateTime;
         private OptionDialog _optionDialog;
@@ -52,8 +71,8 @@ namespace macro.ViewModel
 
         public Model.App target { get; private set; }
 
-        private ViewModel.Option _option;
-        public ViewModel.Option Option
+        private Option _option;
+        public Option Option
         {
             get => _option;
             set
@@ -141,7 +160,7 @@ namespace macro.ViewModel
         public MainWindow(Model.MainWindow model)
         {
             Model = model;
-            Sprites = [.. Model.Sprites.Values.Select(x => new ViewModel.Sprite(x))];
+            Sprites = [.. Model.Sprites.Values.Select(x => new Sprite(x))];
 
             RunCommand = new RelayCommand(OnStart);
             OptionCommand = new RelayCommand(OnOption);
@@ -152,7 +171,7 @@ namespace macro.ViewModel
 
             var timer = new DispatcherTimer
             {
-                Interval = TimeSpan.FromMilliseconds(100)
+                Interval = TimeSpan.FromMilliseconds(TIMER_INTERVAL_MS)
             };
             timer.Tick += OnTimer;
             timer.Start();
@@ -176,70 +195,134 @@ namespace macro.ViewModel
             }
         }
 
+        /// <summary>
+        /// Handles rectangle selection on the screen
+        /// </summary>
+        /// <param name="obj">Command parameter containing selection data</param>
         private void OnSelectedRect(object obj)
         {
-            var parameters = obj as object[];
-            var selectedRect = (System.Windows.Rect)parameters[1];
-            var mouseButton = (MouseButton)parameters[2];
+            if (!TryParseSelectionParameters(obj, out var selectedRect, out var mouseButton))
+                return;
 
             switch (mouseButton)
             {
                 case MouseButton.Left:
-                    {
-                        // Performance: Use MatPool for ROI operation instead of new Mat allocation
-                        var rect = new OpenCvSharp.Rect
-                        {
-                            X = (int)selectedRect.X,
-                            Y = (int)selectedRect.Y,
-                            Width = (int)selectedRect.Width,
-                            Height = (int)selectedRect.Height
-                        };
-
-                        var frameClone = GetFrameClone();
-                        if (frameClone == null)
-                            return;
-
-                        Mat selectedFrame = null;
-                        try
-                        {
-                            // Create ROI and then clone it to make an independent copy
-                            using var roi = new Mat(frameClone, rect);
-                            selectedFrame = MatPool.GetClone(roi);
-                            var newSprite = new Sprite(new Model.Sprite
-                            {
-                                Name = "New Sprite",
-                                Source = selectedFrame,
-                                Threshold = 0.8f,
-                                Extension = new Model.SpriteExtension
-                                {
-                                    Activated = false,
-                                    DetectColor = false,
-                                    Factor = 1.0f,
-                                    Pivot = System.Drawing.Color.White
-                                }
-                            })
-                            {
-                                IsSourceFromMatPool = true // Mark that Source came from MatPool
-                            };
-                            var source = Sprites.Concat([newSprite]);
-
-                            ShowEditSpriteDialog(source, newSprite);
-                        }
-                        finally
-                        {
-                            // Return the cloned frame to pool after processing
-                            MatPool.Return(frameClone);
-                        }
-                    }
+                    CreateSpriteFromSelection(selectedRect);
                     break;
 
                 case MouseButton.Right:
-                    {
-                        Clipboard.SetText($"{{\"x\": {(int)selectedRect.X}, \"y\": {(int)selectedRect.Y}, \"width\": {(int)selectedRect.Width}, \"height\": {(int)selectedRect.Height}}}");
-                        MessageBox.Show("Area saved to clipboard.");
-                    }
+                    CopyAreaToClipboard(selectedRect);
                     break;
             }
+        }
+
+        /// <summary>
+        /// Parses selection parameters from command argument
+        /// </summary>
+        /// <param name="obj">Command parameter</param>
+        /// <param name="selectedRect">Parsed rectangle</param>
+        /// <param name="mouseButton">Parsed mouse button</param>
+        /// <returns>True if parsing successful</returns>
+        private bool TryParseSelectionParameters(object obj, out System.Windows.Rect selectedRect, out MouseButton mouseButton)
+        {
+            selectedRect = default;
+            mouseButton = default;
+
+            if (obj is not object[] parameters || parameters.Length < 3)
+                return false;
+
+            try
+            {
+                selectedRect = (System.Windows.Rect)parameters[1];
+                mouseButton = (MouseButton)parameters[2];
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Creates a new sprite from the selected area
+        /// </summary>
+        /// <param name="selectedRect">Selected rectangle area</param>
+        private void CreateSpriteFromSelection(System.Windows.Rect selectedRect)
+        {
+            var rect = ConvertToOpenCvRect(selectedRect);
+            var frameClone = GetFrameClone();
+
+            if (frameClone == null)
+                return;
+
+            try
+            {
+                // Create ROI and then clone it to make an independent copy
+                using var roi = new Mat(frameClone, rect);
+                var selectedFrame = MatPool.GetClone(roi);
+
+                var newSprite = CreateNewSprite(selectedFrame);
+                var source = Sprites.Concat([newSprite]);
+
+                ShowEditSpriteDialog(source, newSprite);
+            }
+            finally
+            {
+                // Return the cloned frame to pool after processing
+                MatPool.Return(frameClone);
+            }
+        }
+
+        /// <summary>
+        /// Creates a new sprite with default settings
+        /// </summary>
+        /// <param name="sourceFrame">Source frame for the sprite</param>
+        /// <returns>New sprite instance</returns>
+        private Sprite CreateNewSprite(Mat sourceFrame)
+        {
+            return new Sprite(new Model.Sprite
+            {
+                Name = "New Sprite",
+                Source = sourceFrame,
+                Threshold = DEFAULT_SPRITE_THRESHOLD,
+                Extension = new Model.SpriteExtension
+                {
+                    Activated = false,
+                    DetectColor = false,
+                    Factor = DEFAULT_SPRITE_FACTOR,
+                    Pivot = System.Drawing.Color.White
+                }
+            })
+            {
+                IsSourceFromMatPool = true // Mark that Source came from MatPool
+            };
+        }
+
+        /// <summary>
+        /// Copies area coordinates to clipboard as JSON
+        /// </summary>
+        /// <param name="selectedRect">Selected rectangle area</param>
+        private void CopyAreaToClipboard(System.Windows.Rect selectedRect)
+        {
+            var json = $"{{\"x\": {(int)selectedRect.X}, \"y\": {(int)selectedRect.Y}, \"width\": {(int)selectedRect.Width}, \"height\": {(int)selectedRect.Height}}}";
+            Clipboard.SetText(json);
+            MessageBox.Show("Area saved to clipboard.");
+        }
+
+        /// <summary>
+        /// Converts WPF Rect to OpenCV Rect
+        /// </summary>
+        /// <param name="wpfRect">WPF rectangle</param>
+        /// <returns>OpenCV rectangle</returns>
+        private OpenCvSharp.Rect ConvertToOpenCvRect(System.Windows.Rect wpfRect)
+        {
+            return new OpenCvSharp.Rect
+            {
+                X = (int)wpfRect.X,
+                Y = (int)wpfRect.Y,
+                Width = (int)wpfRect.Width,
+                Height = (int)wpfRect.Height
+            };
         }
 
         private void Run()
@@ -357,7 +440,7 @@ namespace macro.ViewModel
             var oldResourcePath = Option.ResourceFilePath;
             _optionDialog = new OptionDialog
             {
-                DataContext = new ViewModel.Option(cloned)
+                DataContext = new Option(cloned)
             };
             _optionDialog.Show();
             _optionDialog.Closed += (sender, e) =>
@@ -389,13 +472,13 @@ namespace macro.ViewModel
                 }
             }).OrderBy(x => x.Name).ToList();
 
-            var model = new ViewModel.EditResourceWindow(cloned)
+            var model = new EditResourceWindow(cloned)
             {
                 CompleteCommand = new RelayCommand(x =>
                 {
                     try
                     {
-                        var dataContext = EditResourceDialog.DataContext as ViewModel.EditResourceWindow;
+                        var dataContext = EditResourceDialog.DataContext as EditResourceWindow;
                         var duplicatedNameList = dataContext.Sprites.GroupBy(x => x.Name).Where(x => x.Count() > 1).Select(x => x.Key).ToList();
                         if (duplicatedNameList.Count > 0)
                             throw new Exception($"Duplicate names: {string.Join(", ", duplicatedNameList)}");
@@ -502,6 +585,8 @@ namespace macro.ViewModel
             _elapsedStopwatch.Stop();
             _elapsedStopwatch.Restart();
         }
+
+        #endregion
 
         #region IDisposable 구현
 

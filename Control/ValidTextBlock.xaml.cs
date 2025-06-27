@@ -3,6 +3,9 @@ using System.Windows.Controls;
 
 namespace macro.Control
 {
+    /// <summary>
+    /// Types of validation for text input
+    /// </summary>
     public enum ValidTextType
     {
         Default,
@@ -11,46 +14,70 @@ namespace macro.Control
     }
 
     /// <summary>
-    /// Interaction logic for ValidTextBlock.xaml
+    /// A text input control with built-in validation feedback
     /// </summary>
     public partial class ValidTextBlock : UserControl
     {
-        public static readonly DependencyProperty TextProperty = DependencyProperty.Register("Text", typeof(string), typeof(ValidTextBlock), new FrameworkPropertyMetadata(string.Empty));
+        #region Dependency Properties
+
+        public static readonly DependencyProperty TextProperty =
+            DependencyProperty.Register(nameof(Text), typeof(string), typeof(ValidTextBlock),
+                new FrameworkPropertyMetadata(string.Empty));
+
+        public static readonly DependencyProperty ValidTextTypeProperty =
+            DependencyProperty.Register(nameof(ValidTextType), typeof(ValidTextType), typeof(ValidTextBlock),
+                new FrameworkPropertyMetadata(Control.ValidTextType.Default));
+
+        #endregion
+
+        #region Public Properties
+
+        /// <summary>
+        /// Gets or sets the text value
+        /// </summary>
         public string Text
         {
-            get { return GetValue(TextProperty).ToString(); }
-            set { SetValue(TextProperty, value); }
+            get => GetValue(TextProperty)?.ToString() ?? string.Empty;
+            set => SetValue(TextProperty, value);
         }
 
-        public static readonly DependencyProperty ValidTextTypeProperty = DependencyProperty.Register("ValidTextType", typeof(ValidTextType), typeof(ValidTextBlock), new FrameworkPropertyMetadata(macro.Control.ValidTextType.Default));
-        public string ValidTextType
+        /// <summary>
+        /// Gets or sets the validation type
+        /// </summary>
+        public ValidTextType ValidTextType
         {
-            get { return GetValue(ValidTextTypeProperty).ToString(); }
-            set { SetValue(ValidTextTypeProperty, value); }
+            get => (ValidTextType)GetValue(ValidTextTypeProperty);
+            set => SetValue(ValidTextTypeProperty, value);
         }
 
+        /// <summary>
+        /// Gets the validation error message, if any
+        /// </summary>
         public string ExceptionText
         {
             get
             {
                 if (string.IsNullOrEmpty(Text))
-                    return $"Cannot be empty";
+                    return "Cannot be empty";
 
                 return string.Empty;
             }
         }
 
-        public bool IsValid
-        {
-            get
-            {
-                return string.IsNullOrEmpty(ExceptionText);
-            }
-        }
+        /// <summary>
+        /// Gets whether the current input is valid
+        /// </summary>
+        public bool IsValid => string.IsNullOrEmpty(ExceptionText);
+
+        #endregion
+
+        #region Constructor
 
         public ValidTextBlock()
         {
             InitializeComponent();
         }
+
+        #endregion
     }
 }
