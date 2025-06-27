@@ -396,11 +396,17 @@ namespace macro.ViewModel
                     Bitmap = new WriteableBitmap(frame.Width, frame.Height, 96, 96, PixelFormats.Bgr24, null);
 
                 Bitmap.Lock();
-                // Direct memory copy from PooledMat to WriteableBitmap buffer
-                using var bitmapMat = PooledMat.AsReference(new Mat(frame.Rows, frame.Cols, MatType.CV_8UC3, Bitmap.BackBuffer));
-                frame.CopyTo(bitmapMat);
-                Bitmap.AddDirtyRect(new Int32Rect(0, 0, frame.Cols, frame.Rows));
-                Bitmap.Unlock();
+                try
+                {
+                    // Direct memory copy from PooledMat to WriteableBitmap buffer
+                    var bitmapMat = new Mat(frame.Rows, frame.Cols, MatType.CV_8UC3, Bitmap.BackBuffer);
+                    frame.CopyTo(bitmapMat);
+                    Bitmap.AddDirtyRect(new Int32Rect(0, 0, frame.Cols, frame.Rows));
+                }
+                finally
+                {
+                    Bitmap.Unlock();
+                }
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Bitmap)));
             });
         }

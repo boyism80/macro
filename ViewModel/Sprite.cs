@@ -151,6 +151,7 @@ namespace macro.ViewModel
                 if (Extension.Activated == false)
                     return Source;
 
+                // Create new mask each time to avoid disposal issues
                 return Source.ToMask(Extension.Pivot, Extension.Factor);
             }
         }
@@ -168,20 +169,39 @@ namespace macro.ViewModel
                 {
                     if (Extension.DetectColor)
                     {
-                        using var mask = Mask;
-                        var detectedRect = mask.GetRotatedRects(Threshold).OrderByDescending(x => x.Size.Width * x.Size.Height).FirstOrDefault();
-                        var points = detectedRect.Points().Select(x => (OpenCvSharp.Point)x).ToList();
+                        var mask = Mask;
+                        try
+                        {
+                            var detectedRect = mask.GetRotatedRects(Threshold).OrderByDescending(x => x.Size.Width * x.Size.Height).FirstOrDefault();
+                            var points = detectedRect.Points().Select(x => (OpenCvSharp.Point)x).ToList();
 
-                        var result = MatPool.GetClone(Source);
-                        Cv2.DrawContours(result, [points], -1, Scalar.Lime, 2);
-                        return result;
+                            var result = MatPool.GetClone(Source);
+                            Cv2.DrawContours(result, [points], -1, Scalar.Lime, 2);
+                            return result;
+                        }
+                        finally
+                        {
+                            if (mask != Source)
+                                mask?.Dispose();
+                        }
                     }
                     else
                     {
                         var result = MatPool.Get(Source.Rows, Source.Cols, Source.Type());
-                        using var mask = Mask;
-                        Source.CopyTo(result, mask);
-                        return result;
+                        // Initialize the Mat to black (zero) to avoid garbage data
+                        result.SetTo(Scalar.Black);
+                        
+                        var mask = Mask;
+                        try
+                        {
+                            Source.CopyTo(result, mask);
+                            return result;
+                        }
+                        finally
+                        {
+                            if (mask != Source)
+                                mask?.Dispose();
+                        }
                     }
                 }
                 else
@@ -202,10 +222,20 @@ namespace macro.ViewModel
                 if (_bitmapCacheValid && _cachedBitmap != null)
                     return _cachedBitmap;
 
-                using var dest = Dest;
-                _cachedBitmap = dest.ToBitmap();
-                _bitmapCacheValid = true;
-                return _cachedBitmap;
+                // Get dest and ensure proper disposal
+                var dest = Dest;
+                try
+                {
+                    _cachedBitmap = dest.ToBitmap();
+                    _bitmapCacheValid = true;
+                    return _cachedBitmap;
+                }
+                finally
+                {
+                    // Only dispose if it's not the Source itself
+                    if (dest != Source)
+                        dest?.Dispose();
+                }
             }
         }
         public BitmapImage MaskBitmap
@@ -215,10 +245,20 @@ namespace macro.ViewModel
                 if (_maskBitmapCacheValid && _cachedMaskBitmap != null)
                     return _cachedMaskBitmap;
 
-                using var mask = Mask;
-                _cachedMaskBitmap = mask.ToBitmap();
-                _maskBitmapCacheValid = true;
-                return _cachedMaskBitmap;
+                // Get mask and ensure proper disposal
+                var mask = Mask;
+                try
+                {
+                    _cachedMaskBitmap = mask.ToBitmap();
+                    _maskBitmapCacheValid = true;
+                    return _cachedMaskBitmap;
+                }
+                finally
+                {
+                    // Only dispose if it's not the Source itself
+                    if (mask != Source)
+                        mask?.Dispose();
+                }
             }
         }
 

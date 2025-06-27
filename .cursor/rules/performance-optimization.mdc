@@ -1,0 +1,45 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Performance Optimization Patterns
+
+The codebase implements several performance optimization patterns to handle real-time frame processing and memory management efficiently.
+
+## Key Components
+
+### Memory Management
+- [Extension/MatPool.cs](mdc:Extension/MatPool.cs) implements object pooling for OpenCV Mat objects
+- Pooling is used to reduce GC pressure and memory allocations
+- All Mat objects should be returned to the pool after use
+
+### Frame Processing
+- [ViewModel/MainWindow.cs](mdc:ViewModel/MainWindow.cs) implements efficient frame processing
+- Uses `ReaderWriterLockSlim` for thread-safe frame access
+- Implements `CompositionTarget.Rendering` for consistent frame updates
+- Avoids WPF's automatic rendering optimization that can cause stuttering
+
+### Best Practices
+1. Use MatPool for all Mat object allocations
+2. Return Mat objects to the pool after processing
+3. Implement proper cleanup patterns
+4. Use WriteableBitmap efficiently by only creating new instances when necessary
+5. Handle frame updates in a thread-safe manner
+
+### Example Usage
+```csharp
+// Get Mat from pool
+var mat = MatPool.Get();
+try 
+{
+    // Process frame
+    ProcessFrame(mat);
+} 
+finally 
+{
+    // Return to pool
+    MatPool.Return(mat);
+}
+```
+

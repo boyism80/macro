@@ -58,11 +58,11 @@ namespace macro.Extension
         /// </summary>
         public void Return(Mat mat)
         {
-            if (mat == null || mat.IsDisposed)
-                return;
-
             lock (_lock)
             {
+                if (mat == null || mat.IsDisposed)
+                    return;
+
                 // Validate Mat dimensions match this queue
                 var expectedKey = $"{mat.Rows}_{mat.Cols}_{(int)mat.Type()}";
                 if (expectedKey != _poolKey)

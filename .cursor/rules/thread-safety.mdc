@@ -1,0 +1,48 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Thread Safety Patterns
+
+The codebase implements thread safety for frame processing and detection using `ReaderWriterLockSlim`. This pattern is crucial for handling concurrent access to shared resources.
+
+## Key Components
+
+### Frame Access Protection
+- [ViewModel/MainWindow.cs](mdc:ViewModel/MainWindow.cs) uses `ReaderWriterLockSlim` for thread-safe frame access
+- Detection methods run in a separate thread from frame processing
+- Write operations occur in the frame processing thread
+- Read operations occur in detection threads
+
+### Best Practices
+1. Always use the Frame property's getter/setter which handles locking automatically
+2. Check for null before accessing Frame in detection methods
+3. Ensure proper cleanup by implementing IDisposable pattern
+4. Release locks in finally blocks to prevent deadlocks
+
+### Example Usage
+```csharp
+// Reading frame (detection thread)
+_frameLock.EnterReadLock();
+try 
+{
+    // Use frame here
+} 
+finally 
+{
+    _frameLock.ExitReadLock();
+}
+
+// Writing frame (processing thread)
+_frameLock.EnterWriteLock();
+try 
+{
+    // Update frame here
+} 
+finally 
+{
+    _frameLock.ExitWriteLock();
+}
+```
+

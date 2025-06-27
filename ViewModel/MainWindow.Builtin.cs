@@ -215,6 +215,9 @@ namespace macro.ViewModel
         /// <returns>Python dictionary of detection results</returns>
         public PythonDictionary Detect(PythonTuple spriteNames, double minPercentage = 0.8, PythonDictionary area = null, int timeout = -1)
         {
+            if (_target == null)
+                throw new InvalidOperationException("Target is null - execution stopped");
+                
             var begin = DateTime.Now;
 
             while (Running)
@@ -288,7 +291,10 @@ namespace macro.ViewModel
         /// <param name="y">Y coordinate of the point</param>
         public void MouseDown(string button, int x, int y)
         {
-            _target?.MouseDown(button.Equals("left") ? MouseButtons.Left : MouseButtons.Right, new System.Drawing.Point(x, y));
+            if (_target == null)
+                throw new InvalidOperationException("Target is null - execution stopped");
+
+            _target.MouseDown(button.Equals("left") ? MouseButtons.Left : MouseButtons.Right, new System.Drawing.Point(x, y));
         }
 
         /// <summary>
@@ -299,7 +305,10 @@ namespace macro.ViewModel
         /// <param name="y">Y coordinate of the point</param>
         public void MouseUp(string button, int x, int y)
         {
-            _target?.MouseUp(button.Equals("left") ? MouseButtons.Left : MouseButtons.Right, new System.Drawing.Point(x, y));
+            if (_target == null)
+                throw new InvalidOperationException("Target is null - execution stopped");
+
+            _target.MouseUp(button.Equals("left") ? MouseButtons.Left : MouseButtons.Right, new System.Drawing.Point(x, y));
         }
 
         /// <summary>
@@ -309,9 +318,12 @@ namespace macro.ViewModel
         /// <param name="sleepTime">Sleep time in milliseconds</param>
         public void KeyPress(string key, int sleepTime = 100)
         {
+            if (_target == null)
+                throw new InvalidOperationException("Target is null - execution stopped");
+
             foreach (var c in key)
             {
-                _target?.KeyPress((Keys)c, sleepTime);
+                _target.KeyPress((Keys)c, sleepTime);
             }
         }
 
@@ -322,7 +334,10 @@ namespace macro.ViewModel
         /// <param name="sleepTime">Sleep time in milliseconds</param>
         public void KeyPress(int key, int sleepTime = 100)
         {
-            _target?.KeyPress((Keys)key, sleepTime);
+            if (_target == null)
+                throw new InvalidOperationException("Target is null - execution stopped");
+
+            _target.KeyPress((Keys)key, sleepTime);
         }
 
         /// <summary>
@@ -332,7 +347,10 @@ namespace macro.ViewModel
         /// <param name="sleepTime">Sleep time in milliseconds</param>
         public void KeyUp(int key, int sleepTime = 100)
         {
-            _target?.KeyUp((Keys)key, sleepTime);
+            if (_target == null)
+                throw new InvalidOperationException("Target is null - execution stopped");
+
+            _target.KeyUp((Keys)key, sleepTime);
         }
 
         /// <summary>
@@ -344,7 +362,10 @@ namespace macro.ViewModel
         /// <param name="doubleClick">True to perform double click</param>
         private void Click(MouseButtons button, int x, int y, bool doubleClick = false)
         {
-            _target?.Click(button, new System.Drawing.Point(x, y), doubleClick);
+            if (_target == null)
+                throw new InvalidOperationException("Target is null - execution stopped");
+
+            _target.Click(button, new System.Drawing.Point(x, y), doubleClick);
         }
 
         /// <summary>
@@ -416,7 +437,10 @@ namespace macro.ViewModel
         /// </summary>
         public void Escape()
         {
-            _target?.KeyPress(Keys.Escape);
+            if (_target == null)
+                throw new InvalidOperationException("Target is null - execution stopped");
+
+            _target.KeyPress(Keys.Escape);
         }
 
         /// <summary>
@@ -424,7 +448,10 @@ namespace macro.ViewModel
         /// </summary>
         public void Enter()
         {
-            _target?.KeyPress(Keys.Enter);
+            if (_target == null)
+                throw new InvalidOperationException("Target is null - execution stopped");
+
+            _target.KeyPress(Keys.Enter);
         }
 
         /// <summary>
@@ -434,7 +461,10 @@ namespace macro.ViewModel
         /// <param name="sleepTime">Sleep time in milliseconds</param>
         public void KeyDown(int key, int sleepTime = 100)
         {
-            _target?.KeyDown((Keys)key, sleepTime);
+            if (_target == null)
+                throw new InvalidOperationException("Target is null - execution stopped");
+
+            _target.KeyDown((Keys)key, sleepTime);
         }
 
         /// <summary>
@@ -444,7 +474,10 @@ namespace macro.ViewModel
         /// <param name="sleepTime">Sleep time in milliseconds</param>
         public void KeyPress(PythonTuple keys)
         {
-            _target?.KeyPress(keys.ToKeys().ToArray());
+            if (_target == null)
+                throw new InvalidOperationException("Target is null - execution stopped");
+
+            _target.KeyPress(keys.ToKeys().ToArray());
         }
 
         /// <summary>
@@ -474,7 +507,10 @@ namespace macro.ViewModel
         /// <param name="keys">Python tuple containing key names</param>
         public void RClick(PythonTuple point, PythonTuple keys)
         {
-            _target?.Click(MouseButtons.Right, new System.Drawing.Point((int)point[0], (int)point[1]), keys.ToKeys().ToArray());
+            if (_target == null)
+                throw new InvalidOperationException("Target is null - execution stopped");
+
+            _target.Click(MouseButtons.Right, new System.Drawing.Point((int)point[0], (int)point[1]), keys.ToKeys().ToArray());
         }
 
         /// <summary>
@@ -493,6 +529,9 @@ namespace macro.ViewModel
         /// <returns>Python tuple containing previous x, y coordinates</returns>
         public PythonTuple SetCursorPosition(PythonTuple point)
         {
+            if (_target == null)
+                throw new InvalidOperationException("Target is null - execution stopped");
+                
             var prev = Cursor.Position;
             Cursor.Position = new System.Drawing.Point((int)point[0], (int)point[1]);
 
@@ -505,7 +544,10 @@ namespace macro.ViewModel
         /// <param name="point">Python tuple containing x, y coordinates</param>
         public void StoreCursorPosition(PythonTuple point)
         {
-            _target?.StoreCursorPosition((int)point[0], (int)point[1]);
+            if (_target == null)
+                throw new InvalidOperationException("Target is null - execution stopped");
+
+            _target.StoreCursorPosition((int)point[0], (int)point[1]);
         }
 
         /// <summary>
@@ -514,7 +556,10 @@ namespace macro.ViewModel
         /// <returns>Python tuple containing previous x, y coordinates</returns>
         public void RestoreCursorPosition()
         {
-            _target?.RestoreCursorPosition();
+            if (_target == null)
+                throw new InvalidOperationException("Target is null - execution stopped");
+
+            _target.RestoreCursorPosition();
         }
 
         /// <summary>
@@ -524,7 +569,10 @@ namespace macro.ViewModel
         /// <param name="y">Y coordinate of the point</param>
         public void StoreCursorPosition(int x, int y)
         {
-            _target?.StoreCursorPosition(x, y);
+            if (_target == null)
+                throw new InvalidOperationException("Target is null - execution stopped");
+
+            _target.StoreCursorPosition(x, y);
         }
 
         #endregion
@@ -537,6 +585,9 @@ namespace macro.ViewModel
         /// <param name="milliseconds">Sleep duration in milliseconds</param>
         public void Sleep(int milliseconds)
         {
+            if (_target == null)
+                throw new InvalidOperationException("Target is null - execution stopped");
+                
             Thread.Sleep(milliseconds);
         }
 
