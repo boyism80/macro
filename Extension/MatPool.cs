@@ -93,17 +93,6 @@ namespace macro.Extension
         }
 
         /// <summary>
-        /// Get current queue sizes for debugging - thread-safe
-        /// </summary>
-        public (int Idle, int Busy) GetCounts()
-        {
-            lock (_lock)
-            {
-                return (_idle.Count, _busy.Count);
-            }
-        }
-
-        /// <summary>
         /// Clear all Mats in this queue - thread-safe
         /// </summary>
         public void Clear()
@@ -184,18 +173,6 @@ namespace macro.Extension
         }
 
         /// <summary>
-        /// Get PooledMat with same dimensions and type as source
-        /// Performance: Optimized for template matching operations
-        /// </summary>
-        public static PooledMat GetLike(Mat source)
-        {
-            if (source == null || source.IsDisposed)
-                return null;
-
-            return Get(source.Rows, source.Cols, source.Type());
-        }
-
-        /// <summary>
         /// Get cloned PooledMat from pool (replaces Mat.Clone())
         /// Performance: Reuses pooled Mat instead of allocating new one
         /// </summary>
@@ -223,19 +200,6 @@ namespace macro.Extension
             }
 
             _pools.Clear();
-        }
-
-        /// <summary>
-        /// Get debug information about all pools
-        /// </summary>
-        public static Dictionary<string, (int Idle, int Busy)> GetPoolStats()
-        {
-            var stats = new Dictionary<string, (int, int)>();
-            foreach (var kvp in _pools)
-            {
-                stats[kvp.Key] = kvp.Value.GetCounts();
-            }
-            return stats;
         }
     }
 }
