@@ -280,10 +280,168 @@ namespace macro.ViewModel
             return result;
         }
 
+        // <summary>
+        /// Clicks the specified button at the specified point
+        /// </summary>
+        /// <param name="button">Name of the button to click (left or right)</param>
+        /// <param name="x">X coordinate of the point</param>
+        /// <param name="y">Y coordinate of the point</param>
+        public void MouseDown(string button, int x, int y)
+        {
+            _target?.MouseDown(button.Equals("left") ? MouseButtons.Left : MouseButtons.Right, new System.Drawing.Point(x, y));
+        }
+
+        /// <summary>
+        /// Releases the specified button at the specified point
+        /// </summary>
+        /// <param name="button">Name of the button to release (left or right)</param>
+        /// <param name="x">X coordinate of the point</param>
+        /// <param name="y">Y coordinate of the point</param>
+        public void MouseUp(string button, int x, int y)
+        {
+            _target?.MouseUp(button.Equals("left") ? MouseButtons.Left : MouseButtons.Right, new System.Drawing.Point(x, y));
+        }
+
+        /// <summary>
+        /// Presses the specified key with specified sleep time
+        /// </summary>
+        /// <param name="key">Name of the key to press</param>
+        /// <param name="sleepTime">Sleep time in milliseconds</param>
+        public void KeyPress(string key, int sleepTime = 100)
+        {
+            foreach (var c in key)
+            {
+                _target?.KeyPress((Keys)c, sleepTime);
+            }
+        }
+
+        /// <summary>
+        /// Presses the specified key with specified sleep time
+        /// </summary>
+        /// <param name="key">Name of the key to press</param>
+        /// <param name="sleepTime">Sleep time in milliseconds</param>
+        public void KeyPress(int key, int sleepTime = 100)
+        {
+            _target?.KeyPress((Keys)key, sleepTime);
+        }
+
+        /// <summary>
+        /// Releases the specified key with specified sleep time
+        /// </summary>
+        /// <param name="key">Name of the key to release</param>
+        /// <param name="sleepTime">Sleep time in milliseconds</param>
+        public void KeyUp(int key, int sleepTime = 100)
+        {
+            _target?.KeyUp((Keys)key, sleepTime);
+        }
+
+        /// <summary>
+        /// Clicks the specified button at the specified point
+        /// </summary>
+        /// <param name="button">Name of the button to click (left or right)</param>
+        /// <param name="x">X coordinate of the point</param>
+        /// <param name="y">Y coordinate of the point</param>
+        /// <param name="doubleClick">True to perform double click</param>
+        private void Click(MouseButtons button, int x, int y, bool doubleClick = false)
+        {
+            _target?.Click(button, new System.Drawing.Point(x, y), doubleClick);
+        }
+
+        /// <summary>
+        /// Clicks the specified button at the specified point
+        /// </summary>
+        /// <param name="button">Name of the button to click (left or right)</param>
+        /// <param name="x">X coordinate of the point</param>
+        /// <param name="y">Y coordinate of the point</param>
+        public void Click(string button, int x, int y, bool doubleClick = false)
+        {
+            Click(button.Equals("left") ? MouseButtons.Left : MouseButtons.Right, x, y, doubleClick);
+        }
+
+        /// <summary>
+        /// Clicks the specified button at the specified point
+        /// </summary>
+        /// <param name="button">Name of the button to click (left or right)</param>
+        /// <param name="point">Point to click</param>
+        /// <param name="doubleClick">True to perform double click</param>
+        public void Click(string button, System.Drawing.Point point, bool doubleClick = false)
+        {
+            Click(button.Equals("left") ? MouseButtons.Left : MouseButtons.Right, point.X, point.Y, doubleClick);
+        }
+
+        /// <summary>
+        /// Clicks the specified button at the specified point
+        /// </summary>
+        /// <param name="button">Name of the button to click (left or right)</param>
+        /// <param name="point">Point to click</param>
+        /// <param name="doubleClick">True to perform double click</param>
+        public void Click(string button, OpenCvSharp.Point point, bool doubleClick = false)
+        {
+            Click(button.Equals("left") ? MouseButtons.Left : MouseButtons.Right, point.X, point.Y, doubleClick);
+        }
+
+        /// <summary>
+        /// Clicks at the specified point
+        /// </summary>
+        /// <param name="point">Point to click</param>
+        /// <param name="doubleClick">True to perform double click</param>
+        public void Click(System.Drawing.Point point, bool doubleClick = false)
+        {
+            Click(point.X, point.Y, doubleClick);
+        }
+
+        /// <summary>
+        /// Clicks at the specified point
+        /// </summary>
+        /// <param name="point">Point to click</param>
+        /// <param name="doubleClick">True to perform double click</param>
+        public void Click(OpenCvSharp.Point point, bool doubleClick = false)
+        {
+            Click(point.X, point.Y, doubleClick);
+        }
+
+        /// <summary>
+        /// Clicks at the specified point
+        /// </summary>
+        /// <param name="x">X coordinate of the point</param>
+        /// <param name="y">Y coordinate of the point</param>
+        /// <param name="doubleClick">True to perform double click</param>
+        public void Click(int x, int y, bool doubleClick = false)
+        {
+            Click(MouseButtons.Left, x, y, doubleClick);
+        }
+
+        /// <summary>
+        /// Presses the Escape key
+        /// </summary>
+        public void Escape()
+        {
+            _target?.KeyPress(Keys.Escape);
+        }
+
+        /// <summary>
+        /// Presses the Enter key
+        /// </summary>
+        public void Enter()
+        {
+            _target?.KeyPress(Keys.Enter);
+        }
+
+        /// <summary>
+        /// Presses the specified key with specified sleep time
+        /// </summary>
+        /// <param name="key">Name of the key to press</param>
+        /// <param name="sleepTime">Sleep time in milliseconds</param>
+        public void KeyDown(int key, int sleepTime = 100)
+        {
+            _target?.KeyDown((Keys)key, sleepTime);
+        }
+
         /// <summary>
         /// Presses multiple keys simultaneously
         /// </summary>
         /// <param name="keys">Python tuple containing key names</param>
+        /// <param name="sleepTime">Sleep time in milliseconds</param>
         public void KeyPress(PythonTuple keys)
         {
             _target?.KeyPress(keys.ToKeys().ToArray());
@@ -296,7 +454,7 @@ namespace macro.ViewModel
         /// <param name="doubleClick">True to perform double click</param>
         public void Click(PythonTuple point, bool doubleClick = false)
         {
-            _target?.Click((int)point[0], (int)point[1], doubleClick);
+            Click((int)point[0], (int)point[1], doubleClick);
         }
 
         /// <summary>
@@ -306,7 +464,7 @@ namespace macro.ViewModel
         /// <param name="doubleClick">True to perform double click</param>
         public void RClick(PythonTuple point, bool doubleClick = false)
         {
-            _target?.Click(MouseButtons.Right, (int)point[0], (int)point[1], doubleClick);
+            Click(MouseButtons.Right, (int)point[0], (int)point[1], doubleClick);
         }
 
         /// <summary>
@@ -317,6 +475,56 @@ namespace macro.ViewModel
         public void RClick(PythonTuple point, PythonTuple keys)
         {
             _target?.Click(MouseButtons.Right, new System.Drawing.Point((int)point[0], (int)point[1]), keys.ToKeys().ToArray());
+        }
+
+        /// <summary>
+        /// Gets the current cursor position
+        /// </summary>
+        /// <returns>Python tuple containing x, y coordinates</returns>
+        public PythonTuple GetCursorPosition()
+        {
+            return new PythonTuple(new[] { Cursor.Position.X, Cursor.Position.Y });
+        }
+
+        /// <summary>
+        /// Sets the current cursor position
+        /// </summary>
+        /// <param name="point">Python tuple containing x, y coordinates</param>
+        /// <returns>Python tuple containing previous x, y coordinates</returns>
+        public PythonTuple SetCursorPosition(PythonTuple point)
+        {
+            var prev = Cursor.Position;
+            Cursor.Position = new System.Drawing.Point((int)point[0], (int)point[1]);
+
+            return new PythonTuple(new[] { prev.X, prev.Y });
+        }
+
+        /// <summary>
+        /// Stores the current cursor position
+        /// </summary>
+        /// <param name="point">Python tuple containing x, y coordinates</param>
+        public void StoreCursorPosition(PythonTuple point)
+        {
+            _target?.StoreCursorPosition((int)point[0], (int)point[1]);
+        }
+
+        /// <summary>
+        /// Restores the current cursor position
+        /// </summary>
+        /// <returns>Python tuple containing previous x, y coordinates</returns>
+        public void RestoreCursorPosition()
+        {
+            _target?.RestoreCursorPosition();
+        }
+
+        /// <summary>
+        /// Stores the current cursor position
+        /// </summary>
+        /// <param name="x">X coordinate of the point</param>
+        /// <param name="y">Y coordinate of the point</param>
+        public void StoreCursorPosition(int x, int y)
+        {
+            _target?.StoreCursorPosition(x, y);
         }
 
         #endregion

@@ -346,8 +346,6 @@ namespace macro.Model
 
         public Rectangle Area { get; private set; }
 
-        public PythonTuple PyArea { get; private set; }
-
         private IntPtr _foregroundActiveHandle;
         public IntPtr ForegroundActiveHandle
         {
@@ -572,7 +570,7 @@ namespace macro.Model
             }
         }
 
-        private IntPtr FindAppHandle(string className)
+        private static IntPtr FindAppHandle(string className)
         {
             var found = Process.GetProcesses().FirstOrDefault(x => x.ProcessName == className);
             if (found == null)
@@ -649,19 +647,9 @@ namespace macro.Model
             MouseAction(button, true, location);
         }
 
-        public void MouseDown(string button, int x, int y)
-        {
-            MouseDown(button.Equals("left") ? MouseButtons.Left : MouseButtons.Right, new System.Drawing.Point(x, y));
-        }
-
         public void MouseUp(MouseButtons button, System.Drawing.Point location)
         {
             MouseAction(button, false, location);
-        }
-
-        public void MouseUp(string button, int x, int y)
-        {
-            MouseUp(button.Equals("left") ? MouseButtons.Left : MouseButtons.Right, new System.Drawing.Point(x, y));
         }
 
         public void Click(MouseButtons button, System.Drawing.Point location, bool doubleClick = false)
@@ -792,37 +780,14 @@ namespace macro.Model
             Cursor.Position = new System.Drawing.Point(area.X + location.X, area.Y + location.Y);
         }
 
-        public void StoreCursorPosition(PythonTuple point)
-        {
-            StoreCursorPosition((int)point[0], (int)point[1]);
-        }
-
         public void RestoreCursorPosition()
         {
             Cursor.Position = _prevCursorPosition;
         }
 
-        public PythonTuple GetCursorPosition()
-        {
-            return new PythonTuple(new[] { Cursor.Position.X, Cursor.Position.Y });
-        }
-
-        public PythonTuple SetCursorPosition(PythonTuple point)
-        {
-            var prev = Cursor.Position;
-            Cursor.Position = new System.Drawing.Point((int)point[0], (int)point[1]);
-
-            return new PythonTuple(new[] { prev.X, prev.Y });
-        }
-
         public void StoreCursorPosition(int x, int y)
         {
             StoreCursorPosition(new System.Drawing.Point(x, y));
-        }
-
-        public void KeyPress(int key, int sleepTime = 100)
-        {
-            KeyPress((Keys)key, sleepTime);
         }
 
         public void KeyPress(Keys key, int sleepTime = 100)
@@ -910,17 +875,6 @@ namespace macro.Model
             }
         }
 
-        public void KeyPress(string key, int sleepTime = 100)
-        {
-            foreach (var c in key)
-                KeyPress((Keys)c, sleepTime);
-        }
-
-        public void KeyDown(int key, int sleepTime = 100)
-        {
-            KeyDown((Keys)key, sleepTime);
-        }
-
         public void KeyDown(Keys key, int sleepTime = 100)
         {
             if (Type == OperationType.Hardware)
@@ -944,11 +898,6 @@ namespace macro.Model
             {
                 SendMessage(Hwnd, 0x0100, new IntPtr((int)key), IntPtr.Zero);
             }
-        }
-
-        public void KeyUp(int key, int sleepTime = 100)
-        {
-            KeyUp((Keys)key, sleepTime);
         }
 
         public void KeyUp(Keys key, int sleepTime = 100)
@@ -975,51 +924,6 @@ namespace macro.Model
             {
                 SendMessage(Hwnd, 0x0101, new IntPtr((int)key), IntPtr.Zero);
             }
-        }
-
-        public void Click(MouseButtons button, int x, int y, bool doubleClick = false)
-        {
-            Click(button, new System.Drawing.Point(x, y), doubleClick);
-        }
-
-        public void Click(string button, int x, int y, bool doubleClick = false)
-        {
-            Click(button.Equals("left") ? MouseButtons.Left : MouseButtons.Right, x, y, doubleClick);
-        }
-
-        public void Click(string button, System.Drawing.Point point, bool doubleClick = false)
-        {
-            Click(button.Equals("left") ? MouseButtons.Left : MouseButtons.Right, point.X, point.Y, doubleClick);
-        }
-
-        public void Click(string button, OpenCvSharp.Point point, bool doubleClick = false)
-        {
-            Click(button.Equals("left") ? MouseButtons.Left : MouseButtons.Right, point.X, point.Y, doubleClick);
-        }
-
-        public void Click(int x, int y, bool doubleClick = false)
-        {
-            Click(MouseButtons.Left, x, y, doubleClick);
-        }
-
-        public void Click(System.Drawing.Point point, bool doubleClick = false)
-        {
-            Click(point.X, point.Y, doubleClick);
-        }
-
-        public void Click(OpenCvSharp.Point point, bool doubleClick = false)
-        {
-            Click(point.X, point.Y, doubleClick);
-        }
-
-        public void Escape()
-        {
-            KeyPress(Keys.Escape);
-        }
-
-        public void Enter()
-        {
-            KeyPress(Keys.Enter);
         }
 
         public void SendMessage(int message, IntPtr w, IntPtr l)
