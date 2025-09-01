@@ -279,7 +279,7 @@ namespace macro.ViewModel
             return new Sprite(new Model.Sprite
             {
                 Name = "New Sprite",
-                Source = sourceFrame,
+                Source = MatPool.GetClone(sourceFrame),
                 Threshold = DEFAULT_SPRITE_THRESHOLD,
                 Extension = new Model.SpriteExtension
                 {
@@ -472,14 +472,14 @@ namespace macro.ViewModel
                 }
             }).OrderBy(x => x.Name).ToList();
 
-            var model = new EditResourceWindow(cloned)
+            var model = new EditResourceWindow(cloned, selection)
             {
                 CompleteCommand = new RelayCommand(x =>
                 {
                     try
                     {
                         var dataContext = EditResourceDialog.DataContext as EditResourceWindow;
-                        var duplicatedNameList = dataContext.Sprites.GroupBy(x => x.Name).Where(x => x.Count() > 1).Select(x => x.Key).ToList();
+                        var duplicatedNameList = dataContext.Sprites.Select(x => x.Name).GroupBy(x => x).Where(x => x.Count() > 1).Select(x => x.Key).ToList();
                         if (duplicatedNameList.Count > 0)
                             throw new Exception($"Duplicate names: {string.Join(", ", duplicatedNameList)}");
 
@@ -498,7 +498,6 @@ namespace macro.ViewModel
                     EditResourceDialog.Close();
                 })
             };
-            model.Selected = selection;
             EditResourceDialog = new EditResourceDialog
             {
                 DataContext = model
@@ -506,7 +505,6 @@ namespace macro.ViewModel
 
             EditResourceDialog.Closed += (sender, e) =>
             {
-                selection?.Dispose();
                 EditResourceDialog = null;
             };
             EditResourceDialog.Show();
@@ -522,8 +520,8 @@ namespace macro.ViewModel
             var dialog = new Microsoft.Win32.OpenFileDialog
             {
                 //InitialDirectory = Directory.GetCurrentDirectory(),
-                DefaultExt = ".jpg",
-                Filter = "Image (.jpg)|*.jpg"
+                DefaultExt = ".png",
+                Filter = "Image files (.jpg;.png)|*.jpg;*.png|JPEG files (.jpg)|*.jpg|PNG files (.png)|*.png"
             };
             if (dialog.ShowDialog() == false)
                 return;

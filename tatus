@@ -1,0 +1,249 @@
+[1mdiff --git a/Control/Screen.xaml.cs b/Control/Screen.xaml.cs[m
+[1mindex 227d3bf..4c3a5ee 100644[m
+[1m--- a/Control/Screen.xaml.cs[m
+[1m+++ b/Control/Screen.xaml.cs[m
+[36m@@ -32,8 +32,6 @@[m [mnamespace macro.Control[m
+         private Point _cursorPoint = new();[m
+         private Visibility _cursorLabelVisibility = Visibility.Hidden;[m
+         private bool _isDragging = false;[m
+[31m-        private Size _selectionSize = new();[m
+[31m-        private Point _selectionBegin = new();[m
+         private bool _isRenderingConnected = false;[m
+ [m
+         #endregion[m
+[36m@@ -81,22 +79,23 @@[m [mnamespace macro.Control[m
+             private set => _isDragging = value;[m
+         }[m
+ [m
+[32m+[m[32m        public Point SelectionBegin {get; private set;} = new();[m
+[32m+[m[32m        public Point SelectionEnd {get; private set;} = new();[m
+[32m+[m
+         /// <summary>[m
+         /// Gets the current selection size[m
+         /// </summary>[m
+         public Size SelectionSize[m
+         {[m
+[31m-            get => _selectionSize;[m
+[31m-            private set => _selectionSize = value;[m
+[31m-        }[m
+[32m+[m[32m            get[m
+[32m+[m[32m            {[m
+[32m+[m[32m                var beginX = Math.Min(SelectionBegin.X, SelectionEnd.X);[m
+[32m+[m[32m                var beginY = Math.Min(SelectionBegin.Y, SelectionEnd.Y);[m
+[32m+[m[32m                var endX = Math.Max(SelectionBegin.X, SelectionEnd.X);[m
+[32m+[m[32m                var endY = Math.Max(SelectionBegin.Y, SelectionEnd.Y);[m
+ [m
+[31m-        /// <summary>[m
+[31m-        /// Gets the selection start point[m
+[31m-        /// </summary>[m
+[31m-        public Point SelectionBegin[m
+[31m-        {[m
+[31m-            get => _selectionBegin;[m
+[31m-            private set => _selectionBegin = value;[m
+[32m+[m[32m                return new Size(endX - beginX, endY - beginY);[m
+[32m+[m[32m            }[m
+         }[m
+ [m
+         /// <summary>[m
+[36m@@ -140,7 +139,8 @@[m [mnamespace macro.Control[m
+             get[m
+             {[m
+                 var validRect = ValidRect;[m
+[31m-                var selectedRect = new Rect(SelectionBegin, SelectionSize);[m
+[32m+[m[32m                var begin = new Point(Math.Min(SelectionBegin.X, SelectionEnd.X), Math.Min(SelectionBegin.Y, SelectionEnd.Y));[m
+[32m+[m[32m                var selectedRect = new Rect(begin, SelectionSize);[m
+ [m
+                 return ConstrainRectToValidArea(selectedRect, validRect);[m
+             }[m
+[36m@@ -270,7 +270,7 @@[m [mnamespace macro.Control[m
+                 return;[m
+ [m
+             var movement = CalculateMovement(currentPosition, SelectionBegin);[m
+[31m-            SelectionSize = movement;[m
+[32m+[m[32m            SelectionEnd = currentPosition;[m
+             OnPropertyChanged(nameof(SelectedRect));[m
+         }[m
+ [m
+[36m@@ -348,7 +348,7 @@[m [mnamespace macro.Control[m
+             MouseButton = e.ChangedButton;[m
+             IsDragging = true;[m
+             SelectionBegin = e.GetPosition(this);[m
+[31m-            SelectionSize = new Size();[m
+[32m+[m[32m            SelectionEnd = new Point();[m
+             SelectedRectVisibility = Visibility.Visible;[m
+         }[m
+ [m
+[36m@@ -392,7 +392,7 @@[m [mnamespace macro.Control[m
+         {[m
+             IsDragging = false;[m
+             SelectionBegin = new Point();[m
+[31m-            SelectionSize = new Size();[m
+[32m+[m[32m            SelectionEnd = new Point();[m
+             SelectedRectVisibility = Visibility.Hidden;[m
+         }[m
+ [m
+[1mdiff --git a/Model/App.cs b/Model/App.cs[m
+[1mindex 26a05e9..78b9041 100644[m
+[1m--- a/Model/App.cs[m
+[1m+++ b/Model/App.cs[m
+[36m@@ -332,6 +332,7 @@[m [mnamespace macro.Model[m
+         private System.Drawing.Point _prevCursorPosition;[m
+         private string _className;[m
+         private System.Drawing.Bitmap _bitmap;[m
+[32m+[m[32m        private readonly Mutex _bitmapLock = new Mutex();[m
+ [m
+         // Performance: Channel-based frame processing for better decoupling[m
+         private readonly Channel<PooledMat> _frameChannel;[m
+[36m@@ -444,6 +445,8 @@[m [mnamespace macro.Model[m
+         {[m
+             try[m
+             {[m
+[32m+[m[32m                _bitmapLock.WaitOne();[m
+[32m+[m
+                 var appClientRect = GetArea();[m
+ [m
+                 // Performance: Reuse existing Bitmap if size matches to avoid allocations[m
+[36m@@ -483,6 +486,10 @@[m [mnamespace macro.Model[m
+             {[m
+                 return null;[m
+             }[m
+[32m+[m[32m            finally[m
+[32m+[m[32m            {[m
+[32m+[m[32m                _bitmapLock.ReleaseMutex();[m
+[32m+[m[32m            }[m
+         }[m
+ [m
+         /// <summary>[m
+[36m@@ -563,11 +570,13 @@[m [mnamespace macro.Model[m
+             _cancellationTokenSource?.Cancel();[m
+ [m
+             // Performance: Proper cleanup of resources[m
+[32m+[m[32m            _bitmapLock.WaitOne();[m
+             if (_bitmap != null)[m
+             {[m
+                 _bitmap.Dispose();[m
+                 _bitmap = null;[m
+             }[m
+[32m+[m[32m            _bitmapLock.ReleaseMutex();[m
+         }[m
+ [m
+         private static IntPtr FindAppHandle(string className)[m
+[1mdiff --git a/ViewModel/EditResourceWindow.cs b/ViewModel/EditResourceWindow.cs[m
+[1mindex 03a3f1c..4aa7358 100644[m
+[1m--- a/ViewModel/EditResourceWindow.cs[m
+[1m+++ b/ViewModel/EditResourceWindow.cs[m
+[36m@@ -46,9 +46,14 @@[m [mnamespace macro.ViewModel[m
+         public ICommand CompleteCommand { get; set; }[m
+         public ICommand CancelCommand { get; set; }[m
+ [m
+[31m-        public EditResourceWindow(IEnumerable<Model.Sprite> sprites)[m
+[32m+[m[32m        public EditResourceWindow(IEnumerable<Model.Sprite> sprites, ViewModel.Sprite newSprite)[m
+         {[m
+[31m-            Sprites = new ObservableCollection<Sprite>(sprites.Select(x => new ViewModel.Sprite(x)));[m
+[32m+[m[32m            Sprites = [.. sprites.Select(x => new ViewModel.Sprite(x))];[m
+[32m+[m[32m            if (newSprite != null)[m
+[32m+[m[32m            {[m
+[32m+[m[32m                Sprites.Add(newSprite);[m
+[32m+[m[32m                Selected = newSprite;[m
+[32m+[m[32m            }[m
+ [m
+             LoadCommand = new RelayCommand(OnLoad);[m
+             SaveCommand = new RelayCommand(OnSave);[m
+[1mdiff --git a/ViewModel/MainWindow.cs b/ViewModel/MainWindow.cs[m
+[1mindex f5df09d..47803f6 100644[m
+[1m--- a/ViewModel/MainWindow.cs[m
+[1m+++ b/ViewModel/MainWindow.cs[m
+[36m@@ -279,7 +279,7 @@[m [mnamespace macro.ViewModel[m
+             return new Sprite(new Model.Sprite[m
+             {[m
+                 Name = "New Sprite",[m
+[31m-                Source = sourceFrame,[m
+[32m+[m[32m                Source = MatPool.GetClone(sourceFrame),[m
+                 Threshold = DEFAULT_SPRITE_THRESHOLD,[m
+                 Extension = new Model.SpriteExtension[m
+                 {[m
+[36m@@ -472,14 +472,14 @@[m [mnamespace macro.ViewModel[m
+                 }[m
+             }).OrderBy(x => x.Name).ToList();[m
+ [m
+[31m-            var model = new EditResourceWindow(cloned)[m
+[32m+[m[32m            var model = new EditResourceWindow(cloned, selection)[m
+             {[m
+                 CompleteCommand = new RelayCommand(x =>[m
+                 {[m
+                     try[m
+                     {[m
+                         var dataContext = EditResourceDialog.DataContext as EditResourceWindow;[m
+[31m-                        var duplicatedNameList = dataContext.Sprites.GroupBy(x => x.Name).Where(x => x.Count() > 1).Select(x => x.Key).ToList();[m
+[32m+[m[32m                        var duplicatedNameList = dataContext.Sprites.Select(x => x.Name).GroupBy(x => x).Where(x => x.Count() > 1).Select(x => x.Key).ToList();[m
+                         if (duplicatedNameList.Count > 0)[m
+                             throw new Exception($"Duplicate names: {string.Join(", ", duplicatedNameList)}");[m
+ [m
+[36m@@ -498,7 +498,6 @@[m [mnamespace macro.ViewModel[m
+                     EditResourceDialog.Close();[m
+                 })[m
+             };[m
+[31m-            model.Selected = selection;[m
+             EditResourceDialog = new EditResourceDialog[m
+             {[m
+                 DataContext = model[m
+[36m@@ -506,7 +505,6 @@[m [mnamespace macro.ViewModel[m
+ [m
+             EditResourceDialog.Closed += (sender, e) =>[m
+             {[m
+[31m-                selection?.Dispose();[m
+                 EditResourceDialog = null;[m
+             };[m
+             EditResourceDialog.Show();[m
+[36m@@ -522,8 +520,8 @@[m [mnamespace macro.ViewModel[m
+             var dialog = new Microsoft.Win32.OpenFileDialog[m
+             {[m
+                 //InitialDirectory = Directory.GetCurrentDirectory(),[m
+[31m-                DefaultExt = ".jpg",[m
+[31m-                Filter = "Image (.jpg)|*.jpg"[m
+[32m+[m[32m                DefaultExt = ".png",[m
+[32m+[m[32m                Filter = "Image files (.jpg;.png)|*.jpg;*.png|JPEG files (.jpg)|*.jpg|PNG files (.png)|*.png"[m
+             };[m
+             if (dialog.ShowDialog() == false)[m
+                 return;[m
+[1mdiff --git a/scripts/wheel.py b/scripts/wheel.py[m
+[1mindex 7a0a223..3fde173 100644[m
+[1m--- a/scripts/wheel.py[m
+[1m+++ b/scripts/wheel.py[m
+[36m@@ -53,26 +53,24 @@[m [mdef fishing(app, mini_game=True):[m
+ 		app.Sleep(1000)[m
+ 		app.SetCursorPosition(prev)[m
+ [m
+[31m-		found = app.Detect('not-enough-energy', timeout=1000*3)[m
+[32m+[m		[32mfound = app.Detect('not-enough-energy', area={"x":823,"y":749,"width":270,"height":75}, timeout=1000*3)[m
+ 		if 'not-enough-energy' in found:[m
+[31m-			return[m
+[31m-[m
+[31m-[m
+ 			app.Click((1033, 927))[m
+ [m
+[31m-			potions = ('life-energy-potion(large)', 'life-energy-potion(normal)', 'life-energy-potion(small)')[m
+[32m+[m			[32m# potions = ('life-energy-potion(large)', 'life-energy-potion(normal)', 'life-energy-potion(small)')[m
+[32m+[m			[32mpotions = ('life-energy-potion(large)', 'life-energy-potion(normal)')[m
+ 			found = app.Detect(potions, timeout=500)[m
+ 			if not found:[m
+[32m+[m				[32mapp.Escape()[m
+ 				break[m
+ [m
+ 			if 'life-energy-potion(small)' in found:[m
+[31m-				app.Click((1074, 564))[m
+[32m+[m				[32mapp.Click((900, 564))[m
+ 			elif 'life-energy-potion(normal)' in found:[m
+[31m-				app.Click((1074, 640))[m
+[32m+[m				[32mapp.Click((900, 640))[m
+ 			elif 'life-energy-potion(large)' in found:[m
+[31m-				app.Click((1074, 713))[m
+[32m+[m				[32mapp.Click((900, 713))[m
+ [m
+[31m-			app.Click((950, 770))[m
+ 			app.Escape()[m
+ 			continue[m
+ [m
+[1mdiff --git a/sprites.dat b/sprites.dat[m
+[1mindex ea747a4..10a7b92 100644[m
+Binary files a/sprites.dat and b/sprites.dat differ

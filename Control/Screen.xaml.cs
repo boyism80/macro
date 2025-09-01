@@ -32,8 +32,6 @@ namespace macro.Control
         private Point _cursorPoint = new();
         private Visibility _cursorLabelVisibility = Visibility.Hidden;
         private bool _isDragging = false;
-        private Size _selectionSize = new();
-        private Point _selectionBegin = new();
         private bool _isRenderingConnected = false;
 
         #endregion
@@ -81,22 +79,23 @@ namespace macro.Control
             private set => _isDragging = value;
         }
 
+        public Point SelectionBegin {get; private set;} = new();
+        public Point SelectionEnd {get; private set;} = new();
+
         /// <summary>
         /// Gets the current selection size
         /// </summary>
         public Size SelectionSize
         {
-            get => _selectionSize;
-            private set => _selectionSize = value;
-        }
+            get
+            {
+                var beginX = Math.Min(SelectionBegin.X, SelectionEnd.X);
+                var beginY = Math.Min(SelectionBegin.Y, SelectionEnd.Y);
+                var endX = Math.Max(SelectionBegin.X, SelectionEnd.X);
+                var endY = Math.Max(SelectionBegin.Y, SelectionEnd.Y);
 
-        /// <summary>
-        /// Gets the selection start point
-        /// </summary>
-        public Point SelectionBegin
-        {
-            get => _selectionBegin;
-            private set => _selectionBegin = value;
+                return new Size(endX - beginX, endY - beginY);
+            }
         }
 
         /// <summary>
@@ -140,7 +139,8 @@ namespace macro.Control
             get
             {
                 var validRect = ValidRect;
-                var selectedRect = new Rect(SelectionBegin, SelectionSize);
+                var begin = new Point(Math.Min(SelectionBegin.X, SelectionEnd.X), Math.Min(SelectionBegin.Y, SelectionEnd.Y));
+                var selectedRect = new Rect(begin, SelectionSize);
 
                 return ConstrainRectToValidArea(selectedRect, validRect);
             }
@@ -270,7 +270,7 @@ namespace macro.Control
                 return;
 
             var movement = CalculateMovement(currentPosition, SelectionBegin);
-            SelectionSize = movement;
+            SelectionEnd = currentPosition;
             OnPropertyChanged(nameof(SelectedRect));
         }
 
@@ -348,7 +348,7 @@ namespace macro.Control
             MouseButton = e.ChangedButton;
             IsDragging = true;
             SelectionBegin = e.GetPosition(this);
-            SelectionSize = new Size();
+            SelectionEnd = new Point();
             SelectedRectVisibility = Visibility.Visible;
         }
 
@@ -392,7 +392,7 @@ namespace macro.Control
         {
             IsDragging = false;
             SelectionBegin = new Point();
-            SelectionSize = new Size();
+            SelectionEnd = new Point();
             SelectedRectVisibility = Visibility.Hidden;
         }
 

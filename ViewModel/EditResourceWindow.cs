@@ -46,9 +46,14 @@ namespace macro.ViewModel
         public ICommand CompleteCommand { get; set; }
         public ICommand CancelCommand { get; set; }
 
-        public EditResourceWindow(IEnumerable<Model.Sprite> sprites)
+        public EditResourceWindow(IEnumerable<Model.Sprite> sprites, ViewModel.Sprite newSprite)
         {
-            Sprites = new ObservableCollection<Sprite>(sprites.Select(x => new ViewModel.Sprite(x)));
+            Sprites = [.. sprites.Select(x => new ViewModel.Sprite(x))];
+            if (newSprite != null)
+            {
+                Sprites.Add(newSprite);
+                Selected = newSprite;
+            }
 
             LoadCommand = new RelayCommand(OnLoad);
             SaveCommand = new RelayCommand(OnSave);

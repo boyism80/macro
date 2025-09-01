@@ -332,6 +332,7 @@ namespace macro.Model
         private System.Drawing.Point _prevCursorPosition;
         private string _className;
         private System.Drawing.Bitmap _bitmap;
+        private readonly Mutex _bitmapLock = new Mutex();
 
         // Performance: Channel-based frame processing for better decoupling
         private readonly Channel<PooledMat> _frameChannel;
@@ -444,6 +445,8 @@ namespace macro.Model
         {
             try
             {
+                _bitmapLock.WaitOne();
+
                 var appClientRect = GetArea();
 
                 // Performance: Reuse existing Bitmap if size matches to avoid allocations
@@ -482,6 +485,10 @@ namespace macro.Model
             catch (Exception)
             {
                 return null;
+            }
+            finally
+            {
+                _bitmapLock.ReleaseMutex();
             }
         }
 
@@ -563,11 +570,13 @@ namespace macro.Model
             _cancellationTokenSource?.Cancel();
 
             // Performance: Proper cleanup of resources
+            _bitmapLock.WaitOne();
             if (_bitmap != null)
             {
                 _bitmap.Dispose();
                 _bitmap = null;
             }
+            _bitmapLock.ReleaseMutex();
         }
 
         private static IntPtr FindAppHandle(string className)

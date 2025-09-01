@@ -53,26 +53,24 @@ def fishing(app, mini_game=True):
 		app.Sleep(1000)
 		app.SetCursorPosition(prev)
 
-		found = app.Detect('not-enough-energy', timeout=1000*3)
+		found = app.Detect('not-enough-energy', area={"x":823,"y":749,"width":270,"height":75}, timeout=1000*3)
 		if 'not-enough-energy' in found:
-			return
-
-
 			app.Click((1033, 927))
 
-			potions = ('life-energy-potion(large)', 'life-energy-potion(normal)', 'life-energy-potion(small)')
+			# potions = ('life-energy-potion(large)', 'life-energy-potion(normal)', 'life-energy-potion(small)')
+			potions = ('life-energy-potion(large)', 'life-energy-potion(normal)')
 			found = app.Detect(potions, timeout=500)
 			if not found:
+				app.Escape()
 				break
 
 			if 'life-energy-potion(small)' in found:
-				app.Click((1074, 564))
+				app.Click((900, 564))
 			elif 'life-energy-potion(normal)' in found:
-				app.Click((1074, 640))
+				app.Click((900, 640))
 			elif 'life-energy-potion(large)' in found:
-				app.Click((1074, 713))
+				app.Click((900, 713))
 
-			app.Click((950, 770))
 			app.Escape()
 			continue
 
