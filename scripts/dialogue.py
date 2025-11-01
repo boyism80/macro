@@ -11,6 +11,8 @@ def dialog_until_finish(app):
 			break
 
 		app.KeyPress(('SHIFT', 'G'))
+		app.Sleep(500)
+		app.KeyPress(('SHIFT', 'G'))
 			
 
 def callback(app):

@@ -92,20 +92,38 @@ def fishing(app, mini_game=True):
 		else:
 			pass
 
-def stone_simulate(app, slot, engraving_name=None, counts=(5,6), with_pheon=True):
-	if with_pheon:
-		stone.buy_pheon(app)
+def stone_simulate(app, engraving_name=None):
+	index = 0
+	app.KeyPress('G')
+	while True:
+		exists = stone.exists(app, index)
+		if not exists:
+			break
 
-	for count in counts:
-		stone.buy_stone(app, slot, count)
-		app.KeyPress('G')
-		if stone.facet_stone(app, engraving_name, count):
+		if stone.facet_stone(app, index, engraving_name):
+			yield 'facet stone success'
 			return
-			
-		stone.disassemble_stones(app)
+
+		index = index + 1
+		if index >= 12:
+			found = app.Detect(('enable_next_stone', 'disable_next_stone'), area={"x":611,"y":759,"width":46,"height":34})
+			if 'enable_next_stone' in found:
+				index = 11
+				app.Click(631, 778)
+
+			elif 'disable_next_stone' in found:
+				yield 'disable next stone'
+				break
+			else:
+				yield 'unexpected exception'
+				return
+
+
+	yield 'facet stone end'
+	app.Escape()
+	stone.disassemble_stones(app)
 
 def callback(app):
-	return fishing(app, mini_game=False)
+	# return fishing(app, mini_game=False)
 
-	# for i in range(1):
-	# 	stone_simulate(app, 2, engraving_name='adrenaline', with_pheon=False, counts=(4, ))
+	stone_simulate(app)

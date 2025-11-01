@@ -14,15 +14,15 @@ def engraving(app, name):
     
 
 def state(app):
-    line1 = {"x": 723, "y": 367, "width": 397, "height": 46}
-    line2 = {"x": 721, "y": 464, "width": 399, "height": 31}
-    line3 = {"x": 716, "y": 591, "width": 404, "height": 36}
+    line1 = {"x":752,"y":367,"width":399,"height":31}
+    line2 = {"x":750,"y":462,"width":397,"height":29}
+    line3 = {"x":748,"y":591,"width":402,"height":36}
 
-    found1 = len(app.DetectAll('stone-success', area=line1))
+    found1 = len(app.DetectAll('stone-success', area=line1)) + len(app.DetectAll('stone-buff-active', area=line1))
     found2 = len(app.DetectAll('stone-failed', area=line1))
-    found3 = len(app.DetectAll('stone-success', area=line2))
+    found3 = len(app.DetectAll('stone-success', area=line2)) + len(app.DetectAll('stone-buff-active', area=line2))
     found4 = len(app.DetectAll('stone-failed', area=line2))
-    found5 = len(app.DetectAll('stone-debuff-success', area=line3))
+    found5 = len(app.DetectAll('stone-debuff-success', area=line3)) + len(app.DetectAll('stone-debuff-active', area=line3))
     found6 = len(app.DetectAll('stone-failed', area=line3))
 
     return [
@@ -54,7 +54,10 @@ def percent(app):
     percent_maps = {'25%': 0.25, '35%': 0.35, '45%': 0.45, '55%': 0.55, '65%': 0.65, '75%': 0.75}
     return percent_maps[matched]
 
-def facet_stone(app, engraving_name, count):
+def exists(app, index):
+    return app.Detect(('stone_exists', 'stone_exist_2'), area={"x": 365, "y": 150 + index * 55, "width": 115, "height": 35}, timeout=1000)
+
+def facet_stone(app, index, engraving_name):
     app.Detect('stone-main')
 
     button_position = {
@@ -63,51 +66,48 @@ def facet_stone(app, engraving_name, count):
         '2': (1170, 600)
     }
 
-    stone_index = 0
-    for stone_index in range(count):
-        stone_position = (300, 150 + stone_index * 56)
-        app.Click(stone_position)
-        app.Click((825, 90))
-        app.Sleep(200)
+    stone_position = (325, 150 + index * 55)
+    app.Click(stone_position)
+    app.Click((825, 90))
+    app.Sleep(200)
 
-        while True:
-            app.ClearLines()
-            current_state = state(app)
+    while True:
+        app.ClearLines()
+        current_state = state(app)
 
-            engraving_line = engraving(app, engraving_name) if engraving_name else None
-            if engraving_line == 1:
-                ist = app.heap['97_2nd']
-            elif engraving_line == 2:
-                ist = app.heap['97_1st']
-            else:
-                ist = app.heap['97']
+        engraving_line = engraving(app, engraving_name) if engraving_name else None
+        if engraving_line == 1:
+            ist = app.heap['97_2nd']
+        elif engraving_line == 2:
+            ist = app.heap['97_1st']
+        else:
+            ist = app.heap['97']
 
-            success = ist.result(current_state)
-            if success == False:
-                break
+        success = ist.result(current_state)
+        if success == False:
+            break
 
-            if success == True:
-                return True
+        if success == True:
+            return True
 
-            current_percent = percent(app)
+        current_percent = percent(app)
 
-            probs = []
-            for selection in range(loa.MAX_LINE):
-                probs.append(ist.fn(current_percent, selection, current_state) * 100.0)
+        probs = []
+        for selection in range(loa.MAX_LINE):
+            probs.append(ist.fn(current_percent, selection, current_state) * 100.0)
 
-            for selection, prob in enumerate(probs):
-                app.WriteLine(f"{selection + 1} >> {prob:.3f}%")
+        for selection, prob in enumerate(probs):
+            app.WriteLine(f"{selection + 1} >> {prob:.3f}%")
 
-            final_prob = max(*probs)
-            selection = random.choice([i for i, x in enumerate(probs) if x == final_prob])
+        final_prob = max(*probs)
+        selection = random.choice([i for i, x in enumerate(probs) if x == final_prob])
 
-            app.WriteLine(f"next selection : {selection + 1} ({final_prob:.3f}%)")
+        app.WriteLine(f"next selection : {selection + 1} ({final_prob:.3f}%)")
 
-            position = button_position[f'{selection}']
-            app.Click(position)
-            app.Sleep(500)
+        position = button_position[f'{selection}']
+        app.Click(position)
+        app.Sleep(500)
 
-    app.Escape()
     return False
 
 def enter_pw(app, pw):
